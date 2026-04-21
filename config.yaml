@@ -1,0 +1,24 @@
+project:
+  name: "f2-fintech-therapist"
+  version: "1.0.0"
+  environment: "dev"
+
+pinecone:
+  # Do NOT put your real key here if you use GitHub; use environment variables
+  api_key: "${PINECONE_API_KEY}" 
+  index_name: "financial-therapy-index"
+  dimension: 3072  # For text-embedding-3-large
+  metric: "cosine"
+  cloud: "aws"
+  region: "us-east-1"
+
+openai:
+  api_key: "${OPENAI_API_KEY}"
+  embedding_model: "text-embedding-3-large"
+  chat_model: "gpt-4o"
+  max_tokens: 500
+
+preprocessing:
+  chunk_size: 1000
+  chunk_overlap: 100
+  data_path: "data/raw/"
