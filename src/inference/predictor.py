@@ -41,7 +41,7 @@ def get_financial_therapy(user_message):
     
     # Updated for the new SDK generation syntax
     response = client.models.generate_content(
-        model='gemini-3.1-pro',
+        model='gemini-3.1-flash',
         contents=prompt,
     )
     
