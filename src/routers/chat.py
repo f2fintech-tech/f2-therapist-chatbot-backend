@@ -17,6 +17,11 @@ from langchain.prompts import ChatPromptTemplate
 from src.models import (
     get_db, Conversation, ConversationMessage, MessageRole, get_or_create_user
 )
+from src.utils.validators import (
+    sanitize_message, sanitize_string, validate_and_sanitize,
+    ValidatedMessage, ValidatedConversation, UUID_PATTERN,
+    MAX_MESSAGE_LENGTH, MIN_MESSAGE_LENGTH
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +48,20 @@ class ChatRequest(BaseModel):
     
     @validator('message')
     def validate_message(cls, v):
-        """Sanitize message."""
-        v = v.strip()
-        if not v:
-            raise ValueError("Message cannot be empty or whitespace only.")
-        return v
+        """Sanitize and validate message."""
+        try:
+            return sanitize_message(v)
+        except ValueError as e:
+            raise ValueError(f"Invalid message: {str(e)}")
+    
+    @validator('conversation_id', pre=True, always=True)
+    def validate_conversation_id(cls, v):
+        """Validate conversation_id if provided."""
+        if v is None:
+            return None
+        if not UUID_PATTERN.match(v):
+            raise ValueError("Invalid conversation_id format. Must be a valid UUID.")
+        return v.lower()
 
 class ChatResponse(BaseModel):
     """Chat response model."""
@@ -229,6 +243,7 @@ def get_or_create_conversation(db: Session, user_id: str, conversation_id: str |
     """Get existing conversation or create a new one."""
     if conversation_id:
         if not UUID_PATTERN.match(conversation_id):
+            logger.warning(f"Invalid conversation_id format: {conversation_id}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid conversation_id format"
@@ -240,6 +255,7 @@ def get_or_create_conversation(db: Session, user_id: str, conversation_id: str |
         ).first()
         
         if not conversation:
+            logger.warning(f"Conversation not found: {conversation_id} for user: {user_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Conversation not found or unauthorized"
@@ -254,15 +270,26 @@ def get_or_create_conversation(db: Session, user_id: str, conversation_id: str |
         db.add(conversation)
         db.commit()
         db.refresh(conversation)
+        logger.info(f"New conversation created: {conversation.id} for user: {user_id}")
         return conversation
 
 def save_message(db: Session, conversation_id: str, role: MessageRole, content: str):
     """Save a message to the database."""
+    # Validate and sanitize content
+    try:
+        validated_content = sanitize_message(content)
+    except ValueError as e:
+        logger.error(f"Message validation failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid message content: {str(e)}"
+        )
+    
     message = ConversationMessage(
         id=str(uuid.uuid4()),
         conversation_id=conversation_id,
         role=role,
-        content=content
+        content=validated_content
     )
     db.add(message)
     db.commit()
@@ -285,6 +312,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
     
     Accepts a user message, manages conversation context, and returns AI response.
     Automatically persists all messages to the database.
+    Input is validated and sanitized for security.
     
     Args:
         request: ChatRequest containing user message and optional conversation ID
@@ -299,16 +327,18 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
     try:
         # Ensure user exists
         user = get_or_create_user(db, request.user_id)
+        logger.info(f"User authenticated: {request.user_id}")
         
         # Get or create conversation
         conversation = get_or_create_conversation(
             db, request.user_id, request.conversation_id
         )
         
-        # Save user message
+        # Save user message (already validated by ChatRequest model)
         user_message_obj = save_message(
             db, conversation.id, MessageRole.USER, request.message
         )
+        logger.info(f"User message saved: {user_message_obj.id}")
         
         # Get conversation context for LLM
         context_messages = get_conversation_context(db, conversation.id, limit=10)
@@ -325,13 +355,14 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         assistant_message_obj = save_message(
             db, conversation.id, MessageRole.ASSISTANT, response.content
         )
+        logger.info(f"Assistant message saved: {assistant_message_obj.id}")
         
         # Update conversation metadata
         conversation.message_count += 2
         conversation.updated_at = datetime.utcnow()
         db.commit()
         
-        logger.info(f"Chat message processed for user {request.user_id} in conversation {conversation.id}")
+        logger.info(f"Chat exchange completed for user {request.user_id} in conversation {conversation.id}")
         
         return ChatResponse(
             response=response.content,
