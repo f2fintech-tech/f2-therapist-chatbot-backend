@@ -1,6 +1,6 @@
 """
 Chat router with message handling and conversation persistence.
-Integrates with Anthropic Claude 3.5 Sonnet via LangChain.
+Integrates with Google Gemini 3.1 via LangChain.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -12,7 +12,7 @@ import logging
 import uuid
 import re
 
-from langchain_anthropic import ChatAnthropic
+from langchain_anthropic import ChatGoogleGenerativeAI
 from langchain.prompts import ChatPromptTemplate
 from src.models import (
     get_db, Conversation, ConversationMessage, MessageRole, get_or_create_user
@@ -73,17 +73,17 @@ class ChatResponse(BaseModel):
 
 # ==================== LLM Configuration ====================
 def get_llm():
-    """Initialize and return the Anthropic Claude LLM instance."""
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        logger.error("ANTHROPIC_API_KEY not found in environment variables")
-        raise ValueError("ANTHROPIC_API_KEY not configured")
-    
-    return ChatAnthropic(
-        model="claude-3-5-sonnet-20241022",
-        temperature=0.7,
-        max_tokens=1024,
-        anthropic_api_key=api_key
+   """Initialize and return the Google Gemini 3.1 LLM instance."""
+     api_key = os.getenv("GEMINI_API_KEY")
+     if not api_key:
+         logger.error("GEMINI_API_KEY not found in environment variables")
+         raise ValueError("GEMINI_API_KEY not configured")
+     
+     return ChatGoogleGenerativeAI(
+         model="gemini-2.0-flash",
+         temperature=0.7,
+         max_output_tokens=1024,
+         google_api_key=api_key
     )
 
 def get_financial_therapy_prompt():

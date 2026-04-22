@@ -1,6 +1,6 @@
 """
 Financial Therapist Chatbot Backend
-FastAPI application with Anthropic Claude 3.5 Sonnet integration
+FastAPI application with Google Gemini 3.1 API integration
 """
 
 from fastapi import FastAPI
@@ -48,7 +48,7 @@ def rate_limit_handler(request, exc):
 # ==================== FastAPI Initialization ====================
 app = FastAPI(
     title="Financial Therapist Chatbot",
-    description="AI-powered financial therapy chatbot backend with Anthropic Claude 3.5 Sonnet",
+    description="AI-powered financial therapy chatbot backend with Google Gemini 3.1 Flash integration.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -125,7 +125,7 @@ async def startup_event():
     logger.info("Starting Financial Therapist Chatbot Backend")
     logger.info("=" * 60)
     logger.info(f"Environment: {ENVIRONMENT}")
-    logger.info(f"Anthropic API configured: {bool(os.getenv('ANTHROPIC_API_KEY'))}")
+    logger.info(f"Google Gemini API configured: {bool(os.getenv('GEMINI_API_KEY'))}")
     logger.info(f"Database configured: {bool(os.getenv('DATABASE_URL'))}")
     logger.info("Rate limiting: 100 requests per minute per IP")
     logger.info("Logging middleware: Enabled")

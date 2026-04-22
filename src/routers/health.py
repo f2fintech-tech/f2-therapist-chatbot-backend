@@ -14,7 +14,7 @@ class HealthCheckResponse(BaseModel):
     version: str
     service: str
     database_configured: bool
-    anthropic_api_configured: bool
+    gemini_api_configured: bool
 
 class StatusResponse(BaseModel):
     """Service status response model."""
@@ -36,7 +36,7 @@ async def health_check():
         version="0.1.0",
         service="Financial Therapist Chatbot Backend",
         database_configured=bool(os.getenv("DATABASE_URL")),
-        anthropic_api_configured=bool(os.getenv("ANTHROPIC_API_KEY"))
+        gemini_api_configured=bool(os.getenv("GEMINI_API_KEY"))
     )
 
 @router.get("/status", response_model=StatusResponse)
