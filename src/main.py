@@ -17,11 +17,17 @@ import logging
 from src.routers import health, chat, conversations
 from src.models import init_db
 
+# Import middleware
+from src.middleware.logging import RequestLoggingMiddleware, SecurityLoggingMiddleware
+
 # Load environment variables
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # ==================== Rate Limiting Setup ====================
@@ -53,7 +59,14 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
-# ==================== CORS Configuration ====================
+# ==================== Middleware Stack ====================
+# Order matters: Security → Logging → CORS (outermost)
+
+# Security and observability middleware (added first, processed last)
+app.add_middleware(SecurityLoggingMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+
+# CORS middleware (added last, processed first)
 # Get allowed origins from environment variable
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
@@ -115,6 +128,8 @@ async def startup_event():
     logger.info(f"Anthropic API configured: {bool(os.getenv('ANTHROPIC_API_KEY'))}")
     logger.info(f"Database configured: {bool(os.getenv('DATABASE_URL'))}")
     logger.info("Rate limiting: 100 requests per minute per IP")
+    logger.info("Logging middleware: Enabled")
+    logger.info("Security logging: Enabled")
     logger.info("API Documentation available at: /docs")
     logger.info("=" * 60)
 
