@@ -5,6 +5,10 @@ FastAPI application with Anthropic Claude 3.5 Sonnet integration
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 import os
 import logging
@@ -20,6 +24,21 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ==================== Rate Limiting Setup ====================
+limiter = Limiter(key_func=get_remote_address)
+
+@limiter.limit("100/minute")
+def rate_limit_handler(request, exc):
+    """Custom rate limit error handler."""
+    return JSONResponse(
+        status_code=429,
+        content={
+            "error": "Rate limit exceeded",
+            "detail": "Too many requests. Please try again later.",
+            "retry_after": 60
+        }
+    )
+
 # ==================== FastAPI Initialization ====================
 app = FastAPI(
     title="Financial Therapist Chatbot",
@@ -29,6 +48,10 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json"
 )
+
+# Add rate limiter to app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 # ==================== CORS Configuration ====================
 # Get allowed origins from environment variable
@@ -60,10 +83,10 @@ init_db()
 # Health check routes
 app.include_router(health.router)
 
-# Chat routes (v1 API)
+# Chat routes (v1 API) with rate limiting
 app.include_router(chat.router, prefix="/api/v1")
 
-# Conversation management routes (v1 API)
+# Conversation management routes (v1 API) with rate limiting
 app.include_router(conversations.router, prefix="/api/v1")
 
 # ==================== Root Routes ====================
@@ -77,7 +100,8 @@ async def root():
         "version": "1.0.0",
         "environment": ENVIRONMENT,
         "documentation": "/docs",
-        "api_base": "/api/v1"
+        "api_base": "/api/v1",
+        "rate_limit": "100 requests per minute"
     }
 
 # ==================== Startup/Shutdown Events ====================
@@ -90,6 +114,7 @@ async def startup_event():
     logger.info(f"Environment: {ENVIRONMENT}")
     logger.info(f"Anthropic API configured: {bool(os.getenv('ANTHROPIC_API_KEY'))}")
     logger.info(f"Database configured: {bool(os.getenv('DATABASE_URL'))}")
+    logger.info("Rate limiting: 100 requests per minute per IP")
     logger.info("API Documentation available at: /docs")
     logger.info("=" * 60)
 
