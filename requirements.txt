@@ -20,7 +20,7 @@ psycopg2-binary==2.9.11
 # LLM & NLP
 langchain==1.2.15
 openai==2.31.0
-langchain-google-genai==1.0.9
+langchain-google-genai==4.2.2
 
 # Utilities
 python-dotenv==1.2.2
