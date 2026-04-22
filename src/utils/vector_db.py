@@ -1,59 +1,53 @@
 import os
-import google.generativeai as genai
+from google import genai
 from pinecone import Pinecone, ServerlessSpec
 from dotenv import load_dotenv
 
-# Load your secret keys from .env
+# Load keys
 load_dotenv()
 
 def setup_and_seed_pinecone():
-    # 1. Setup Clients
+    # 1. Setup New 2026 Clients
+    # The new SDK uses a Client object
+    google_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
     
     index_name = "f2-therapy-index"
 
     # 2. Create Index if it doesn't exist
-    if index_name not in pc.list_indexes().names():
+    if index_name not in [idx.name for idx in pc.list_indexes()]:
         pc.create_index(
             name=index_name,
-            dimension=768, # Correct for Gemini
+            dimension=768, 
             metric="cosine",
             spec=ServerlessSpec(cloud="aws", region="us-east-1")
         )
 
     index = pc.Index(index_name)
 
-    # 3. Example Therapy Scripts to feed the 'Librarian'
-    # In a real scenario, you would load these from a text file or PDF
+    # 3. Therapy Data
     therapy_data = [
-        {
-            "id": "advice_01",
-            "text": "When feeling overwhelmed by EMI dates, take a 5-minute breathing exercise. Financial stress is common, and you are not alone."
-        },
-        {
-            "id": "advice_02",
-            "text": "Missing a payment doesn't define your worth. F2 Fintech suggests looking into consolidation if you have multiple high-interest debts."
-        }
+        {"id": "advice_01", "text": "Money stress is heavy, but you are not alone. Take a deep breath."},
+        {"id": "advice_02", "text": "Missing a payment is a hurdle, not a wall. Let's look at aggregator options."}
     ]
 
-    # 4. Turn text into 768 numbers and upload
+    # 4. Use the new 'embed_content' method
     for item in therapy_data:
-        # Convert text to Vector
-        embedding = genai.embed_content(
-            model="models/text-embedding-004",
-            content=item["text"],
-            task_type="retrieval_document"
-        )["embedding"]
+        result = google_client.models.embed_content(
+            model="text-embedding-004",
+            contents=item["text"]
+        )
+        
+        # In the new SDK, embeddings are accessed like this:
+        embedding_values = result.embeddings[0].values
 
-        # Upload to Pinecone (Upsert)
         index.upsert(vectors=[{
             "id": item["id"],
-            "values": embedding,
-            "metadata": {"text": item["text"]} # Crucial for the bot to read later!
+            "values": embedding_values,
+            "metadata": {"text": item["text"]}
         }])
 
-    print("Success! Your Pinecone filing cabinet is now filled.")
+    print("✅ Success! Your 2026 Pinecone library is ready.")
 
 if __name__ == "__main__":
     setup_and_seed_pinecone()
