@@ -8,3 +8,8 @@ pinecone:
   index_name: "f2-therapy-index"
   dimension: 768  # Crucial: Must be 768 for Gemini
   metric: "cosine"
+
+  rag:
+  chunk_size: 1000      # How many characters per chunk
+  chunk_overlap: 100   # Overlap so sentences don't break
+  top_k: 3             # How many chunks to pull from Pinecone
