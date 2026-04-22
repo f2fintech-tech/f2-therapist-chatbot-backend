@@ -17,17 +17,30 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(
     title="Financial Therapist Chatbot",
-    description="AI-powered financial therapy chatbot backend",
+    description="AI-powered financial therapy chatbot backend with Anthropic Claude",
     version="0.1.0"
 )
 
-# Configure CORS
+# ==================== CORS Configuration ====================
+# Get allowed origins from environment variable
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
+
+# For production, default to no origins (explicitly set required)
+if ENVIRONMENT == "production":
+    if os.getenv("ALLOWED_ORIGINS") is None:
+        logger.warning("ALLOWED_ORIGINS not set in production. CORS disabled for safety.")
+        ALLOWED_ORIGINS = []
+
+logger.info(f"CORS allowed origins: {ALLOWED_ORIGINS}")
+
+# Configure CORS with secure settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Update with specific domains in production
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Only needed methods
+    allow_headers=["Content-Type", "Authorization"],  # Only needed headers
 )
 
 # ==================== Models ====================
