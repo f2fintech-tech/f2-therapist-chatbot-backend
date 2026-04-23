@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 class KnowledgeRetriever:
     def __init__(self):
-        api_key = os.getenv("PINECONE_API_KEY")
+        api_key = os.getenv("export PINECONE_API_KEY="pcsk_66p3nV_DsKrE4Kx7we6oC6P6jgiYb6djJFJSDzAVtfhyCWsPUWweXA3FrWNBZbDenzeyb2"")
         index_name = "f2-therapy-index"
         
         if not api_key:
-            logger.error("PINECONE_API_KEY not found")
+            logger.error("PINECO")
             raise ValueError("PINECONE_API_KEY not configured")
         
         self.client = Pinecone(api_key=api_key)
