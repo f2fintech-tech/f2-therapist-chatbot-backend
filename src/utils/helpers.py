@@ -9,4 +9,4 @@ def load_config(config_path="config.yaml"):
     config['pinecone']['api_key'] = os.getenv('PINECONE_API_KEY')
     config['openai']['api_key'] = os.getenv('OPENAI_API_KEY')
     
-    return confi 
+    return config
