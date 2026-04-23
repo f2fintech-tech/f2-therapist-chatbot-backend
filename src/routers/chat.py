@@ -1,6 +1,6 @@
 """
 Chat router with message handling and conversation persistence.
-Integrates with Google Gemini 3.1 via LangChain.
+Integrates with Google Gemini 3.1 via LangChain and Knowledge Base (RAG).
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -312,7 +312,8 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
     """
     Main chat endpoint for the financial therapy chatbot.
     
-    Accepts a user message, manages conversation context, and returns AI response.
+    Accepts a user message, retrieves relevant knowledge from the knowledge base,
+    manages conversation context, and returns an AI response grounded in your data.
     Automatically persists all messages to the database.
     Input is validated and sanitized for security.
     
@@ -345,13 +346,55 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         # Get conversation context for LLM
         context_messages = get_conversation_context(db, conversation.id, limit=10)
         
+        # ==================== NEW: RAG Integration ====================
+        # Retrieve relevant knowledge from Pinecone
+        logger.info(f"Retrieving knowledge base context for query: {request.message}")
+        
+        context_text = ""
+        knowledge_context = []
+        
+        try:
+            from src.knowledge.embedder import embed_text
+            from src.knowledge.retriever import KnowledgeRetriever
+            
+            # Convert user message to embedding
+            query_vector = embed_text(request.message)
+            logger.debug("User message converted to embedding vector")
+            
+            # Search Pinecone for relevant documents
+            retriever = KnowledgeRetriever()
+            knowledge_context = retriever.get_context(query_vector)
+            logger.info(f"Retrieved {len(knowledge_context)} relevant knowledge documents")
+            
+            # Build context string from retrieved documents
+            if knowledge_context:
+                context_text = "📚 **Relevant Knowledge Base**:\n"
+                for idx, doc in enumerate(knowledge_context, 1):
+                    content_preview = doc['content'][:300] if doc['content'] else "No content"
+                    context_text += f"\n{idx}. {content_preview}...\n"
+                context_text += "\n---\n\n"
+                logger.info(f"Built knowledge context with {len(knowledge_context)} documents")
+            else:
+                logger.info("No relevant knowledge documents found in vector DB")
+        
+        except Exception as e:
+            logger.warning(f"Knowledge base retrieval failed: {str(e)}. Continuing without context.")
+            context_text = ""
+            knowledge_context = []
+        
+        # ==================== Build Enhanced Message ====================
+        # Combine knowledge context with user message
+        enhanced_message = f"{context_text}**User's Question:**\n{request.message}"
+        
+        logger.info(f"Enhanced message length: {len(enhanced_message)} characters")
+        
         # Initialize LLM and prompt
         llm = get_llm()
         prompt = get_financial_therapy_prompt()
         
-        # Create the chain and get response
+        # Create the chain and get response (with knowledge context)
         chain = prompt | llm
-        response = chain.invoke({"user_message": request.message})
+        response = chain.invoke({"user_message": enhanced_message})
         
         # Save assistant message
         assistant_message_obj = save_message(
@@ -365,6 +408,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         db.commit()
         
         logger.info(f"Chat exchange completed for user {request.user_id} in conversation {conversation.id}")
+        logger.info(f"Response length: {len(response.content)} characters")
         
         return ChatResponse(
             response=response.content,
