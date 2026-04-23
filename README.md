@@ -8,8 +8,6 @@
 
 The Financial Therapist Chatbot is an intelligent conversational AI service that provides **empathetic financial guidance** and emotional support. It combines state-of-the-art natural language processing with deep financial domain knowledge to help users navigate their financial journeys.
 
-**Live API Base URL:** `https://api.f2fintech.com/api/v1` (Coming Soon)
-
 ---
 
 ## ✨ Key Features
@@ -40,7 +38,3 @@ The Financial Therapist Chatbot is an intelligent conversational AI service that
 - **Health checks** - Built-in readiness and liveness probes
 
 ---
-
-## 📚 API Documentation
-
-### **Base URL**
