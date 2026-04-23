@@ -3,7 +3,7 @@ Conversation management router with comprehensive security and CRUD endpoints.
 Includes input validation, authorization checks, rate limiting readiness, and SQL injection protection.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Path
 from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
@@ -238,8 +238,8 @@ async def list_conversations(
 
 @router.get("/{conversation_id}", response_model=ConversationDetail)
 async def get_conversation(
-    conversation_id: str = Query(..., min_length=36, max_length=36),
-    user_id: str = Query(..., min_length=1, max_length=36, description="User ID for verification"),
+    conversation_id: str = Path(..., min_length=36, max_length=36),
+    user_id: str = Query(..., min_length=1, max_length=36),
     db: Session = Depends(get_db)
 ):
     """
@@ -271,9 +271,9 @@ async def get_conversation(
 
 @router.put("/{conversation_id}", response_model=ConversationDetail)
 async def update_conversation(
-    conversation_id: str = Query(..., min_length=36, max_length=36),
+    conversation_id: str = Path(..., min_length=36, max_length=36),
     request: ConversationUpdate = None,
-    user_id: str = Query(..., min_length=1, max_length=36, description="User ID for verification"),
+    user_id: str = Query(..., min_length=1, max_length=36),
     db: Session = Depends(get_db)
 ):
     """
@@ -323,7 +323,7 @@ async def update_conversation(
 
 @router.delete("/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_conversation(
-    conversation_id: str = Query(..., min_length=36, max_length=36),
+    conversation_id: str = Path(..., min_length=36, max_length=36),
     user_id: str = Query(..., min_length=1, max_length=36, description="User ID for verification"),
     db: Session = Depends(get_db)
 ):
@@ -359,7 +359,7 @@ async def delete_conversation(
 
 @router.get("/{conversation_id}/messages", response_model=list[MessageDetail])
 async def get_conversation_messages(
-    conversation_id: str = Query(..., min_length=36, max_length=36),
+    conversation_id: str = Path(..., min_length=36, max_length=36),
     user_id: str = Query(..., min_length=1, max_length=36, description="User ID for verification"),
     limit: int = Query(50, ge=MIN_MESSAGES_PER_REQUEST, le=MAX_MESSAGES_PER_REQUEST, description="Number of messages to return"),
     offset: int = Query(0, ge=0, le=MAX_OFFSET, description="Number of messages to skip"),
