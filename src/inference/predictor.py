@@ -5,7 +5,7 @@ from pinecone import Pinecone
 # 1. Setup Gemini and Pinecone
 # The new genai.Client() automatically looks for the GEMINI_API_KEY environment variable!
 client = genai.Client() 
-pc = Pinecone(api_key=os.getenv("export PINECONE_API_KEY="pcsk_66p3nV_DsKrE4Kx7we6oC6P6jgiYb6djJFJSDzAVtfhyCWsPUWweXA3FrWNBZbDenzeyb2""))
+pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 index = pc.Index("f2-therapy-index")
 
 def get_financial_therapy(user_message):

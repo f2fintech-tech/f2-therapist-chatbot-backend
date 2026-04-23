@@ -14,11 +14,10 @@ logger = logging.getLogger(__name__)
 class KnowledgeLoader:
     def __init__(self):
         api_key = os.getenv("PINECONE_API_KEY")
-        index_name = "f2-therapy-index"
-        
         if not api_key:
-            raise ValueError("PINECONE_API_KEY not configured")
-        
+            raise ValueError("PINECONE_API_KEY is not set! Please configure it in your environment.")
+
+        index_name = "f2-therapy-index"
         self.client = Pinecone(api_key=api_key)
         self.index = self.client.Index(index_name)
     
