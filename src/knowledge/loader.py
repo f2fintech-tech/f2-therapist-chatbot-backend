@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class KnowledgeLoader:
     def __init__(self):
-        api_key = os.getenv("export PINECONE_API_KEY="pcsk_66p3nV_DsKrE4Kx7we6oC6P6jgiYb6djJFJSDzAVtfhyCWsPUWweXA3FrWNBZbDenzeyb2"")
+        api_key = os.getenv("PINECONE_API_KEY")
         index_name = "f2-therapy-index"
         
         if not api_key:

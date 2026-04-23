@@ -4,7 +4,7 @@ google:
   chat_model: "gemini-3.1-flash"
 
 pinecone:
-  api_key: "export PINECONE_API_KEY="{pcsk_66p3nV_DsKrE4Kx7we6oC6P6jgiYb6djJFJSDzAVtfhyCWsPUWweXA3FrWNBZbDenzeyb2}"
+  api_key: "${PINECONE_API_KEY}"
   index_name: "f2-therapy-index"
   dimension: 768  # Crucial: Must be 768 for Gemini
   metric: "cosine"
