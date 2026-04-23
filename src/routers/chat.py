@@ -13,7 +13,7 @@ import uuid
 import re
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from src.models import (
     get_db, Conversation, ConversationMessage, MessageRole, get_or_create_user
 )
