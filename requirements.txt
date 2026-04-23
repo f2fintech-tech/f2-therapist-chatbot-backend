@@ -1,11 +1,5 @@
 # Data Processing
 pandas==3.0.2
-numpy==2.4.4
-
-# Machine Learning
-scikit-learn==1.8.0
-torch==2.11.0
-transformers==5.5.0
 
 # API & Web Server
 fastapi==0.135.3
