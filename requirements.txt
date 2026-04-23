@@ -9,7 +9,7 @@ slowapi==0.1.9
 
 boto3==1.26.137
 botocore==1.29.137
-pyyaml==6.0
+PyYAML==6.0.1
 pinecone-client==3.0.0
 
 # Database
