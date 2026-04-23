@@ -14,17 +14,18 @@ import logging
 logger = logging.getLogger(__name__)
 
 # ==================== Database Configuration ====================
-# DATABASE_URL must be set in environment variables (from .env file)
-DATABASE_URL = os.getenv("DATABASE_URL")
+def get_database_url():
+    """Get database URL with fallback for development."""
+    url = os.getenv("DATABASE_URL")
+    
+    if not url:
+        logger.warning("DATABASE_URL not set, using SQLite for development")
+        url = "sqlite:///./test.db"
+    
+    return url
 
-if not DATABASE_URL:
-    raise ValueError(
-        "DATABASE_URL environment variable is not set. "
-        "Please set it in your .env file. "
-        "Example: postgresql://username:password@localhost:5432/financial_therapist"
-    )
-
-logger.info("Database connection configured")
+DATABASE_URL = get_database_url()
+logger.info(f"Database connection configured: {DATABASE_URL}")
 
 # Create engine and session
 engine = create_engine(DATABASE_URL, echo=False)
