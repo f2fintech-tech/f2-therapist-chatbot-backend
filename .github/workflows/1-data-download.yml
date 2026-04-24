@@ -6,6 +6,27 @@ on:
 jobs:
   data-download:
     runs-on: ubuntu-latest
+    env:
+      # Secrets
+      PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # Repository variables
+      ENVIRONMENT: ${{ vars.ENVIRONMENT }}
+      APP_ENV: ${{ vars.APP_ENV }}
+      HOST: ${{ vars.HOST }}
+      PORT: ${{ vars.PORT }}
+      LOG_LEVEL: ${{ vars.LOG_LEVEL }}
+      ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
+      CORS_ORIGINS: ${{ vars.CORS_ORIGINS }}
+      POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+      POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_S3_BUCKET_NAME: ${{ vars.AWS_S3_BUCKET_NAME }}
+      SQL_ECHO: ${{ vars.SQL_ECHO }}
 
     permissions:
       contents: read
@@ -23,6 +44,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Download data
-        env:
-          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
         run: python src/utils/ingest_data.py
