@@ -82,7 +82,7 @@ def get_llm():
         raise ValueError("GEMINI_API_KEY not configured")
 
     return ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash",
+        model="gemini-3.1-flash",
         temperature=0.7,
         max_output_tokens=1024,
         google_api_key=api_key
