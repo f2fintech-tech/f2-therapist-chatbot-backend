@@ -7,7 +7,7 @@ pinecone:
   api_key: "${PINECONE_API_KEY}"
   index_name: "f2-therapy-index"
   dimension: 768  # Crucial: Must be 768 for Gemini
-  metric: "cosine"
+  metric: "cosine"$
 
   rag:
   chunk_size: 1000      # How many characters per chunk
