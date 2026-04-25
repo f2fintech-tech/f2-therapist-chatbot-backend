@@ -4,11 +4,51 @@ Process raw knowledge base files into formatted, ready-to-embed documents
 
 import json
 import os
+import stat
 from pathlib import Path
 from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
+
+def _validate_scenario_schema(scenario: dict) -> bool:
+    """
+    Validate scenario has required fields.
+    
+    Args:
+        scenario: Scenario dictionary to validate
+    
+    Returns:
+        True if valid, False otherwise
+    """
+    required_fields = {'id', 'title', 'content'}
+    return all(field in scenario and scenario[field] for field in required_fields)
+
+def _validate_faq_schema(faq: dict) -> bool:
+    """
+    Validate FAQ has required fields.
+    
+    Args:
+        faq: FAQ dictionary to validate
+    
+    Returns:
+        True if valid, False otherwise
+    """
+    required_fields = {'id', 'question', 'answer'}
+    return all(field in faq and faq[field] for field in required_fields)
+
+def _set_secure_permissions(file_path: Path):
+    """
+    Set restrictive file permissions (0o600 - owner read/write only).
+    
+    Args:
+        file_path: Path to file to secure
+    """
+    try:
+        os.chmod(str(file_path), stat.S_IRUSR | stat.S_IWUSR)  # 0o600
+        logger.debug(f"Set secure permissions on {file_path}")
+    except Exception as e:
+        logger.warning(f"Could not set permissions on {file_path}: {e}")
 
 class DataProcessor:
     def __init__(self):
@@ -27,11 +67,20 @@ class DataProcessor:
             logger.warning(f"Raw scenarios file not found: {raw_file}")
             return []
         
-        with open(raw_file, 'r', encoding='utf-8') as f:
-            raw_scenarios = json.load(f)
+        try:
+            with open(raw_file, 'r', encoding='utf-8') as f:
+                raw_scenarios = json.load(f)
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in scenarios file: {e}")
+            return []
         
         processed_scenarios = []
         for scenario in raw_scenarios:
+            # Validate schema
+            if not _validate_scenario_schema(scenario):
+                logger.warning(f"Invalid scenario schema, skipping: {scenario.get('id', 'unknown')}")
+                continue
+            
             processed = {
                 "id": scenario.get("id"),
                 "title": scenario.get("title"),
@@ -45,11 +94,18 @@ class DataProcessor:
             }
             processed_scenarios.append(processed)
         
-        with open(processed_file, 'w', encoding='utf-8') as f:
-            json.dump(processed_scenarios, f, indent=2, ensure_ascii=False)
-        
-        logger.info(f"Processed {len(processed_scenarios)} scenarios")
-        return processed_scenarios
+        try:
+            with open(processed_file, 'w', encoding='utf-8') as f:
+                json.dump(processed_scenarios, f, indent=2, ensure_ascii=False)
+            
+            # Set secure permissions on the file
+            _set_secure_permissions(processed_file)
+            
+            logger.info(f"Processed {len(processed_scenarios)} scenarios")
+            return processed_scenarios
+        except IOError as e:
+            logger.error(f"Error writing processed scenarios: {e}")
+            return []
     
     def process_faqs(self):
         """Process raw FAQs into formatted documents."""
@@ -60,11 +116,20 @@ class DataProcessor:
             logger.warning(f"Raw FAQs file not found: {raw_file}")
             return []
         
-        with open(raw_file, 'r', encoding='utf-8') as f:
-            raw_faqs = json.load(f)
+        try:
+            with open(raw_file, 'r', encoding='utf-8') as f:
+                raw_faqs = json.load(f)
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in FAQs file: {e}")
+            return []
         
         processed_faqs = []
         for faq in raw_faqs:
+            # Validate schema
+            if not _validate_faq_schema(faq):
+                logger.warning(f"Invalid FAQ schema, skipping: {faq.get('id', 'unknown')}")
+                continue
+            
             processed = {
                 "id": faq.get("id"),
                 "question": faq.get("question"),
@@ -75,11 +140,18 @@ class DataProcessor:
             }
             processed_faqs.append(processed)
         
-        with open(processed_file, 'w', encoding='utf-8') as f:
-            json.dump(processed_faqs, f, indent=2, ensure_ascii=False)
-        
-        logger.info(f"Processed {len(processed_faqs)} FAQs")
-        return processed_faqs
+        try:
+            with open(processed_file, 'w', encoding='utf-8') as f:
+                json.dump(processed_faqs, f, indent=2, ensure_ascii=False)
+            
+            # Set secure permissions on the file
+            _set_secure_permissions(processed_file)
+            
+            logger.info(f"Processed {len(processed_faqs)} FAQs")
+            return processed_faqs
+        except IOError as e:
+            logger.error(f"Error writing processed FAQs: {e}")
+            return []
     
     def process_system_prompt(self):
         """Process raw system prompt."""
@@ -90,16 +162,23 @@ class DataProcessor:
             logger.warning(f"Raw system prompt not found: {raw_file}")
             return None
         
-        with open(raw_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        processed_content = content.strip()
-        
-        with open(processed_file, 'w', encoding='utf-8') as f:
-            f.write(processed_content)
-        
-        logger.info("Processed system prompt")
-        return processed_content
+        try:
+            with open(raw_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            processed_content = content.strip()
+            
+            with open(processed_file, 'w', encoding='utf-8') as f:
+                f.write(processed_content)
+            
+            # Set secure permissions on the file
+            _set_secure_permissions(processed_file)
+            
+            logger.info("Processed system prompt")
+            return processed_content
+        except IOError as e:
+            logger.error(f"Error processing system prompt: {e}")
+            return None
     
     def process_all(self):
         """Process all raw data into processed format."""
