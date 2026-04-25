@@ -85,7 +85,7 @@ class S3StorageManager:
         """
 
         # Validate S3 path for safety
-        if not _validate_path_parameter(s3_path):
+        """if not _validate_path_parameter(s3_path):
             logger.error(f"Invalid S3 path: {s3_path}")
             return False
 
@@ -98,7 +98,7 @@ class S3StorageManager:
 
         except ClientError as e:
             logger.error(f"Failed to upload {local_path}: {e}")
-            return False
+            return False"""
 
     def download_file(self, s3_path: str, local_path: str):
         """
