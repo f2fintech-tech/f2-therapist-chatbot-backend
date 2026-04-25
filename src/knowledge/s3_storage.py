@@ -10,6 +10,34 @@ from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 
+def _validate_path_parameter(path: str, allow_relative: bool = True) -> bool:
+    """
+    Validate path parameter to prevent directory traversal attacks.
+    
+    Args:
+        path: Path to validate
+        allow_relative: Whether to allow relative paths
+    
+    Returns:
+        True if path is safe, False otherwise
+    """
+    if not path or not isinstance(path, str):
+        return False
+    
+    # Prevent absolute paths if not allowed
+    if path.startswith('/'):
+        return False
+    
+    # Prevent directory traversal
+    if '..' in path or path.startswith('~'):
+        return False
+    
+    # Prevent null bytes
+    if '\x00' in path:
+        return False
+    
+    return True
+
 class S3StorageManager:
     def __init__(self, bucket_name: str = "f2-fintech-kb", region: str = "us-east-1"):
         """
@@ -41,6 +69,11 @@ class S3StorageManager:
             local_path: Path to local file (e.g., "src/data/raw/scenarios_raw.json")
             s3_path: Path in S3 (e.g., "raw/scenarios_raw.json")
         """
+        # Validate S3 path to prevent directory traversal
+        if not _validate_path_parameter(s3_path):
+            logger.error(f"Invalid S3 path: {s3_path}")
+            return False
+        
         try:
             self.s3_client.upload_file(local_path, self.bucket_name, s3_path)
             logger.info(f"Uploaded {local_path} to s3://{self.bucket_name}/{s3_path}")
@@ -57,6 +90,11 @@ class S3StorageManager:
             s3_path: Path in S3 (e.g., "raw/scenarios_raw.json")
             local_path: Path to save locally (e.g., "src/data/raw/scenarios_raw.json")
         """
+        # Validate S3 path to prevent directory traversal
+        if not _validate_path_parameter(s3_path):
+            logger.error(f"Invalid S3 path: {s3_path}")
+            return False
+        
         try:
             # Create local directory if needed
             Path(local_path).parent.mkdir(parents=True, exist_ok=True)
