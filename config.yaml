@@ -1,7 +1,7 @@
 google:
   api_key: "${GEMINI_API_KEY}"
-  embedding_model: "models/text-embedding-004" # This model uses 768 dims
-  chat_model: "gemini-3.1-flash"
+  embedding_model: "text-embedding-004" # This model uses 768 dims
+  chat_model: "gemini-3-flash-preview"
 
 pinecone:
   api_key: "${PINECONE_API_KEY}"
