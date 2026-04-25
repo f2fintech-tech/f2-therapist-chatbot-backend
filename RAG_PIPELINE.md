@@ -98,7 +98,7 @@ This document describes the complete Retrieval-Augmented Generation (RAG) pipeli
 - `get_context()`: Get formatted context
 
 ### 6. Model Trainer (`src/model/model_train.py`)
-- Trains model using Gemini 3.1 Flash
+- Trains model using Gemini 3.1 Flash preview
 - Prepares training data from conversations
 - Validates model functionality
 
@@ -314,7 +314,7 @@ When a user sends a message:
      - User message
 
 4. **Response Generation**
-   - Send enhanced prompt to Gemini 3.1 Flash
+   - Send enhanced prompt to Gemini 3.1 Flash preview
    - Generate empathetic, context-aware response
 
 5. **Response Return**

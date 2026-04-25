@@ -1,6 +1,6 @@
 """
 Financial Therapist Chatbot Backend
-FastAPI application with Google Gemini 3.1 API integration
+FastAPI application with Google Gemini 3 flash preview API integration
 """
 
 from fastapi import FastAPI
@@ -48,7 +48,7 @@ def rate_limit_handler(request, exc):
 # ==================== FastAPI Initialization ====================
 app = FastAPI(
     title="Financial Therapist Chatbot",
-    description="AI-powered financial therapy chatbot backend with Google Gemini 3.1 Flash integration.",
+    description="AI-powered financial therapy chatbot backend with Google Gemini 3 Flash preview integration.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",

@@ -12,7 +12,7 @@ The Financial Therapist Chatbot is an intelligent conversational AI service that
 - 🧠 **RAG-Powered**: Retrieves relevant knowledge base documents for context-aware responses
 - 💬 **Emotionally Intelligent**: Recognizes and validates financial anxiety
 - 📚 **Knowledge-Rich**: Trained on FAQs, scenarios, and therapy conversations
-- ⚡ **Fast**: Sub-second responses using Gemini 3.1 Flash
+- ⚡ **Fast**: Sub-second responses using Gemini 3.1 Flash preview
 - 🔒 **Secure**: Enterprise-grade security with full audit trails
 
 ---

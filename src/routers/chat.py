@@ -1,6 +1,6 @@
 """
 Chat router with message handling and conversation persistence.
-Integrates with Google Gemini 3.1 via LangChain and Knowledge Base (RAG).
+Integrates with Google Gemini 3 flash preview via LangChain and Knowledge Base (RAG).
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -73,7 +73,7 @@ class ChatResponse(BaseModel):
 
 # ==================== LLM Configuration ====================
 def get_llm():
-    """Initialize and return the Google Gemini 3.1 LLM instance."""
+    """Initialize and return the Google Gemini 3 flash preview LLM instance."""
 
     api_key = os.getenv("GEMINI_API_KEY")
 
@@ -82,7 +82,7 @@ def get_llm():
         raise ValueError("GEMINI_API_KEY not configured")
 
     return ChatGoogleGenerativeAI(
-        model="gemini-3.1-flash",
+        model="gemini-3-flash-preview",
         temperature=0.7,
         max_output_tokens=1024,
         google_api_key=api_key

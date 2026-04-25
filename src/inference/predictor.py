@@ -31,7 +31,7 @@ class TherapyChatbot:
         
         # Initialize Gemini client
         self.client = genai.Client(api_key=gemini_api_key)
-        self.model_name = "gemini-3.1-flash"
+        self.model_name = "gemini-3-flash-preview"
         
         # Validate Pinecone API key
         pinecone_api_key = os.getenv("PINECONE_API_KEY")

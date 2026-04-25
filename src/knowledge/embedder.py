@@ -10,12 +10,12 @@ logger = logging.getLogger(__name__)
 
 def get_embeddings():
     """Initialize and return the embedding model."""
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("gemini-3-flash-preview")
     if not api_key:
         raise ValueError("GEMINI_API_KEY is not set! Please configure it in your environment.")
 
     return GoogleGenerativeAIEmbeddings(
-        model="models/text-embedding-004",
+        model="text-embedding-004",
         google_api_key=api_key
     )
 

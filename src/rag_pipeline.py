@@ -173,9 +173,9 @@ class RAGPipeline:
             return False
     
     def step_6_train_model(self):
-        """Step 6: Train model with Gemini 3.1 Flash"""
+        """Step 6: Train model with Gemini 3.Flash preview"""
         logger.info("\n" + "="*60)
-        logger.info("STEP 6: Training model with Gemini 3.1 Flash")
+        logger.info("STEP 6: Training model with Gemini 3.1 Flash preview")
         logger.info("="*60)
         
         try:

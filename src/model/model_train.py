@@ -1,5 +1,5 @@
 """
-Model Training for Financial Therapist Chatbot using Gemini 3.1 Flash
+Model Training for Financial Therapist Chatbot using Gemini 3 Flash preview
 """
 
 import logging
@@ -28,7 +28,7 @@ class ModelTrainer:
             )
         
         self.client = genai.Client(api_key=api_key)
-        self.model_name = "gemini-3.1-flash"
+        self.model_name = "gemini-3-flash-preview"
         self.conversation_data_path = Path("src/data/processed/conversation_training_data.json")
         
     def prepare_training_data(self):
@@ -135,7 +135,7 @@ Your goal is to make people feel heard, understood, and empowered to take contro
             system_prompt = self.load_system_prompt()
             
             # Step 3: Validate model
-            logger.info("\n3. Validating Gemini 3.1 Flash model...")
+            logger.info("\n3. Validating Gemini 3 Flash preview model...")
             logger.info(f"Model: {self.model_name}")
             logger.info(f"Type: Generative (Instruct)")
             logger.info("Capabilities: Text generation, RAG integration, Multi-turn conversations")
