@@ -136,7 +136,7 @@ class RAGPipeline:
         logger.info("="*60)
         
         try:
-            logger.info("Initializing embeddings model (Gemini text-embedding-004)...")
+            logger.info("Initializing embeddings model (Gemini text-embedding-001)...")
             embeddings = get_embeddings()
             logger.info("✓ Embeddings model ready")
             
