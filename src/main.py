@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 # ==================== Rate Limiting Setup ====================
 limiter = Limiter(key_func=get_remote_address)
 
-@limiter.limit("100/minute")
+@limiter.limit("200/minute")
 def rate_limit_handler(request, exc):
     """Custom rate limit error handler."""
     return JSONResponse(
@@ -114,7 +114,7 @@ async def root():
         "environment": ENVIRONMENT,
         "documentation": "/docs",
         "api_base": "/api/v1",
-        "rate_limit": "100 requests per minute"
+        "rate_limit": "200 requests per minute"
     }
 
 # ==================== Startup/Shutdown Events ====================
@@ -127,7 +127,7 @@ async def startup_event():
     logger.info(f"Environment: {ENVIRONMENT}")
     logger.info(f"Google Gemini API configured: {bool(os.getenv('GEMINI_API_KEY'))}")
     logger.info(f"Database configured: {bool(os.getenv('DATABASE_URL'))}")
-    logger.info("Rate limiting: 100 requests per minute per IP")
+    logger.info("Rate limiting: 200 requests per minute per IP")
     logger.info("Logging middleware: Enabled")
     logger.info("Security logging: Enabled")
     logger.info("API Documentation available at: /docs")
