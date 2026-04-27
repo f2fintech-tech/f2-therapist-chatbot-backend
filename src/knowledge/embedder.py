@@ -15,7 +15,7 @@ def get_embeddings():
         raise ValueError("GEMINI_API_KEY is not set! Please configure it in your environment.")
 
     return GoogleGenerativeAIEmbeddings(
-        model="text-embedding-001",
+        model="gemini-embedding-2",
         google_api_key=api_key
     )
 
