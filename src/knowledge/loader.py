@@ -43,8 +43,8 @@ class KnowledgeLoader:
                 'metadata': {
                     'content': content,
                     'type': 'scenario',
-                    'category': scenario.get('category'),
-                    'severity': scenario.get('severity')
+                    'category': scenario.get('category') if scenario.get('category') is not None else 'unknown',
+                    'severity': scenario.get('severity') if scenario.get('severity') is not None else 'unknown'
                 }
             })
         
@@ -73,7 +73,7 @@ class KnowledgeLoader:
                 'metadata': {
                     'content': content,
                     'type': 'faq',
-                    'category': faq.get('category'),
+                    'category': faq.get('category') if faq.get('category') is not None else 'unknown',
                     'tags': faq.get('tags', [])
                 }
             })
