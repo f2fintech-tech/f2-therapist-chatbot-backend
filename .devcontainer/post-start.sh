@@ -2,24 +2,40 @@
 set -euo pipefail
 
 echo "========================================="
-echo "🚀 Starting Codespace Bootstrap..."
+echo "Starting Codespace Bootstrap..."
 echo "========================================="
 
-# Create .env file from environment variables
-echo "📝 Creating .env from GitHub Secrets..."
-cat > .env << 'EOF'
+# Explicitly set AWS_REGION to a known default if not already set or empty.
+# This prevents invalid STS endpoints like https://sts..amazonaws.com.
+if [[ -z "${AWS_REGION:-}" ]]; then
+  export AWS_REGION="ap-south-1"
+  echo "AWS_REGION was not set; defaulting to ap-south-1"
+fi
+# AWS CLI uses AWS_DEFAULT_REGION; keep both variables in sync.
+export AWS_DEFAULT_REGION="${AWS_REGION}"
+echo "Using AWS_REGION: ${AWS_REGION}"
+
+# Resolve optional variables with defaults so the .env file holds real values.
+AWS_S3_BUCKET_NAME="${AWS_S3_BUCKET_NAME:-f2fintech-knowledge-base}"
+PINECONE_INDEX_NAME="${PINECONE_INDEX_NAME:-f2-therapy-index}"
+
+# Create .env file with fully resolved values (not shell-template strings).
+# Using an unquoted heredoc (<<EOF) so variables are expanded here, which means
+# python-dotenv and other tools will read actual values instead of expressions.
+echo "Creating .env from GitHub Secrets..."
+cat > .env << EOF
 # AWS Configuration - from Repository Secrets
 AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
 AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
-AWS_REGION=${AWS_REGION:-ap-south-1}
-AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-f2fintech-knowledge-base}
+AWS_REGION=${AWS_REGION}
+AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
 
 # Google Gemini API - from Repository Secrets
 GEMINI_API_KEY=${GEMINI_API_KEY:-}
 
 # Pinecone Vector DB - from Repository Secrets
 PINECONE_API_KEY=${PINECONE_API_KEY:-}
-PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME:-f2-therapy-index}
+PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME}
 
 # Environment
 ENVIRONMENT=development
@@ -29,59 +45,53 @@ PORT=8000
 EOF
 
 chmod 600 .env
-echo "✓ .env file created with secure permissions"
-
-# Export variables from .env
-set -a
-source .env
-set +a
-echo "✓ Environment variables loaded"
+echo ".env file created with secure permissions"
 
 # Create AWS credentials directory
 mkdir -p ~/.aws
 
 # Configure AWS CLI from secrets
 if [[ -n "${AWS_ACCESS_KEY_ID:-}" && -n "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
-  echo "🔐 Configuring AWS CLI..."
-  
+  echo "Configuring AWS CLI..."
+
   aws configure set aws_access_key_id "${AWS_ACCESS_KEY_ID}" --profile default
   aws configure set aws_secret_access_key "${AWS_SECRET_ACCESS_KEY}" --profile default
-  aws configure set region "${AWS_REGION:-ap-south-1}" --profile default
-  
+  aws configure set region "${AWS_REGION}" --profile default
+
   # Set secure permissions on AWS config
   chmod 600 ~/.aws/credentials 2>/dev/null || true
   chmod 600 ~/.aws/config 2>/dev/null || true
-  
-  echo "✓ AWS CLI configured successfully"
+
+  echo "AWS CLI configured successfully"
 else
-  echo "⚠️  AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY not found"
-  echo "   Please ensure these secrets are set in GitHub Secrets"
+  echo "WARNING: AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY not found"
+  echo "         Please ensure these secrets are set in GitHub Codespaces Secrets"
 fi
 
 echo ""
 echo "========================================="
-echo "📊 Configuration Status:"
+echo "Configuration Status:"
 echo "========================================="
-echo "AWS_ACCESS_KEY_ID: $([ -n "${AWS_ACCESS_KEY_ID:-}" ] && echo '✓ Set' || echo '✗ Missing')"
-echo "AWS_SECRET_ACCESS_KEY: $([ -n "${AWS_SECRET_ACCESS_KEY:-}" ] && echo '✓ Set' || echo '✗ Missing')"
-echo "AWS_REGION: ${AWS_REGION:-ap-south-1} ✓"
-echo "AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-f2fintech-knowledge-base} ✓"
-echo "GEMINI_API_KEY: $([ -n "${GEMINI_API_KEY:-}" ] && echo '✓ Set' || echo '✗ Missing')"
-echo "PINECONE_API_KEY: $([ -n "${PINECONE_API_KEY:-}" ] && echo '✓ Set' || echo '✗ Missing')"
-echo "PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-f2-therapy-index} ✓"
+echo "AWS_ACCESS_KEY_ID:     $([ -n "${AWS_ACCESS_KEY_ID:-}" ]     && echo 'Set' || echo 'MISSING')"
+echo "AWS_SECRET_ACCESS_KEY: $([ -n "${AWS_SECRET_ACCESS_KEY:-}" ] && echo 'Set' || echo 'MISSING')"
+echo "AWS_REGION:            ${AWS_REGION}"
+echo "AWS_S3_BUCKET_NAME:    ${AWS_S3_BUCKET_NAME}"
+echo "GEMINI_API_KEY:        $([ -n "${GEMINI_API_KEY:-}" ]        && echo 'Set' || echo 'MISSING')"
+echo "PINECONE_API_KEY:      $([ -n "${PINECONE_API_KEY:-}" ]      && echo 'Set' || echo 'MISSING')"
+echo "PINECONE_INDEX_NAME:   ${PINECONE_INDEX_NAME}"
 echo ""
 
-# Test AWS credentials
-echo "🧪 Testing AWS credentials..."
+# AWS_REGION is guaranteed non-empty (set to ap-south-1 above if unset).
+echo "Testing AWS credentials (region: ${AWS_REGION})..."
 if aws sts get-caller-identity > /dev/null 2>&1; then
-  echo "✓ AWS credentials are valid!"
+  echo "AWS credentials are valid!"
   echo ""
   aws sts get-caller-identity
 else
-  echo "✗ AWS credentials test failed - check your secrets"
+  echo "AWS credentials test failed - check your secrets"
 fi
 
 echo ""
 echo "========================================="
-echo "✅ Bootstrap Complete!"
+echo "Bootstrap Complete!"
 echo "========================================="
