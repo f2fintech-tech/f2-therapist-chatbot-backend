@@ -15,6 +15,8 @@ class HealthCheckResponse(BaseModel):
     service: str
     database_configured: bool
     gemini_api_configured: bool
+    pinecone_configured: bool
+    aws_configured: bool
 
 class StatusResponse(BaseModel):
     """Service status response model."""
@@ -36,7 +38,9 @@ async def health_check():
         version="0.1.0",
         service="Financial Therapist Chatbot Backend",
         database_configured=bool(os.getenv("DATABASE_URL")),
-        gemini_api_configured=bool(os.getenv("GEMINI_API_KEY"))
+        gemini_api_configured=bool(os.getenv("GEMINI_API_KEY")),
+        pinecone_configured=bool(os.getenv("PINECONE_API_KEY")),
+        aws_configured=bool(os.getenv("AWS_ACCESS_KEY_ID"))
     )
 
 @router.get("/status", response_model=StatusResponse)
