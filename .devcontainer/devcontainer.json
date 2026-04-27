@@ -8,11 +8,20 @@
   "remoteEnv": {
     "AWS_ACCESS_KEY_ID": "${localEnv:AWS_ACCESS_KEY_ID}",
     "AWS_SECRET_ACCESS_KEY": "${localEnv:AWS_SECRET_ACCESS_KEY}",
-    "AWS_REGION": "${localEnv:AWS_REGION:-ap-south-1}",
+    "AWS_REGION": "${localEnv:AWS_REGION:ap-south-1}",
     "AWS_S3_BUCKET_NAME": "${localEnv:AWS_S3_BUCKET_NAME}",
     "GEMINI_API_KEY": "${localEnv:GEMINI_API_KEY}",
     "PINECONE_API_KEY": "${localEnv:PINECONE_API_KEY}",
     "PINECONE_INDEX_NAME": "${localEnv:PINECONE_INDEX_NAME}"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.terminal.executeInFileDir": true,
+        "python.terminal.useEnvFile": true,
+        "python.linting.enabled": true
+      }
+    }
   },
   "postCreateCommand": "pip install -q -r requirements.txt 2>/dev/null || true",
   "postStartCommand": "bash .devcontainer/post-start.sh"
