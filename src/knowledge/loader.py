@@ -5,11 +5,21 @@ Loads knowledge base documents into Pinecone
 import json
 import logging
 from pathlib import Path
-from .embedder import embed_text
 from pinecone import Pinecone
 import os
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_metadata(value, default=None):
+    """Return Pinecone-compatible metadata values."""
+    if value is None:
+        return "unknown" if default is None else default
+    if isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, list):
+        return [str(v) for v in value]
+    return str(value)
 
 class KnowledgeLoader:
     def __init__(self):
@@ -35,7 +45,13 @@ class KnowledgeLoader:
         vectors = []
         for scenario in scenarios:
             content = f"{scenario['title']}: {scenario['content']}"
-            vector = embed_text(content)
+            vector = scenario.get("embedding")
+
+            if not vector:
+                raise ValueError(
+                    f"Missing embedding for scenario {scenario.get('id')}. "
+                    "Run Step 4 (embedding generation) before loading to Pinecone."
+                )
             
             vectors.append({
                 'id': scenario['id'],
@@ -43,8 +59,8 @@ class KnowledgeLoader:
                 'metadata': {
                     'content': content,
                     'type': 'scenario',
-                    'category': scenario.get('category') if scenario.get('category') is not None else 'unknown',
-                    'severity': scenario.get('severity') if scenario.get('severity') is not None else 'unknown'
+                    'category': _safe_metadata(scenario.get('category')),
+                    'severity': _safe_metadata(scenario.get('severity'))
                 }
             })
         
@@ -65,7 +81,13 @@ class KnowledgeLoader:
         vectors = []
         for faq in faqs:
             content = f"Q: {faq['question']}\nA: {faq['answer']}"
-            vector = embed_text(content)
+            vector = faq.get("embedding")
+
+            if not vector:
+                raise ValueError(
+                    f"Missing embedding for FAQ {faq.get('id')}. "
+                    "Run Step 4 (embedding generation) before loading to Pinecone."
+                )
             
             vectors.append({
                 'id': faq['id'],
@@ -73,8 +95,8 @@ class KnowledgeLoader:
                 'metadata': {
                     'content': content,
                     'type': 'faq',
-                    'category': faq.get('category') if faq.get('category') is not None else 'unknown',
-                    'tags': faq.get('tags', [])
+                    'category': _safe_metadata(faq.get('category')),
+                    'tags': _safe_metadata(faq.get('tags', []), default=[])
                 }
             })
         

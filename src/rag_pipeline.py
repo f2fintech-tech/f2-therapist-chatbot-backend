@@ -5,6 +5,9 @@ Handles: S3 upload/download -> Data processing -> Embeddings -> Pinecone loading
 
 import logging
 import os
+import json
+import re
+import time
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -139,12 +142,69 @@ class RAGPipeline:
             logger.info("Initializing embeddings model (Gemini gemini-embedding-2)...")
             embeddings = get_embeddings()
             logger.info("✓ Embeddings model ready")
-            
-            # Test embedding
-            logger.info("Testing embedding generation...")
-            test_text = "Financial therapy and mental health support"
-            test_vector = embeddings.embed_query(test_text)
-            logger.info(f"✓ Generated test embedding (dimension: {len(test_vector)})")
+
+            scenarios_path = Path("src/data/processed/scenarios.json")
+            faqs_path = Path("src/data/processed/faqs.json")
+
+            if not scenarios_path.exists() or not faqs_path.exists():
+                logger.error("Processed files not found. Run Step 3 before Step 4.")
+                return False
+
+            with open(scenarios_path, "r", encoding="utf-8") as f:
+                scenarios = json.load(f)
+
+            with open(faqs_path, "r", encoding="utf-8") as f:
+                faqs = json.load(f)
+
+            def embed_with_retry(text, label, item_id, max_retries=5):
+                for attempt in range(1, max_retries + 1):
+                    try:
+                        return embeddings.embed_query(text)
+                    except Exception as exc:
+                        msg = str(exc)
+                        is_quota = "RESOURCE_EXHAUSTED" in msg or "429" in msg
+                        if not is_quota or attempt == max_retries:
+                            raise
+
+                        retry_match = re.search(r"retry in\s+([0-9]+(?:\.[0-9]+)?)s", msg, re.IGNORECASE)
+                        delay = float(retry_match.group(1)) if retry_match else 20.0
+                        logger.warning(
+                            f"Quota hit while embedding {label} {item_id}; retrying in {delay:.1f}s "
+                            f"(attempt {attempt}/{max_retries})"
+                        )
+                        time.sleep(delay)
+
+                raise RuntimeError(f"Failed to embed {label} {item_id}")
+
+            scenario_total = len(scenarios)
+            faq_total = len(faqs)
+
+            logger.info(f"Generating embeddings for {scenario_total} scenarios...")
+            for idx, item in enumerate(scenarios, start=1):
+                if isinstance(item.get("embedding"), list) and item["embedding"]:
+                    continue
+                text = f"{item['title']}: {item['content']}"
+                logger.info(f"Embedding scenario {idx}/{scenario_total} ({item.get('id')})...")
+                item["embedding"] = embed_with_retry(text, "scenario", item.get("id"))
+
+            logger.info(f"Generating embeddings for {faq_total} FAQs...")
+            for idx, item in enumerate(faqs, start=1):
+                if isinstance(item.get("embedding"), list) and item["embedding"]:
+                    continue
+                text = f"Q: {item['question']}\nA: {item['answer']}"
+                logger.info(f"Embedding FAQ {idx}/{faq_total} ({item.get('id')})...")
+                item["embedding"] = embed_with_retry(text, "faq", item.get("id"))
+
+            with open(scenarios_path, "w", encoding="utf-8") as f:
+                json.dump(scenarios, f, indent=2, ensure_ascii=False)
+
+            with open(faqs_path, "w", encoding="utf-8") as f:
+                json.dump(faqs, f, indent=2, ensure_ascii=False)
+
+            if scenarios and isinstance(scenarios[0].get("embedding"), list):
+                logger.info(f"✓ Stored scenario embeddings (dimension: {len(scenarios[0]['embedding'])})")
+            if faqs and isinstance(faqs[0].get("embedding"), list):
+                logger.info(f"✓ Stored FAQ embeddings (dimension: {len(faqs[0]['embedding'])})")
             
             return True
             
@@ -262,10 +322,13 @@ class RAGPipeline:
         
         # Step 4: Generate embeddings
         logger.info("\nStep 4/7: Generate embeddings")
-        if self.step_4_embed_data():
+        embed_success = self.step_4_embed_data()
+        if embed_success:
             steps.append(("✓", "Generate embeddings"))
         else:
             steps.append(("✗", "Generate embeddings"))
+            logger.error("Stopping pipeline because Step 4 failed.")
+            return False
         
         # Step 5: Load to Pinecone
         logger.info("\nStep 5/7: Load to Pinecone")
