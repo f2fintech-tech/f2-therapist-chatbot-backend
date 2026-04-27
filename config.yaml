@@ -1,12 +1,12 @@
 google:
   api_key: "${GEMINI_API_KEY}"
-  embedding_model: "text-embedding-004" # This model uses 768 dims
+  embedding_model: "gemini-embedding-2" # This model uses 3072 dims
   chat_model: "gemini-3-flash-preview"
 
 pinecone:
   api_key: "${PINECONE_API_KEY}"
   index_name: "f2-therapy-index"
-  dimension: 768  # Crucial: Must be 768 for Gemini
+  dimension: 3072  # Crucial: Must be 3072 for gemini-embedding-2
   metric: "cosine"$
 
   rag:
