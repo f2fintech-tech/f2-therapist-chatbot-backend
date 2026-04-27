@@ -23,6 +23,5 @@
       }
     }
   },
-  "postCreateCommand": "pip install -q -r requirements.txt 2>/dev/null || true",
   "postStartCommand": "bash .devcontainer/post-start.sh"
 }
