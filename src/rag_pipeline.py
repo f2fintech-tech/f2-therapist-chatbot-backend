@@ -45,7 +45,7 @@ class RAGPipeline:
         
         try:
             self.s3_manager = S3StorageManager(
-                bucket_name=os.getenv("S3_BUCKET_NAME", "f2-fintech-kb"),
+                bucket_name=os.getenv("AWS_S3_BUCKET_NAME", "f2-fintech-knowledge-base"),
                 region=os.getenv("AWS_REGION", "us-east-1")
             )
             
@@ -77,8 +77,8 @@ class RAGPipeline:
         try:
             if self.s3_manager is None:
                 self.s3_manager = S3StorageManager(
-                    bucket_name=os.getenv("S3_BUCKET_NAME", "f2-fintech-kb"),
-                    region=os.getenv("AWS_REGION", "us-east-1")
+                    bucket_name=os.getenv("AWS_S3_BUCKET_NAME", "f2-fintech-knowledge-base"),
+                    region=os.getenv("AWS_REGION", "ap-south-1")
                 )
             
             logger.info("Downloading raw files from S3...")

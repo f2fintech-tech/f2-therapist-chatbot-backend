@@ -20,7 +20,7 @@ PINECONE_INDEX_NAME=f2-therapy-index
 AWS_ACCESS_KEY_ID=your-aws-access-key
 AWS_SECRET_ACCESS_KEY=your-aws-secret-key
 AWS_REGION=us-east-1
-S3_BUCKET_NAME=f2-fintech-kb
+AWS_S3_BUCKET_NAME=f2-fintech-knowledge-base
 
 # Database Configuration (Optional, for persistence)
 DATABASE_URL=postgresql://user:password@localhost:5432/f2_therapist
