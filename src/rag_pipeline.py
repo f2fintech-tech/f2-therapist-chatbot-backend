@@ -46,7 +46,7 @@ class RAGPipeline:
         try:
             self.s3_manager = S3StorageManager(
                 bucket_name=os.getenv("AWS_S3_BUCKET_NAME", "f2-fintech-knowledge-base"),
-                region=os.getenv("AWS_REGION", "us-east-1")
+                region=os.getenv("AWS_REGION", "ap-south-1")
             )
             
             raw_dir = Path("src/data/raw")
@@ -175,7 +175,7 @@ class RAGPipeline:
     def step_6_train_model(self):
         """Step 6: Train model with Gemini 3.Flash preview"""
         logger.info("\n" + "="*60)
-        logger.info("STEP 6: Training model with Gemini 3.1 Flash preview")
+        logger.info("STEP 6: Training model with Gemini 3 Flash preview")
         logger.info("="*60)
         
         try:
