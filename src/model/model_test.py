@@ -359,6 +359,40 @@ Your response (remember to acknowledge emotion first, then provide guidance):"""
         
         logger.info("=" * 80)
 
+    def _save_test_results(self, results_summary: Dict, output_path: Path) -> Path:
+        """Save results to the main JSON file and append them to run history."""
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        existing_summary: Dict = {}
+        if output_path.exists():
+            try:
+                with open(output_path, "r", encoding="utf-8") as f:
+                    existing_summary = json.load(f)
+            except Exception:
+                existing_summary = {}
+
+        run_history = []
+        if isinstance(existing_summary, dict):
+            existing_history = existing_summary.get("run_history", [])
+            if isinstance(existing_history, list):
+                run_history = existing_history
+
+        run_history.append({
+            **results_summary,
+        })
+
+        aggregate_summary = {
+            **(existing_summary if isinstance(existing_summary, dict) else {}),
+            **results_summary,
+            "latest_run": results_summary,
+            "run_history": run_history[-20:],
+        }
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(aggregate_summary, f, indent=2, default=str)
+
+        return output_path
+
 
 def main():
     """Main test runner"""
@@ -446,20 +480,15 @@ def main():
         result = tester.test_query(args.query, use_rag=not args.no_rag)
 
         output_path = Path("src/model/model_test_results.json")
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "timestamp": time.time(),
-                    "model": tester.model_name,
-                    "prompt_type": "fine-tuned" if tester.use_finetuned else "base",
-                    "mode": "single_custom_query",
-                    "custom_query_test": result,
-                },
-                f,
-                indent=2,
-                default=str,
-            )
+        results_summary = {
+            "timestamp": time.time(),
+            "model": tester.model_name,
+            "prompt_type": "fine-tuned" if tester.use_finetuned else "base",
+            "mode": "single_custom_query",
+            "custom_query_test": result,
+        }
+
+        saved_path = tester._save_test_results(results_summary, output_path)
 
         logger.info(f"✓ Custom query result saved to {output_path}")
         logger.info("=" * 80)
@@ -510,9 +539,7 @@ def main():
         }
     }
     
-    with open(output_path, 'w', encoding='utf-8') as f:
-        # Custom JSON encoder for non-serializable types
-        json.dump(results_summary, f, indent=2, default=str)
+    saved_path = tester._save_test_results(results_summary, output_path)
     
     logger.info(f"✓ Test results saved to {output_path}")
     logger.info("=" * 80)
