@@ -31,6 +31,10 @@ from inference.predictor import TherapyChatbot
 from model.model_train import ModelTrainer
 
 
+class DailyEmbeddingQuotaExceeded(RuntimeError):
+    """Raised when embedding daily quota is exhausted and retries will not help."""
+
+
 class RAGPipeline:
     """Orchestrates the complete RAG pipeline"""
     
@@ -40,6 +44,8 @@ class RAGPipeline:
         self.data_processor = DataProcessor()
         self.knowledge_loader = None
         self.model_trainer = None
+        self._next_embedding_request_at = 0.0
+        self._adaptive_embed_delay = 0.75
 
     @staticmethod
     def _normalize_text(text):
@@ -83,6 +89,84 @@ class RAGPipeline:
             return str(stored)
 
         return self._hash_text(self._build_embedding_text(source_name, item))
+
+    @staticmethod
+    def _retry_delay_from_error(msg, default_delay=20.0):
+        retry_match = re.search(r"retry in\s+([0-9]+(?:\.[0-9]+)?)s", msg, re.IGNORECASE)
+        return float(retry_match.group(1)) if retry_match else default_delay
+
+    @staticmethod
+    def _is_daily_quota_exhausted(msg):
+        lowered = msg.lower()
+        return (
+            "embedcontentrequestsperdayperprojectpermodel-freetier" in lowered
+            or "quota exceeded for metric" in lowered and "embed_content" in lowered
+            or "exceeded your current quota" in lowered
+        )
+
+    def _wait_for_embedding_slot(self):
+        now = time.time()
+        wait = self._next_embedding_request_at - now
+        if wait > 0:
+            time.sleep(wait)
+
+    def _mark_embedding_result(self, quota_hit=False):
+        if quota_hit:
+            self._adaptive_embed_delay = min(8.0, max(0.8, self._adaptive_embed_delay * 1.6))
+        else:
+            self._adaptive_embed_delay = max(0.35, self._adaptive_embed_delay * 0.92)
+
+        self._next_embedding_request_at = time.time() + self._adaptive_embed_delay
+
+    def _embed_query_with_retry(self, embeddings, text, label, item_id, max_retries=5):
+        for attempt in range(1, max_retries + 1):
+            try:
+                self._wait_for_embedding_slot()
+                vector = embeddings.embed_query(text)
+                self._mark_embedding_result(quota_hit=False)
+                return vector
+            except Exception as exc:
+                msg = str(exc)
+                is_quota = "RESOURCE_EXHAUSTED" in msg or "429" in msg
+                if is_quota and self._is_daily_quota_exhausted(msg):
+                    raise DailyEmbeddingQuotaExceeded(msg)
+                if not is_quota or attempt == max_retries:
+                    raise
+
+                self._mark_embedding_result(quota_hit=True)
+                delay = self._retry_delay_from_error(msg)
+                logger.warning(
+                    f"Quota hit while embedding {label} {item_id}; retrying in {delay:.1f}s "
+                    f"(attempt {attempt}/{max_retries})"
+                )
+                time.sleep(delay)
+
+        raise RuntimeError(f"Failed to embed {label} {item_id}")
+
+    def _embed_documents_batch_with_retry(self, embeddings, texts, label, max_retries=5):
+        for attempt in range(1, max_retries + 1):
+            try:
+                self._wait_for_embedding_slot()
+                vectors = embeddings.embed_documents(texts)
+                self._mark_embedding_result(quota_hit=False)
+                return vectors
+            except Exception as exc:
+                msg = str(exc)
+                is_quota = "RESOURCE_EXHAUSTED" in msg or "429" in msg
+                if is_quota and self._is_daily_quota_exhausted(msg):
+                    raise DailyEmbeddingQuotaExceeded(msg)
+                if not is_quota or attempt == max_retries:
+                    raise
+
+                self._mark_embedding_result(quota_hit=True)
+                delay = self._retry_delay_from_error(msg)
+                logger.warning(
+                    f"Quota hit while embedding {label} batch of {len(texts)}; retrying in {delay:.1f}s "
+                    f"(attempt {attempt}/{max_retries})"
+                )
+                time.sleep(delay)
+
+        raise RuntimeError(f"Failed to embed {label} batch")
         
     def _build_embedding_text(self, source_name, item):
         """Build embedding text for a processed record."""
@@ -129,25 +213,21 @@ class RAGPipeline:
         embedded_count = 0
         skipped_count = 0
 
-        def embed_with_retry(text, label, item_id, max_retries=5):
-            for attempt in range(1, max_retries + 1):
-                try:
-                    return embeddings.embed_query(text)
-                except Exception as exc:
-                    msg = str(exc)
-                    is_quota = "RESOURCE_EXHAUSTED" in msg or "429" in msg
-                    if not is_quota or attempt == max_retries:
-                        raise
+        if source_name == "conversation_training_data":
+            default_batch_size = "1"
+            default_batch_pause = "1.8"
+            default_record_pause = "1.4"
+        else:
+            default_batch_size = "4"
+            default_batch_pause = "0.6"
+            default_record_pause = "0.3"
 
-                    retry_match = re.search(r"retry in\s+([0-9]+(?:\.[0-9]+)?)s", msg, re.IGNORECASE)
-                    delay = float(retry_match.group(1)) if retry_match else 20.0
-                    logger.warning(
-                        f"Quota hit while embedding {label} {item_id}; retrying in {delay:.1f}s "
-                        f"(attempt {attempt}/{max_retries})"
-                    )
-                    time.sleep(delay)
+        batch_size = int(os.getenv("EMBEDDING_BATCH_SIZE", default_batch_size))
+        batch_pause_seconds = float(os.getenv("EMBEDDING_BATCH_PAUSE_SECONDS", default_batch_pause))
+        record_pause_seconds = float(os.getenv("EMBEDDING_RECORD_PAUSE_SECONDS", default_record_pause))
 
-            raise RuntimeError(f"Failed to embed {label} {item_id}")
+        pending_records = []
+        quota_exhausted = False
 
         for idx, item in enumerate(records, start=1):
             if not isinstance(item, dict):
@@ -167,20 +247,105 @@ class RAGPipeline:
                 logger.warning(f"Skipping empty embedding text for {file_path} record {item.get('id', idx)}")
                 continue
 
+            pending_records.append((idx, item, record_key, record_hash, text))
+
+        cursor = 0
+        current_batch_size = max(1, batch_size)
+
+        while cursor < len(pending_records):
+            batch = pending_records[cursor:cursor + current_batch_size]
+            texts = [entry[4] for entry in batch]
+
             try:
-                item["embedding"] = embed_with_retry(text, source_name, item.get("id", idx))
-                item["content_hash"] = record_hash
-                embedded_count += 1
-                updated = True
-                source_state[record_key] = record_hash
+                vectors = self._embed_documents_batch_with_retry(embeddings, texts, source_name)
+                if len(vectors) != len(batch):
+                    if len(vectors) == 1 and len(batch) > 1:
+                        next_size = max(1, current_batch_size // 2)
+                        if next_size == current_batch_size:
+                            next_size = 1
+                        logger.warning(
+                            f"Embedding API returned 1 vector for batch size {len(batch)} in "
+                            f"{file_path.name}; reducing batch size to {next_size}."
+                        )
+                        current_batch_size = next_size
+                        continue
+
+                    raise RuntimeError(
+                        f"Embedding batch size mismatch for {file_path.name}: "
+                        f"expected {len(batch)}, got {len(vectors)}"
+                    )
+
+                for (_, item, record_key, record_hash, _), vector in zip(batch, vectors):
+                    item["embedding"] = vector
+                    item["content_hash"] = record_hash
+                    embedded_count += 1
+                    updated = True
+                    source_state[record_key] = record_hash
+
+                cursor += len(batch)
+
+            except DailyEmbeddingQuotaExceeded as exc:
+                quota_exhausted = True
+                logger.error(
+                    "Daily embedding quota exhausted while processing %s. "
+                    "Stopping further embedding attempts for now. Error: %s",
+                    file_path.name,
+                    exc,
+                )
+                break
+
             except Exception as exc:
-                skipped_count += 1
-                logger.error(f"Error embedding {file_path} record {item.get('id', idx)}: {exc}")
+                logger.warning(
+                    f"Batch embedding failed for {file_path.name} (size {len(batch)}). "
+                    f"Falling back to per-record embedding. Error: {exc}"
+                )
+                for position, (idx, item, record_key, record_hash, text) in enumerate(batch):
+                    try:
+                        item["embedding"] = self._embed_query_with_retry(
+                            embeddings, text, source_name, item.get("id", idx)
+                        )
+                        item["content_hash"] = record_hash
+                        embedded_count += 1
+                        updated = True
+                        source_state[record_key] = record_hash
+
+                        if position + 1 < len(batch) and record_pause_seconds > 0:
+                            time.sleep(record_pause_seconds)
+                    except DailyEmbeddingQuotaExceeded as record_quota_exc:
+                        quota_exhausted = True
+                        logger.error(
+                            "Daily embedding quota exhausted while processing %s record %s. "
+                            "Stopping further embedding attempts for now. Error: %s",
+                            file_path.name,
+                            item.get("id", idx),
+                            record_quota_exc,
+                        )
+                        break
+                    except Exception as record_exc:
+                        skipped_count += 1
+                        logger.error(
+                            f"Error embedding {file_path} record {item.get('id', idx)}: {record_exc}"
+                        )
+
+                if quota_exhausted:
+                    break
+
+                cursor += len(batch)
+
+            if cursor < len(pending_records) and batch_pause_seconds > 0:
+                time.sleep(batch_pause_seconds)
 
         if updated:
             with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(records, f, indent=2, ensure_ascii=False)
             self._save_embedding_state(state)
+
+        if quota_exhausted:
+            logger.warning(
+                "Embedding paused due to daily quota exhaustion for %s. "
+                "Re-run after quota reset to continue from saved progress.",
+                file_path.name,
+            )
 
         if embedded_count:
             logger.info(
@@ -222,32 +387,14 @@ class RAGPipeline:
             except Exception:
                 pass
 
-        def embed_with_retry(text, label, item_id, max_retries=5):
-            for attempt in range(1, max_retries + 1):
-                try:
-                    return embeddings.embed_query(text)
-                except Exception as exc:
-                    msg = str(exc)
-                    is_quota = "RESOURCE_EXHAUSTED" in msg or "429" in msg
-                    if not is_quota or attempt == max_retries:
-                        raise
-
-                    retry_match = re.search(r"retry in\s+([0-9]+(?:\.[0-9]+)?)s", msg, re.IGNORECASE)
-                    delay = float(retry_match.group(1)) if retry_match else 20.0
-                    logger.warning(
-                        f"Quota hit while embedding {label} {item_id}; retrying in {delay:.1f}s "
-                        f"(attempt {attempt}/{max_retries})"
-                    )
-                    time.sleep(delay)
-
-            raise RuntimeError(f"Failed to embed {label} {item_id}")
-
         record = {
             "id": "system_prompt",
             "source_file": "system_prompt.md",
             "content": prompt_text,
             "content_hash": self._hash_text(prompt_text),
-            "embedding": embed_with_retry(prompt_text, "system_prompt", "system_prompt")
+            "embedding": self._embed_query_with_retry(
+                embeddings, prompt_text, "system_prompt", "system_prompt"
+            )
         }
 
         state = self._load_embedding_state()

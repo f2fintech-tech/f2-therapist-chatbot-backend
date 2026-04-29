@@ -52,16 +52,29 @@ class TherapyChatbot:
     
     def _load_system_prompt(self):
         """Load the system prompt for the financial therapist"""
+        # First, try to load fine-tuned prompt
+        finetuned_path = Path("src/model/finetuned_system_prompt.txt")
+        if finetuned_path.exists():
+            try:
+                with open(finetuned_path, 'r', encoding='utf-8') as f:
+                    logger.info("✓ Loaded fine-tuned system prompt")
+                    return f.read()
+            except Exception as e:
+                logger.warning(f"Could not load fine-tuned prompt: {e}")
+        
+        # Fallback to base prompt
         prompt_path = Path("src/data/processed/system_prompt.md")
         
         if prompt_path.exists():
             try:
                 with open(prompt_path, 'r', encoding='utf-8') as f:
+                    logger.info("✓ Loaded base system prompt")
                     return f.read()
             except Exception as e:
                 logger.warning(f"Could not load system prompt: {e}")
         
         # Default system prompt
+        logger.warning("Using default system prompt - fine-tuned version recommended")
         return """You are a compassionate Financial Therapist for F2 Fintech.
 Your core role:
 - Empathetic listener who understands money stress
@@ -83,14 +96,21 @@ Guidelines:
 - Explain jargon: "EMI (Equated Monthly Installment - your fixed monthly payment)"
 - Ask permission before giving long explanations: "Want me to explain how that works?"
 - Never push products they don't need
-- Never make promises you can't keep"""
+- Never make promises you can't keep
+- Never say "Don't worry" (dismissive) or "It's simple" (makes them feel dumb)
+- Never ignore the emotional content of their message
+- Explain jargon: "EMI (Equated Monthly Installment - your fixed monthly payment)"
+- Ask permission before giving long explanations: "Want me to explain how that works?"
+- Never push products they don't need
+- Never make promises you can't keep
+"""
     
     def _get_relevant_context(self, user_message, top_k=3):
         """Retrieve relevant knowledge base documents using RAG"""
         try:
             # Convert user message to embedding
             embed_result = self.client.models.embed_content(
-                model="text-embedding-2",
+                model="gemini-embedding-2",
                 contents=user_message,
             )
             user_vector = embed_result.embeddings[0].values
