@@ -4,6 +4,7 @@ Process raw knowledge base files into formatted, ready-to-embed documents
 
 import json
 import os
+import hashlib
 import stat
 from pathlib import Path
 from datetime import datetime
@@ -63,6 +64,11 @@ def _set_secure_permissions(file_path: Path):
     except Exception as e:
         logger.warning(f"Could not set permissions on {file_path}: {e}")
 
+def _content_signature(text: str) -> str:
+    """Create a stable hash for change detection."""
+    normalized = text.strip().replace("\r\n", "\n")
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
 class DataProcessor:
     def __init__(self):
         self.raw_dir = Path("src/data/raw")
@@ -102,6 +108,9 @@ class DataProcessor:
                 "severity": scenario.get("severity"),
                 "keywords": self._extract_keywords(
                     f"{scenario.get('title')} {scenario.get('content')}"
+                ),
+                "content_hash": _content_signature(
+                    f"{scenario.get('title')}\n{scenario.get('content')}\n{scenario.get('category')}\n{scenario.get('severity')}"
                 ),
                 "processed_at": datetime.utcnow().isoformat()
             }
@@ -149,6 +158,9 @@ class DataProcessor:
                 "answer": faq.get("answer"),
                 "category": faq.get("category", "general"),
                 "tags": faq.get("tags", []),
+                "content_hash": _content_signature(
+                    f"{faq.get('question')}\n{faq.get('answer')}\n{faq.get('category', 'general')}\n{json.dumps(faq.get('tags', []), ensure_ascii=False)}"
+                ),
                 "processed_at": datetime.utcnow().isoformat()
             }
             processed_faqs.append(processed)
@@ -215,6 +227,9 @@ class DataProcessor:
                     "user_intent": user_msg.get("intent", ""),
                     "stage": user_msg.get("stage", ""),
                     "risk_score": user_msg.get("risk_score", 0),
+                    "content_hash": _content_signature(
+                        f"{conversation.get('id')}\n{conversation.get('title')}\n{conversation.get('category')}\n{user_msg.get('text', '')}\n{assistant_msg.get('text', '')}\n{user_msg.get('intent', '')}\n{user_msg.get('stage', '')}\n{user_msg.get('risk_score', 0)}"
+                    ),
                     "processed_at": datetime.utcnow().isoformat()
                 })
 

@@ -6,6 +6,7 @@ Handles: S3 upload/download -> Data processing -> Embeddings -> Pinecone loading
 import logging
 import os
 import json
+import hashlib
 import re
 import time
 from pathlib import Path
@@ -39,6 +40,49 @@ class RAGPipeline:
         self.data_processor = DataProcessor()
         self.knowledge_loader = None
         self.model_trainer = None
+
+    @staticmethod
+    def _normalize_text(text):
+        return str(text).strip().replace("\r\n", "\n")
+
+    @classmethod
+    def _hash_text(cls, text):
+        return hashlib.sha256(cls._normalize_text(text).encode("utf-8")).hexdigest()
+
+    def _embedding_state_path(self):
+        return Path("src/data/processed/.embedding_state.json")
+
+    def _load_embedding_state(self):
+        state_path = self._embedding_state_path()
+        if not state_path.exists():
+            return {}
+
+        try:
+            with open(state_path, "r", encoding="utf-8") as f:
+                state = json.load(f)
+            return state if isinstance(state, dict) else {}
+        except Exception:
+            logger.warning(f"Could not read embedding state from {state_path}; starting fresh")
+            return {}
+
+    def _save_embedding_state(self, state):
+        state_path = self._embedding_state_path()
+        with open(state_path, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+
+    def _record_key(self, source_name, item, index):
+        record_id = item.get("id")
+        if record_id:
+            return str(record_id)
+
+        return f"{source_name}_{self._record_hash(source_name, item)[:16]}"
+
+    def _record_hash(self, source_name, item):
+        stored = item.get("content_hash")
+        if stored:
+            return str(stored)
+
+        return self._hash_text(self._build_embedding_text(source_name, item))
         
     def _build_embedding_text(self, source_name, item):
         """Build embedding text for a processed record."""
@@ -79,6 +123,8 @@ class RAGPipeline:
             return False
 
         source_name = file_path.stem
+        state = self._load_embedding_state()
+        source_state = state.setdefault(source_name, {})
         updated = False
         embedded_count = 0
         skipped_count = 0
@@ -109,7 +155,10 @@ class RAGPipeline:
                 logger.warning(f"Skipping non-object record in {file_path}: index {idx}")
                 continue
 
-            if isinstance(item.get("embedding"), list) and item["embedding"]:
+            record_key = self._record_key(source_name, item, idx)
+            record_hash = self._record_hash(source_name, item)
+
+            if source_state.get(record_key) == record_hash:
                 continue
 
             text = self._build_embedding_text(source_name, item)
@@ -120,8 +169,10 @@ class RAGPipeline:
 
             try:
                 item["embedding"] = embed_with_retry(text, source_name, item.get("id", idx))
+                item["content_hash"] = record_hash
                 embedded_count += 1
                 updated = True
+                source_state[record_key] = record_hash
             except Exception as exc:
                 skipped_count += 1
                 logger.error(f"Error embedding {file_path} record {item.get('id', idx)}: {exc}")
@@ -129,6 +180,7 @@ class RAGPipeline:
         if updated:
             with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(records, f, indent=2, ensure_ascii=False)
+            self._save_embedding_state(state)
 
         if embedded_count:
             logger.info(
@@ -194,11 +246,17 @@ class RAGPipeline:
             "id": "system_prompt",
             "source_file": "system_prompt.md",
             "content": prompt_text,
+            "content_hash": self._hash_text(prompt_text),
             "embedding": embed_with_retry(prompt_text, "system_prompt", "system_prompt")
         }
 
+        state = self._load_embedding_state()
+        state.setdefault("system_prompt", {})["system_prompt"] = record["content_hash"]
+
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump([record], f, indent=2, ensure_ascii=False)
+
+        self._save_embedding_state(state)
 
         logger.info("Embedded system prompt into system_prompt.json")
         return True

@@ -4,6 +4,7 @@ Loads knowledge base documents into Pinecone
 
 import json
 import logging
+import hashlib
 from pathlib import Path
 from pinecone import Pinecone
 import os
@@ -30,6 +31,49 @@ class KnowledgeLoader:
         index_name = "f2-therapy-index"
         self.client = Pinecone(api_key=api_key)
         self.index = self.client.Index(index_name)
+
+    def _sync_state_path(self):
+        return Path("src/data/processed/.pinecone_sync_state.json")
+
+    def _load_sync_state(self):
+        state_path = self._sync_state_path()
+        if not state_path.exists():
+            return {}
+
+        try:
+            with open(state_path, "r", encoding="utf-8") as f:
+                state = json.load(f)
+            return state if isinstance(state, dict) else {}
+        except Exception:
+            logger.warning(f"Could not read Pinecone sync state from {state_path}; starting fresh")
+            return {}
+
+    def _save_sync_state(self, state):
+        state_path = self._sync_state_path()
+        with open(state_path, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+
+    @staticmethod
+    def _normalize_text(text):
+        return str(text).strip().replace("\r\n", "\n")
+
+    @classmethod
+    def _hash_text(cls, text):
+        return hashlib.sha256(cls._normalize_text(text).encode("utf-8")).hexdigest()
+
+    def _record_key(self, source_name, record, index):
+        record_id = record.get("id")
+        if record_id:
+            return str(record_id)
+
+        return f"{source_name}_{self._record_hash(source_name, record)[:16]}"
+
+    def _record_hash(self, source_name, record):
+        stored = record.get("content_hash")
+        if stored:
+            return str(stored)
+
+        return self._hash_text(self._record_text(source_name, record))
 
     def _record_text(self, source_name, record):
         """Build searchable text for a processed record."""
@@ -78,10 +122,18 @@ class KnowledgeLoader:
         vectors = []
         skipped = 0
         source_name = collection_path.stem
+        state = self._load_sync_state()
+        source_state = state.setdefault(source_name, {})
 
         for record in records:
             if not isinstance(record, dict):
                 skipped += 1
+                continue
+
+            record_key = self._record_key(source_name, record, len(vectors) + skipped + 1)
+            record_hash = self._record_hash(source_name, record)
+
+            if source_state.get(record_key) == record_hash:
                 continue
 
             vector = record.get("embedding")
@@ -92,11 +144,7 @@ class KnowledgeLoader:
                 )
                 continue
 
-            record_id = record.get("id")
-            if not record_id:
-                skipped += 1
-                logger.warning(f"Missing id in {collection_path.name}, skipping record")
-                continue
+            record_id = record.get("id") or record_key
 
             content = self._record_text(source_name, record)
             metadata = {
@@ -113,12 +161,14 @@ class KnowledgeLoader:
                 'values': vector,
                 'metadata': metadata
             })
+            source_state[record_key] = record_hash
 
         if not vectors:
             logger.warning(f"No loadable vectors found in {collection_path.name}")
             return 0
 
         self.index.upsert(vectors=vectors)
+        self._save_sync_state(state)
         logger.info(
             f"Loaded {len(vectors)} records from {collection_path.name} into Pinecone"
             + (f" ({skipped} skipped)" if skipped else "")
@@ -146,6 +196,8 @@ class KnowledgeLoader:
 
         total_loaded = 0
         for collection_path in sorted(processed_dir.glob("*.json")):
+            if collection_path.name in {"embedding_state.json", "pinecone_sync_state.json"}:
+                continue
             total_loaded += self._load_json_collection(collection_path)
 
         logger.info(f"Knowledge base loaded successfully! Total vectors loaded: {total_loaded}")
