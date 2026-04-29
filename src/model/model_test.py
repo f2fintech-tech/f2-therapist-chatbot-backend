@@ -6,6 +6,7 @@ Tests the fine-tuned model against real queries and evaluates response quality
 import logging
 import json
 import os
+import argparse
 from pathlib import Path
 from typing import Dict, List, Optional
 from google import genai
@@ -340,14 +341,60 @@ Your response (remember to acknowledge emotion first, then provide guidance):"""
 
 def main():
     """Main test runner"""
+    parser = argparse.ArgumentParser(description="Test the financial therapist model")
+    parser.add_argument(
+        "--query",
+        type=str,
+        help="Run a single custom query instead of the default batch test",
+    )
+    parser.add_argument(
+        "--no-rag",
+        action="store_true",
+        help="Disable RAG context retrieval for the custom query",
+    )
+    parser.add_argument(
+        "--skip-training",
+        action="store_true",
+        help="Skip training example tests and only run custom queries",
+    )
+    args = parser.parse_args()
+
     tester = ModelTester(use_finetuned=True)
+
+    if args.query:
+        logger.info("\n" + "=" * 80)
+        logger.info("CUSTOM QUERY TEST")
+        logger.info("=" * 80)
+        result = tester.test_query(args.query, use_rag=not args.no_rag)
+
+        output_path = Path("src/model/model_test_results.json")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "timestamp": time.time(),
+                    "model": tester.model_name,
+                    "prompt_type": "fine-tuned" if tester.use_finetuned else "base",
+                    "mode": "single_custom_query",
+                    "custom_query_test": result,
+                },
+                f,
+                indent=2,
+                default=str,
+            )
+
+        logger.info(f"✓ Custom query result saved to {output_path}")
+        logger.info("=" * 80)
+        return
     
-    # Test 1: With training examples
-    logger.info("\n" + "=" * 80)
-    logger.info("TEST 1: EVALUATING WITH TRAINING EXAMPLES")
-    logger.info("=" * 80)
-    training_results = tester.test_with_training_examples(num_examples=5)
-    
+    training_results = []
+    if not args.skip_training:
+        # Test 1: With training examples
+        logger.info("\n" + "=" * 80)
+        logger.info("TEST 1: EVALUATING WITH TRAINING EXAMPLES")
+        logger.info("=" * 80)
+        training_results = tester.test_with_training_examples(num_examples=5)
+
     # Test 2: With custom queries (real-world scenarios)
     logger.info("\n" + "=" * 80)
     logger.info("TEST 2: CUSTOM REAL-WORLD QUERIES")

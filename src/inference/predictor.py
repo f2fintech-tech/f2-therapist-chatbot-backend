@@ -170,14 +170,42 @@ Guidelines:
 """
         
         return rag_prompt
+
+    def _build_chat_prompt(self, user_message, conversation_history=None, context_pieces=None):
+        """Build a chat prompt that includes optional conversation history."""
+        history_block = ""
+        if conversation_history:
+            history_lines = []
+            for turn in conversation_history[-6:]:
+                role = turn.get("role", "user").capitalize()
+                content = turn.get("content", "").strip()
+                if content:
+                    history_lines.append(f"{role}: {content}")
+            if history_lines:
+                history_block = "\nRecent conversation:\n" + "\n".join(history_lines) + "\n"
+
+        rag_block = ""
+        if context_pieces:
+            rag_block = self._build_rag_prompt(user_message, context_pieces)
+            return f"""{self.system_prompt}
+
+{history_block}
+{rag_block}
+"""
+
+        return f"""{self.system_prompt}
+
+{history_block}
+User says: {user_message}"""
     
-    def chat(self, user_message, use_rag=True):
+    def chat(self, user_message, use_rag=True, conversation_history=None):
         """
         Chat with the financial therapist
         
         Args:
             user_message: The user's input message
             use_rag: Whether to use RAG (Retrieval-Augmented Generation)
+            conversation_history: Optional list of recent turns to preserve context
         
         Returns:
             The therapist's response
@@ -192,12 +220,11 @@ Guidelines:
                 context_pieces = self._get_relevant_context(user_message)
             
             # Build the prompt
-            if context_pieces:
-                prompt = self._build_rag_prompt(user_message, context_pieces)
-            else:
-                prompt = f"""{self.system_prompt}
-
-User says: {user_message}"""
+            prompt = self._build_chat_prompt(
+                user_message,
+                conversation_history=conversation_history,
+                context_pieces=context_pieces,
+            )
             
             # Generate response using Gemini
             logger.info(f"Generating response using {self.model_name}...")
