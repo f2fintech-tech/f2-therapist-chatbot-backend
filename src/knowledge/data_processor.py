@@ -37,6 +37,19 @@ def _validate_faq_schema(faq: dict) -> bool:
     required_fields = {'id', 'question', 'answer'}
     return all(field in faq and faq[field] for field in required_fields)
 
+def _validate_conversation_schema(conversation: dict) -> bool:
+    """
+    Validate conversation has required fields.
+    
+    Args:
+        conversation: Conversation dictionary to validate
+    
+    Returns:
+        True if valid, False otherwise
+    """
+    required_fields = {'id', 'script'}
+    return all(field in conversation and conversation[field] for field in required_fields)
+
 def _set_secure_permissions(file_path: Path):
     """
     Set restrictive file permissions (0o600 - owner read/write only).
@@ -151,6 +164,70 @@ class DataProcessor:
             return processed_faqs
         except IOError as e:
             logger.error(f"Error writing processed FAQs: {e}")
+            return []
+    
+    def process_conversations(self):
+        """Process raw conversations into training examples."""
+        raw_file = self.raw_dir / "conversations.json"
+        processed_file = self.processed_dir / "conversation_training_data.json"
+
+        if not raw_file.exists():
+            logger.warning(f"Raw conversations file not found: {raw_file}")
+            return []
+
+        try:
+            with open(raw_file, 'r', encoding='utf-8') as f:
+                raw_conversations = json.load(f)
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in conversations file: {e}")
+            return []
+
+        processed_examples = []
+        for conversation in raw_conversations:
+            if not _validate_conversation_schema(conversation):
+                logger.warning(
+                    f"Invalid conversation schema, skipping: {conversation.get('id', 'unknown')}"
+                )
+                continue
+
+            script = conversation.get("script", [])
+            example_index = 0
+
+            for i in range(0, len(script) - 1, 2):
+                user_msg = script[i]
+                assistant_msg = script[i + 1]
+
+                if not (
+                    user_msg.get("role") == "user" and assistant_msg.get("role") == "assistant"
+                ):
+                    continue
+
+                example_index += 1
+                processed_examples.append({
+                    "id": f"{conversation.get('id')}_example_{example_index:03d}",
+                    "conversation_id": conversation.get("id"),
+                    "title": conversation.get("title"),
+                    "category": conversation.get("category"),
+                    "tags": conversation.get("tags", []),
+                    "difficulty": conversation.get("difficulty"),
+                    "user_input": user_msg.get("text", ""),
+                    "expected_response": assistant_msg.get("text", ""),
+                    "user_intent": user_msg.get("intent", ""),
+                    "stage": user_msg.get("stage", ""),
+                    "risk_score": user_msg.get("risk_score", 0),
+                    "processed_at": datetime.utcnow().isoformat()
+                })
+
+        try:
+            with open(processed_file, 'w', encoding='utf-8') as f:
+                json.dump(processed_examples, f, indent=2, ensure_ascii=False)
+
+            _set_secure_permissions(processed_file)
+
+            logger.info(f"Processed {len(processed_examples)} conversation examples")
+            return processed_examples
+        except IOError as e:
+            logger.error(f"Error writing processed conversations: {e}")
             return []
     
     def process_system_prompt(self):

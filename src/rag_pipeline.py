@@ -40,6 +40,169 @@ class RAGPipeline:
         self.knowledge_loader = None
         self.model_trainer = None
         
+    def _build_embedding_text(self, source_name, item):
+        """Build embedding text for a processed record."""
+        if source_name == "scenarios":
+            return f"{item.get('title', '')}: {item.get('content', '')}".strip(': ')
+
+        if source_name == "faqs":
+            return f"Q: {item.get('question', '')}\nA: {item.get('answer', '')}".strip()
+
+        if source_name == "conversation_training_data":
+            parts = []
+            title = item.get("title")
+            category = item.get("category")
+            if title:
+                parts.append(f"Conversation: {title}")
+            if category:
+                parts.append(f"Category: {category}")
+            parts.append(f"User: {item.get('user_input', '')}")
+            parts.append(f"Assistant: {item.get('expected_response', '')}")
+            user_intent = item.get("user_intent")
+            stage = item.get("stage")
+            if user_intent:
+                parts.append(f"Intent: {user_intent}")
+            if stage:
+                parts.append(f"Stage: {stage}")
+            return "\n".join(parts).strip()
+
+        content = item.get("content") or item.get("text") or item.get("question") or item.get("answer") or ""
+        return str(content).strip()
+
+    def _embed_json_collection(self, file_path, embeddings):
+        """Embed a processed JSON collection in place."""
+        with open(file_path, "r", encoding="utf-8") as f:
+            records = json.load(f)
+
+        if not isinstance(records, list):
+            logger.warning(f"Skipping non-list JSON collection: {file_path}")
+            return False
+
+        source_name = file_path.stem
+        updated = False
+        embedded_count = 0
+        skipped_count = 0
+
+        def embed_with_retry(text, label, item_id, max_retries=5):
+            for attempt in range(1, max_retries + 1):
+                try:
+                    return embeddings.embed_query(text)
+                except Exception as exc:
+                    msg = str(exc)
+                    is_quota = "RESOURCE_EXHAUSTED" in msg or "429" in msg
+                    if not is_quota or attempt == max_retries:
+                        raise
+
+                    retry_match = re.search(r"retry in\s+([0-9]+(?:\.[0-9]+)?)s", msg, re.IGNORECASE)
+                    delay = float(retry_match.group(1)) if retry_match else 20.0
+                    logger.warning(
+                        f"Quota hit while embedding {label} {item_id}; retrying in {delay:.1f}s "
+                        f"(attempt {attempt}/{max_retries})"
+                    )
+                    time.sleep(delay)
+
+            raise RuntimeError(f"Failed to embed {label} {item_id}")
+
+        for idx, item in enumerate(records, start=1):
+            if not isinstance(item, dict):
+                skipped_count += 1
+                logger.warning(f"Skipping non-object record in {file_path}: index {idx}")
+                continue
+
+            if isinstance(item.get("embedding"), list) and item["embedding"]:
+                continue
+
+            text = self._build_embedding_text(source_name, item)
+            if not text:
+                skipped_count += 1
+                logger.warning(f"Skipping empty embedding text for {file_path} record {item.get('id', idx)}")
+                continue
+
+            try:
+                item["embedding"] = embed_with_retry(text, source_name, item.get("id", idx))
+                embedded_count += 1
+                updated = True
+            except Exception as exc:
+                skipped_count += 1
+                logger.error(f"Error embedding {file_path} record {item.get('id', idx)}: {exc}")
+
+        if updated:
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(records, f, indent=2, ensure_ascii=False)
+
+        if embedded_count:
+            logger.info(
+                f"Embedded {embedded_count} records in {file_path.name} "
+                f"({skipped_count} skipped)"
+            )
+        else:
+            logger.warning(f"No new embeddings written for {file_path.name}")
+
+        return embedded_count > 0
+
+    def _embed_system_prompt(self, embeddings):
+        """Embed the processed system prompt as a single-record collection."""
+        prompt_path = Path("src/data/processed/system_prompt.md")
+        if not prompt_path.exists():
+            logger.warning(f"System prompt not found at {prompt_path}")
+            return False
+
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            prompt_text = f.read().strip()
+
+        if not prompt_text:
+            logger.warning("System prompt file is empty, skipping embedding")
+            return False
+
+        output_path = Path("src/data/processed/system_prompt.json")
+        if output_path.exists():
+            try:
+                with open(output_path, "r", encoding="utf-8") as f:
+                    existing_records = json.load(f)
+                if isinstance(existing_records, list) and existing_records:
+                    existing_record = existing_records[0]
+                    if (
+                        existing_record.get("content") == prompt_text
+                        and isinstance(existing_record.get("embedding"), list)
+                        and existing_record["embedding"]
+                    ):
+                        return True
+            except Exception:
+                pass
+
+        def embed_with_retry(text, label, item_id, max_retries=5):
+            for attempt in range(1, max_retries + 1):
+                try:
+                    return embeddings.embed_query(text)
+                except Exception as exc:
+                    msg = str(exc)
+                    is_quota = "RESOURCE_EXHAUSTED" in msg or "429" in msg
+                    if not is_quota or attempt == max_retries:
+                        raise
+
+                    retry_match = re.search(r"retry in\s+([0-9]+(?:\.[0-9]+)?)s", msg, re.IGNORECASE)
+                    delay = float(retry_match.group(1)) if retry_match else 20.0
+                    logger.warning(
+                        f"Quota hit while embedding {label} {item_id}; retrying in {delay:.1f}s "
+                        f"(attempt {attempt}/{max_retries})"
+                    )
+                    time.sleep(delay)
+
+            raise RuntimeError(f"Failed to embed {label} {item_id}")
+
+        record = {
+            "id": "system_prompt",
+            "source_file": "system_prompt.md",
+            "content": prompt_text,
+            "embedding": embed_with_retry(prompt_text, "system_prompt", "system_prompt")
+        }
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump([record], f, indent=2, ensure_ascii=False)
+
+        logger.info("Embedded system prompt into system_prompt.json")
+        return True
+        
     def step_1_upload_to_s3(self):
         """Step 1: Upload raw knowledge base files to S3"""
         logger.info("\n" + "="*60)
@@ -143,69 +306,33 @@ class RAGPipeline:
             embeddings = get_embeddings()
             logger.info("✓ Embeddings model ready")
 
-            scenarios_path = Path("src/data/processed/scenarios.json")
-            faqs_path = Path("src/data/processed/faqs.json")
-
-            if not scenarios_path.exists() or not faqs_path.exists():
-                logger.error("Processed files not found. Run Step 3 before Step 4.")
+            processed_dir = Path("src/data/processed")
+            if not processed_dir.exists():
+                logger.error(f"Processed data directory not found: {processed_dir}")
                 return False
 
-            with open(scenarios_path, "r", encoding="utf-8") as f:
-                scenarios = json.load(f)
+            collections = [
+                path for path in sorted(processed_dir.glob("*.json"))
+                if path.name != "system_prompt.json"
+            ]
 
-            with open(faqs_path, "r", encoding="utf-8") as f:
-                faqs = json.load(f)
+            if not collections and not (processed_dir / "system_prompt.md").exists():
+                logger.error("No processed collections found. Run Step 3 before Step 4.")
+                return False
 
-            def embed_with_retry(text, label, item_id, max_retries=5):
-                for attempt in range(1, max_retries + 1):
-                    try:
-                        return embeddings.embed_query(text)
-                    except Exception as exc:
-                        msg = str(exc)
-                        is_quota = "RESOURCE_EXHAUSTED" in msg or "429" in msg
-                        if not is_quota or attempt == max_retries:
-                            raise
+            any_embedded = False
 
-                        retry_match = re.search(r"retry in\s+([0-9]+(?:\.[0-9]+)?)s", msg, re.IGNORECASE)
-                        delay = float(retry_match.group(1)) if retry_match else 20.0
-                        logger.warning(
-                            f"Quota hit while embedding {label} {item_id}; retrying in {delay:.1f}s "
-                            f"(attempt {attempt}/{max_retries})"
-                        )
-                        time.sleep(delay)
+            if (processed_dir / "system_prompt.md").exists():
+                any_embedded = self._embed_system_prompt(embeddings) or any_embedded
 
-                raise RuntimeError(f"Failed to embed {label} {item_id}")
+            for collection_path in collections:
+                any_embedded = self._embed_json_collection(collection_path, embeddings) or any_embedded
 
-            scenario_total = len(scenarios)
-            faq_total = len(faqs)
+            if not any_embedded:
+                logger.warning("No embeddings were written during Step 4.")
+                return False
 
-            logger.info(f"Generating embeddings for {scenario_total} scenarios...")
-            for idx, item in enumerate(scenarios, start=1):
-                if isinstance(item.get("embedding"), list) and item["embedding"]:
-                    continue
-                text = f"{item['title']}: {item['content']}"
-                logger.info(f"Embedding scenario {idx}/{scenario_total} ({item.get('id')})...")
-                item["embedding"] = embed_with_retry(text, "scenario", item.get("id"))
-
-            logger.info(f"Generating embeddings for {faq_total} FAQs...")
-            for idx, item in enumerate(faqs, start=1):
-                if isinstance(item.get("embedding"), list) and item["embedding"]:
-                    continue
-                text = f"Q: {item['question']}\nA: {item['answer']}"
-                logger.info(f"Embedding FAQ {idx}/{faq_total} ({item.get('id')})...")
-                item["embedding"] = embed_with_retry(text, "faq", item.get("id"))
-
-            with open(scenarios_path, "w", encoding="utf-8") as f:
-                json.dump(scenarios, f, indent=2, ensure_ascii=False)
-
-            with open(faqs_path, "w", encoding="utf-8") as f:
-                json.dump(faqs, f, indent=2, ensure_ascii=False)
-
-            if scenarios and isinstance(scenarios[0].get("embedding"), list):
-                logger.info(f"✓ Stored scenario embeddings (dimension: {len(scenarios[0]['embedding'])})")
-            if faqs and isinstance(faqs[0].get("embedding"), list):
-                logger.info(f"✓ Stored FAQ embeddings (dimension: {len(faqs[0]['embedding'])})")
-            
+            logger.info("✓ Embedding step completed for all processed collections")
             return True
             
         except Exception as e:

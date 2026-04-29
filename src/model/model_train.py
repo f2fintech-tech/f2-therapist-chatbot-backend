@@ -36,6 +36,16 @@ class ModelTrainer:
         logger.info("Preparing training data from conversations...")
         
         try:
+            if self.conversation_data_path.exists():
+                with open(self.conversation_data_path, 'r', encoding='utf-8') as f:
+                    training_examples = json.load(f)
+
+                if isinstance(training_examples, list) and training_examples:
+                    logger.info(
+                        f"✓ Loaded {len(training_examples)} processed training examples"
+                    )
+                    return training_examples
+
             raw_conv_path = Path("src/data/raw/conversations.json")
             
             if not raw_conv_path.exists():
@@ -54,6 +64,7 @@ class ModelTrainer:
                 script = conv.get('script', [])
                 
                 # Build conversation examples
+                example_index = 0
                 for i in range(0, len(script) - 1, 2):
                     if i + 1 < len(script):
                         user_msg = script[i]
@@ -61,8 +72,9 @@ class ModelTrainer:
                         
                         if (user_msg.get('role') == 'user' and 
                             assistant_msg.get('role') == 'assistant'):
-                            
+                            example_index += 1
                             training_examples.append({
+                                'id': f"{conv_id}_example_{example_index:03d}",
                                 'conversation_id': conv_id,
                                 'category': category,
                                 'title': title,
