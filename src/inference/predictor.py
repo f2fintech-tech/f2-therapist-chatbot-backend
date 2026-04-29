@@ -5,6 +5,8 @@ Financial Therapist Chatbot with RAG (Retrieval-Augmented Generation) Pipeline
 import os
 import logging
 import json
+import re
+import time
 from pathlib import Path
 from google import genai
 from pinecone import Pinecone
@@ -197,8 +199,18 @@ Guidelines:
 
 {history_block}
 User says: {user_message}"""
+
+    @staticmethod
+    def _retry_delay_from_error(error_message, default_delay=15.0):
+        match = re.search(r"retry in\s+([0-9]+(?:\.[0-9]+)?)s", error_message, re.IGNORECASE)
+        return float(match.group(1)) if match else default_delay
+
+    @staticmethod
+    def _is_quota_exhausted(error_message):
+        lowered = error_message.lower()
+        return "resource_exhausted" in lowered or "quota exceeded" in lowered or "429" in lowered
     
-    def chat(self, user_message, use_rag=True, conversation_history=None):
+    def chat(self, user_message, use_rag=True, conversation_history=None, verbose=True):
         """
         Chat with the financial therapist
         
@@ -206,11 +218,13 @@ User says: {user_message}"""
             user_message: The user's input message
             use_rag: Whether to use RAG (Retrieval-Augmented Generation)
             conversation_history: Optional list of recent turns to preserve context
+            verbose: Whether to log the user and therapist messages
         
         Returns:
             The therapist's response
         """
-        logger.info(f"User: {user_message[:80]}...")
+        if verbose:
+            logger.info(f"User: {user_message[:80]}...")
         
         try:
             context_pieces = []
@@ -226,15 +240,32 @@ User says: {user_message}"""
                 context_pieces=context_pieces,
             )
             
-            # Generate response using Gemini
+            # Generate response using Gemini, with quota-aware retry handling
             logger.info(f"Generating response using {self.model_name}...")
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-            )
+            max_retries = 2
+            response = None
+            for attempt in range(1, max_retries + 1):
+                try:
+                    response = self.client.models.generate_content(
+                        model=self.model_name,
+                        contents=prompt,
+                    )
+                    break
+                except Exception as exc:
+                    error_message = str(exc)
+                    if not self._is_quota_exhausted(error_message) or attempt == max_retries:
+                        raise
+
+                    retry_delay = self._retry_delay_from_error(error_message)
+                    logger.warning(
+                        f"Gemini quota hit for chat message; waiting {retry_delay:.1f}s before retrying "
+                        f"(attempt {attempt}/{max_retries})"
+                    )
+                    time.sleep(retry_delay)
             
             if response and response.text:
-                logger.info(f"Therapist: {response.text[:100]}...")
+                if verbose:
+                    logger.info(f"Therapist: {response.text[:100]}...")
                 return response.text
             else:
                 logger.error("No response generated from model")

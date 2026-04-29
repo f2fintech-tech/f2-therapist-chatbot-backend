@@ -8,7 +8,7 @@ import json
 import os
 import argparse
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 from google import genai
 from dotenv import load_dotenv
 import time
@@ -17,6 +17,11 @@ try:
     from pinecone import Pinecone
 except ImportError:
     Pinecone = None
+
+try:
+    from src.inference.predictor import TherapyChatbot
+except ImportError:
+    TherapyChatbot = None
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -94,21 +99,37 @@ class ModelTester:
                 model="gemini-embedding-2",
                 contents=query,
             )
-            query_vector = embed_result.embeddings[0].values
+            embeddings = getattr(embed_result, "embeddings", None)
+            if not embeddings:
+                return ""
+
+            query_vector = embeddings[0].values
             
             # Search Pinecone
-            search_results = self.index.query(
+            search_results: Any = self.index.query(
                 vector=query_vector,
                 top_k=top_k,
                 include_metadata=True
             )
             
             context = ""
-            if search_results.get('matches'):
+            matches: Any = getattr(search_results, "matches", None)
+            if matches is None and isinstance(search_results, dict):
+                matches = search_results.get("matches")
+
+            if matches:
                 context = "\n# RELEVANT KNOWLEDGE BASE:\n"
-                for match in search_results['matches']:
-                    metadata = match.get('metadata', {})
-                    content = metadata.get('content', '')[:200]
+                for match in cast(List[Any], matches):
+                    metadata = getattr(match, "metadata", None)
+                    if metadata is None and isinstance(match, dict):
+                        metadata = match.get("metadata", {})
+
+                    content = ""
+                    if isinstance(metadata, dict):
+                        content = metadata.get("content", "")[:200]
+                    else:
+                        content = getattr(metadata, "content", "")[:200]
+
                     if content:
                         context += f"- {content}\n"
             
@@ -357,7 +378,64 @@ def main():
         action="store_true",
         help="Skip training example tests and only run custom queries",
     )
+    parser.add_argument(
+        "--chat",
+        action="store_true",
+        help="Start an interactive chatbot REPL instead of running evaluations",
+    )
+    parser.add_argument(
+        "--chat-rag",
+        action="store_true",
+        help="Use RAG context in chat mode (adds an embedding API call per message)",
+    )
     args = parser.parse_args()
+
+    if args.chat:
+        if TherapyChatbot is None:
+            raise ImportError("TherapyChatbot could not be imported from src.inference.predictor")
+
+        logger.info("\n" + "=" * 80)
+        logger.info("FINANCIAL THERAPIST CHAT MODE")
+        logger.info("Type 'exit', 'quit', or 'q' to stop.")
+        if args.chat_rag:
+            logger.info("RAG is enabled in chat mode, so each message uses 2 API calls.")
+        else:
+            logger.info("RAG is disabled in chat mode to keep each message to 1 API call.")
+        logger.info("=" * 80)
+
+        chatbot = TherapyChatbot()
+        conversation_history = []
+
+        while True:
+            try:
+                user_message = input("You: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print()
+                break
+
+            if not user_message:
+                continue
+
+            if user_message.lower() in {"exit", "quit", "q"}:
+                break
+
+            conversation_history.append({"role": "user", "content": user_message})
+
+            try:
+                response = chatbot.chat(
+                    user_message,
+                    use_rag=args.chat_rag,
+                    conversation_history=conversation_history,
+                    verbose=False,
+                )
+            except Exception as exc:
+                response = f"I'm sorry, I ran into an error: {exc}"
+
+            print(f"Bot: {response}\n")
+            conversation_history.append({"role": "assistant", "content": response})
+
+        logger.info("Chat session ended.")
+        return
 
     tester = ModelTester(use_finetuned=True)
 
