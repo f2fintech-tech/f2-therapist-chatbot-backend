@@ -21,7 +21,7 @@ def load_data_to_pinecone(file_path):
     print(f"Split into {len(chunks)} chunks.")
 
     # 3. Setup Embeddings
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-2")
 
     # 4. Upload to Pinecone!
     index_name = "f2-therapy-index"

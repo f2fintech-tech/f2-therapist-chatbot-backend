@@ -26,7 +26,7 @@ This document describes the complete Retrieval-Augmented Generation (RAG) pipeli
 │  └─ Process System Prompt → system_prompt.md                   │
 │           ↓                                                    │
 │  Step 4: EMBEDDING GENERATION                                  │
-│  └─ Use Gemini text-embedding-004 (768 dimensions)            │
+│  └─ Use Gemini text-embedding-2 (768 dimensions)              │
 │           ↓                                                    │
 │  Step 5: VECTOR DATABASE (Pinecone)                            │
 │  ├─ Index Name: f2-therapy-index                              │
@@ -71,7 +71,7 @@ This document describes the complete Retrieval-Augmented Generation (RAG) pipeli
 
 ### 3. Embedder (`src/knowledge/embedder.py`)
 - Generates embeddings using Google Gemini
-- Uses text-embedding-004 model (768 dimensions)
+- Uses text-embedding-2 model (768 dimensions)
 - Converts text to vector representations
 
 **Key Methods:**

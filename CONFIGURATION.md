@@ -64,7 +64,7 @@ print('✓ Gemini API configured successfully')
 2. Create a project
 3. Create an index with:
    - **Name:** `f2-therapy-index`
-   - **Dimension:** `768` (matches Gemini embeddings)
+   - **Dimension:** `3072` (matches Gemini embeddings)
    - **Metric:** `cosine`
    - **Pod Type:** Starter or Standard
 4. Copy API key and add to `.env`:
@@ -171,7 +171,7 @@ Central configuration for all modules:
 ```yaml
 google:
   api_key: "${GEMINI_API_KEY}"
-  embedding_model: "models/text-embedding-004"
+   embedding_model: "models/text-embedding-2"
   chat_model: "gemini-3.1-flash"
 
 pinecone:

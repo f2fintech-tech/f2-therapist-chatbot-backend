@@ -16,7 +16,7 @@
 - **File:** `src/knowledge/data_processor.py`
 
 ### 3. **Embedding Generation** ✓
-- ✅ Gemini text-embedding-004 integration (768 dimensions)
+- ✅ Gemini text-embedding-2 integration (768 dimensions)
 - ✅ Text-to-vector conversion
 - ✅ Embeddings caching support
 - **File:** `src/knowledge/embedder.py`
@@ -72,7 +72,7 @@ Data Processing
     └─ Process System Prompt
     ↓
 Embedding Generation
-    └─ Gemini text-embedding-004
+    └─ Gemini text-embedding-2
     ↓
 Pinecone Vector DB
     ├─ Index: f2-therapy-index

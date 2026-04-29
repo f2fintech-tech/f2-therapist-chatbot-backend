@@ -61,7 +61,7 @@ cat << 'EOF'
         ↓
   ┌─────────────────────────────────────────┐
   │ Step 4: Generate Embeddings             │ ✅ Embedder
-  │  • Gemini text-embedding-004            │
+  │  • Gemini text-embedding-2              │
   │  • 768 dimensions                       │
   └─────────────────────────────────────────┘
         ↓
@@ -94,7 +94,7 @@ cat << 'EOF'
 
 Technology Stack:
   ✓ Google Gemini 3.1 Flash (Chat Model)
-  ✓ Gemini text-embedding-004 (768 dimensions)
+  ✓ Gemini text-embedding-2 (768 dimensions)
   ✓ Pinecone Vector Database
   ✓ AWS S3 Storage
   ✓ FastAPI Backend

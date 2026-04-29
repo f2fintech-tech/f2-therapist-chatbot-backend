@@ -34,7 +34,7 @@ def setup_and_seed_pinecone():
     # 4. Use the new 'embed_content' method
     for item in therapy_data:
         result = google_client.models.embed_content(
-            model="text-embedding-004",
+            model="text-embedding-2",
             contents=item["text"]
         )
         

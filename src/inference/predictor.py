@@ -90,7 +90,7 @@ Guidelines:
         try:
             # Convert user message to embedding
             embed_result = self.client.models.embed_content(
-                model="text-embedding-004",
+                model="text-embedding-2",
                 contents=user_message,
             )
             user_vector = embed_result.embeddings[0].values
