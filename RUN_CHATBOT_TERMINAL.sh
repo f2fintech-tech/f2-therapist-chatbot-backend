@@ -15,7 +15,7 @@ set -euo pipefail
 #   python -m src.model.model_test --chat --chat-rag
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$REPO_ROOT"
+cd "$REPO_ROOT"s
 
 echo "============================================================"
 echo "F2 Therapist Chatbot - Terminal Launcher"
