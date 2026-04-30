@@ -82,7 +82,10 @@ jobs:
       - name: Run pipeline
         if: steps.fingerprint.outputs.changed == 'true'
         run: python src/rag_pipeline.py --skip-s3-upload --skip-s3-download
-
+# The S3 upload/download steps are skipped here to save time and API calls, but can be enabled for a full end-to-end run. 
+# Run python src/rag_pipeline.py --skip-s3-upload to download existing model artifacts from S3 without uploading new ones, or omit both flags for a complete run that updates S3 with new artifacts.
+#If dataset or training code changes are detected, the pipeline will run and update the local model artifacts. 
+# You can then add a separate workflow to handle S3 sync and deployment on a less frequent schedule or via manual trigger.
       - name: Save dataset fingerprint
         if: steps.fingerprint.outputs.changed == 'true'
         run: |
