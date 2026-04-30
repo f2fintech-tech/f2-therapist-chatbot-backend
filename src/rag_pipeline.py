@@ -615,13 +615,14 @@ class RAGPipeline:
             logger.error(f"Error testing chatbot: {e}")
             return False
     
-    def run_full_pipeline(self, skip_s3_upload=False, skip_s3_download=False):
+    def run_full_pipeline(self, skip_s3_upload=False, skip_s3_download=False, skip_chatbot_test=False):
         """
         Run the complete RAG pipeline
         
         Args:
             skip_s3_upload: Skip uploading to S3 (useful if files already uploaded)
             skip_s3_download: Skip downloading from S3 (useful if running with local files)
+            skip_chatbot_test: Skip chatbot testing step (Step 7)
         """
         logger.info("\n" + "█"*60)
         logger.info("█ STARTING COMPLETE RAG PIPELINE EXECUTION")
@@ -677,11 +678,15 @@ class RAGPipeline:
             steps.append(("✗", "Train model"))
         
         # Step 7: Test chatbot
-        logger.info("\nStep 7/7: Test chatbot")
-        if self.step_7_test_chatbot():
-            steps.append(("✓", "Test chatbot"))
+        if skip_chatbot_test:
+            logger.info("\nStep 7/7: Test chatbot (SKIPPED)")
+            steps.append(("-", "Test chatbot (skipped)"))
         else:
-            steps.append(("✗", "Test chatbot"))
+            logger.info("\nStep 7/7: Test chatbot")
+            if self.step_7_test_chatbot():
+                steps.append(("✓", "Test chatbot"))
+            else:
+                steps.append(("✗", "Test chatbot"))
         
         # Print summary
         logger.info("\n" + "█"*60)
@@ -711,6 +716,7 @@ def main():
     parser = argparse.ArgumentParser(description="RAG Pipeline Orchestrator")
     parser.add_argument("--skip-s3-upload", action="store_true", help="Skip S3 upload step")
     parser.add_argument("--skip-s3-download", action="store_true", help="Skip S3 download step")
+    parser.add_argument("--skip-chatbot-test", action="store_true", help="Skip chatbot testing step")
     parser.add_argument("--steps", type=str, help="Comma-separated specific steps to run (1-7)")
     
     args = parser.parse_args()
@@ -718,7 +724,8 @@ def main():
     pipeline = RAGPipeline()
     pipeline.run_full_pipeline(
         skip_s3_upload=args.skip_s3_upload,
-        skip_s3_download=args.skip_s3_download
+        skip_s3_download=args.skip_s3_download,
+        skip_chatbot_test=args.skip_chatbot_test,
     )
 
 
