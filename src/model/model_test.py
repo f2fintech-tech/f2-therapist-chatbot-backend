@@ -439,6 +439,8 @@ def main():
 
         chatbot = TherapyChatbot()
         conversation_history = []
+        chat_transcript = []
+        chat_started_at = time.time()
 
         while True:
             try:
@@ -467,6 +469,28 @@ def main():
 
             print(f"Bot: {response}\n")
             conversation_history.append({"role": "assistant", "content": response})
+            chat_transcript.append({
+                "user": user_message,
+                "assistant": response,
+                "rag_used": args.chat_rag,
+                "timestamp": time.time(),
+            })
+
+        if chat_transcript:
+            output_path = Path("src/model/model_test_results.json")
+            results_summary = {
+                "timestamp": chat_started_at,
+                "mode": "interactive_chat",
+                "model": getattr(chatbot, "model_name", "gemini-3-flash-preview"),
+                "prompt_type": "fine-tuned",
+                "chat_rag": args.chat_rag,
+                "chat_session": chat_transcript,
+                "turn_count": len(chat_transcript),
+            }
+
+            tester = ModelTester(use_finetuned=True)
+            tester._save_test_results(results_summary, output_path)
+            logger.info(f"✓ Chat session saved to {output_path}")
 
         logger.info("Chat session ended.")
         return
