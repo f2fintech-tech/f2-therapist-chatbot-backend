@@ -1,0 +1,17 @@
+name: Monitor Pipeline
+
+on:
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Monitor placeholder
+        run: |
+          echo "No monitoring steps configured. Add checks to .github/workflows/6-monitor-pipeline.yml"
