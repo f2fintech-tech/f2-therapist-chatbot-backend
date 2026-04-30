@@ -1,6 +1,26 @@
 """
 Complete RAG Pipeline Orchestrator
 Handles: S3 upload/download -> Data processing -> Embeddings -> Pinecone loading -> Model training
+
+How to run the pipeline (from repository root):
+
+- Activate the project's virtual environment (if using the included .venv):
+    python -m venv .venv && source .venv/bin/activate
+
+- Run the full pipeline (flags are optional):
+    python src/rag_pipeline.py [--skip-s3-upload] [--skip-s3-download] [--skip-chatbot-test]
+
+- Example: run processing, embeddings and loading locally, skipping S3 and chatbot test:
+    python src/rag_pipeline.py --skip-s3-upload --skip-s3-download --skip-chatbot-test
+
+- Run specific steps with `--steps` (comma-separated numbers 1-7). Example to run steps 3-5:
+    python src/rag_pipeline.py --steps 3,4,5
+
+- Notes:
+    - Ensure required environment variables are set: `AWS_S3_BUCKET_NAME`, `AWS_REGION`, `PINECONE_API_KEY`, `GEMINI_API_KEY`.
+    - The script expects processed JSON under `src/data/processed/` and will write state files there.
+    - Use `--skip-chatbot-test` to avoid generating live model responses during test runs.
+
 """
 
 import logging
@@ -486,6 +506,13 @@ class RAGPipeline:
                 logger.info(f"✓ Processed {len(scenarios)} scenarios")
             else:
                 logger.warning("⚠ No scenarios found to process")
+
+            logger.info("Processing conversations...")
+            conversations = self.data_processor.process_conversations()
+            if conversations:
+                logger.info(f"✓ Processed {len(conversations)} conversation examples")
+            else:
+                logger.warning("⚠ No conversation examples found to process")
             
             logger.info("Processing system prompt...")
             prompt = self.data_processor.process_system_prompt()
