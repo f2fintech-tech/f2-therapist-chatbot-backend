@@ -2,6 +2,12 @@ name: Model Training
 
 on:
   workflow_dispatch:
+    inputs:
+      force_run:
+        description: "Run training even if the fingerprint has not changed"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   model-train:
@@ -33,15 +39,74 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
+
+      # Store the last successful fingerprint so we can skip API-heavy training
+      # when the raw data and training inputs are unchanged.
+      - name: Restore training fingerprint
+        uses: actions/cache@v4
+        with:
+          path: .ci-state/model-train-fingerprint.txt
+          key: model-train-fingerprint-${{ github.ref_name }}
+
+      # Compute a fingerprint across the files that affect training output.
+      # If the fingerprint is identical, the job can safely skip Gemini calls.
+      - name: Compute training fingerprint
+        id: fingerprint
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ inputs.force_run }}" == "true" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "reason=force_run" >> "$GITHUB_OUTPUT"
+            echo "current_hash=forced-run" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          current_hash=$(python src/utils/dataset_fingerprint.py \
+            --pattern src/data/processed/conversation_training_data.json \
+            --pattern src/data/processed/system_prompt.md \
+            --pattern src/model/finetuned_system_prompt.txt \
+            --pattern src/model/model_train.py \
+            --pattern src/knowledge/data_processor.py \
+            --pattern src/data/raw/conversations.json)
+
+          cached_hash=""
+          if [[ -f .ci-state/model-train-fingerprint.txt ]]; then
+            cached_hash="$(tr -d '\r\n' < .ci-state/model-train-fingerprint.txt)"
+          fi
+
+          if [[ "$current_hash" == "$cached_hash" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "reason=unchanged" >> "$GITHUB_OUTPUT"
+            echo "Training inputs unchanged; skipping Gemini usage."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "reason=changed" >> "$GITHUB_OUTPUT"
+            echo "Training inputs changed; running the training job."
+          fi
+
+          echo "current_hash=$current_hash" >> "$GITHUB_OUTPUT"
+
+      - name: Skip unchanged training
+        if: steps.fingerprint.outputs.changed == 'false'
+        run: echo "No training rerun needed. Use force_run=true to override this gate."
 
       - name: Install dependencies
+        if: steps.fingerprint.outputs.changed == 'true'
         run: pip install -r requirements.txt
 
       - name: Train model
+        if: steps.fingerprint.outputs.changed == 'true'
         run: python src/model/model_train.py
+
+      - name: Save training fingerprint
+        if: steps.fingerprint.outputs.changed == 'true'
+        run: |
+          mkdir -p .ci-state
+          printf '%s\n' "${{ steps.fingerprint.outputs.current_hash }}" > .ci-state/model-train-fingerprint.txt
