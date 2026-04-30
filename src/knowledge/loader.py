@@ -32,6 +32,114 @@ class KnowledgeLoader:
         self.client = Pinecone(api_key=api_key)
         self.index = self.client.Index(index_name)
 
+    def _processed_dir(self):
+        return Path("src/data/processed")
+
+    def _desired_record_id(self, source_name, record, index):
+        record_id = record.get("id")
+        if record_id:
+            return str(record_id)
+
+        record_hash = self._record_hash(source_name, record)
+        return f"{source_name}_{record_hash[:16]}"
+
+    def _build_desired_record_map(self):
+        """Map each processed record to the ID it should occupy in Pinecone.
+
+        The key is (record type, content hash) so we can remove older duplicates
+        even if they were loaded under a different Pinecone ID.
+        """
+        desired = {}
+        processed_dir = self._processed_dir()
+
+        if not processed_dir.exists():
+            logger.warning(f"Processed directory not found at {processed_dir}")
+            return desired
+
+        for collection_path in sorted(processed_dir.glob("*.json")):
+            if collection_path.name in {"embedding_state.json", "pinecone_sync_state.json"}:
+                continue
+
+            try:
+                with open(collection_path, "r", encoding="utf-8") as f:
+                    records = json.load(f)
+            except Exception:
+                logger.warning(f"Could not read processed file {collection_path}; skipping duplicate check")
+                continue
+
+            if not isinstance(records, list):
+                continue
+
+            source_name = collection_path.stem
+            for index, record in enumerate(records, start=1):
+                if not isinstance(record, dict):
+                    continue
+
+                record_hash = self._record_hash(source_name, record)
+                desired[(source_name, record_hash)] = self._desired_record_id(source_name, record, index)
+
+        # Include the system prompt markdown file as its own record so we can
+        # clean up older duplicate prompt vectors too.
+        prompt_path = processed_dir / "system_prompt.md"
+        if prompt_path.exists():
+            try:
+                with open(prompt_path, "r", encoding="utf-8") as f:
+                    prompt_text = f.read().strip()
+                if prompt_text:
+                    prompt_record = {"id": "system_prompt", "content": prompt_text}
+                    desired[("system_prompt", self._record_hash("system_prompt", prompt_record))] = "system_prompt"
+            except Exception:
+                logger.warning(f"Could not read system prompt from {prompt_path}; skipping duplicate check")
+
+        return desired
+
+    def _delete_duplicate_vectors(self):
+        """Delete older Pinecone vectors that duplicate the current processed data.
+
+        This keeps a single vector per record type/content hash pair and avoids
+        removing the current vectors that use the desired IDs.
+        """
+        desired_map = self._build_desired_record_map()
+        if not desired_map:
+            return 0
+
+        duplicate_ids = []
+        for page in self.index.list():
+            page_ids = list(page)
+            if not page_ids:
+                continue
+
+            fetch_result = self.index.fetch(ids=page_ids)
+            vectors = fetch_result.to_dict().get("vectors", {}) if hasattr(fetch_result, "to_dict") else fetch_result.get("vectors", {})
+
+            for vector_id, vector in vectors.items():
+                metadata = vector.get("metadata", {}) or {}
+                source_name = metadata.get("type")
+                content_hash = metadata.get("content_hash")
+
+                if not source_name or not content_hash:
+                    continue
+
+                desired_id = desired_map.get((source_name, content_hash))
+                if desired_id and vector_id != desired_id:
+                    duplicate_ids.append(vector_id)
+
+        if not duplicate_ids:
+            logger.info("No duplicate Pinecone vectors found for the current processed data")
+            return 0
+
+        batch_size = 100
+        deleted = 0
+        for start in range(0, len(duplicate_ids), batch_size):
+            batch = duplicate_ids[start:start + batch_size]
+            if not batch:
+                continue
+            self.index.delete(ids=batch)
+            deleted += len(batch)
+
+        logger.info(f"Deleted {deleted} duplicate Pinecone vectors that matched the current processed data")
+        return deleted
+
     def _sync_state_path(self):
         return Path("src/data/processed/.pinecone_sync_state.json")
 
@@ -188,6 +296,11 @@ class KnowledgeLoader:
     def load_all(self):
         """Load all knowledge base documents."""
         logger.info("Loading knowledge base into Pinecone...")
+
+        # Remove older Pinecone vectors that duplicate the current processed
+        # records, regardless of whether they are FAQs, scenarios, the system
+        # prompt, or conversation examples.
+        self._delete_duplicate_vectors()
 
         processed_dir = Path("src/data/processed")
         if not processed_dir.exists():
