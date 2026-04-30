@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: '0 2 1,15 * *'
+  workflow_dispatch:
 
 jobs:
   complete-pipeline:
@@ -35,15 +38,53 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
+
+      - name: Restore dataset fingerprint
+        uses: actions/cache@v4
+        with:
+          path: .ci-state/raw-data-fingerprint.txt
+          key: raw-data-fingerprint-${{ github.ref_name }}
+
+      - name: Compute dataset fingerprint
+        id: fingerprint
+        run: |
+          set -euo pipefail
+          current_hash=$(python src/utils/dataset_fingerprint.py)
+          cached_hash=""
+          if [[ -f .ci-state/raw-data-fingerprint.txt ]]; then
+            cached_hash="$(tr -d '\r\n' < .ci-state/raw-data-fingerprint.txt)"
+          fi
+
+          if [[ "$current_hash" == "$cached_hash" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Pipeline inputs unchanged; expensive steps will be skipped."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Pipeline inputs changed; running preprocessing, embedding, and training."
+          fi
+
+          echo "current_hash=$current_hash" >> "$GITHUB_OUTPUT"
+
+      - name: Skip unchanged pipeline
+        if: steps.fingerprint.outputs.changed == 'false'
+        run: echo "No raw-data or pipeline-code changes detected. Skipping API-heavy steps."
 
       - name: Install dependencies
+        if: steps.fingerprint.outputs.changed == 'true'
         run: pip install -r requirements.txt
 
       - name: Run pipeline
-        run: python src/deployment/api.py
+        if: steps.fingerprint.outputs.changed == 'true'
+        run: python src/rag_pipeline.py --skip-s3-upload --skip-s3-download
+
+      - name: Save dataset fingerprint
+        if: steps.fingerprint.outputs.changed == 'true'
+        run: |
+          mkdir -p .ci-state
+          printf '%s\n' "${{ steps.fingerprint.outputs.current_hash }}" > .ci-state/raw-data-fingerprint.txt
