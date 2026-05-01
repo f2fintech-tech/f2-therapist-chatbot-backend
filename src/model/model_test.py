@@ -381,10 +381,16 @@ Your response (remember to acknowledge emotion first, then provide guidance):"""
             **results_summary,
         })
 
-        aggregate_summary = {
-            **(existing_summary if isinstance(existing_summary, dict) else {}),
+        latest_run = {
             **results_summary,
-            "latest_run": results_summary,
+        }
+
+        aggregate_summary = {
+            "timestamp": latest_run.get("timestamp"),
+            "mode": latest_run.get("mode"),
+            "model": latest_run.get("model"),
+            "prompt_type": latest_run.get("prompt_type"),
+            "latest_run": latest_run,
             "run_history": run_history[-20:],
         }
 
