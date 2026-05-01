@@ -31,6 +31,7 @@ router = APIRouter(prefix="/chat", tags=["Chat"])
 UUID_PATTERN = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
 MAX_MESSAGE_LENGTH = 5000
 MIN_MESSAGE_LENGTH = 1
+CONTEXT_WINDOW_MESSAGES = 10
 
 # ==================== Pydantic Models ====================
 class ChatRequest(BaseModel):
@@ -306,6 +307,24 @@ def get_conversation_context(db: Session, conversation_id: str, limit: int = 10)
     
     return list(reversed(messages))
 
+def format_conversation_context(messages: list[ConversationMessage]) -> str:
+    """Format recent conversation turns into plain text for prompt context."""
+    if not messages:
+        return ""
+
+    history_lines = []
+    for msg in messages:
+        role = "User" if msg.role == MessageRole.USER else "Assistant"
+        content = (msg.content or "").strip()
+        if not content:
+            continue
+        history_lines.append(f"{role}: {content}")
+
+    if not history_lines:
+        return ""
+
+    return "\n".join(history_lines)
+
 # ==================== Routes ====================
 @router.post("/", response_model=ChatResponse, status_code=status.HTTP_200_OK)
 async def chat(request: ChatRequest, db: Session = Depends(get_db)):
@@ -344,7 +363,14 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         logger.info(f"User message saved: {user_message_obj.id}")
         
         # Get conversation context for LLM
-        context_messages = get_conversation_context(db, conversation.id, limit=10)
+        context_messages = get_conversation_context(
+            db,
+            conversation.id,
+            limit=CONTEXT_WINDOW_MESSAGES
+        )
+        # Exclude the current user message to avoid duplicate content in the same prompt.
+        prior_context_messages = context_messages[:-1]
+        conversation_context_text = format_conversation_context(prior_context_messages)
         
         # ==================== NEW: RAG Integration ====================
         # Retrieve relevant knowledge from Pinecone
@@ -383,8 +409,20 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
             knowledge_context = []
         
         # ==================== Build Enhanced Message ====================
-        # Combine knowledge context with user message
-        enhanced_message = f"{context_text}**User's Question:**\n{request.message}"
+        # Combine prior conversation, knowledge context, and current user message.
+        enhanced_message_parts = []
+        if conversation_context_text:
+            enhanced_message_parts.append(
+                "Recent Conversation Context:\n"
+                f"{conversation_context_text}\n"
+                "\nUse this context to avoid asking the user to repeat details they already shared.\n"
+            )
+
+        if context_text:
+            enhanced_message_parts.append(context_text)
+
+        enhanced_message_parts.append(f"**User's Question:**\n{request.message}")
+        enhanced_message = "\n".join(enhanced_message_parts)
         
         logger.info(f"Enhanced message length: {len(enhanced_message)} characters")
         
