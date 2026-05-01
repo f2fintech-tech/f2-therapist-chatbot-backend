@@ -201,9 +201,20 @@ Guidelines:
 User says: {user_message}"""
 
     @staticmethod
-    def _retry_delay_from_error(error_message, default_delay=15.0):
-        match = re.search(r"retry in\s+([0-9]+(?:\.[0-9]+)?)s", error_message, re.IGNORECASE)
-        return float(match.group(1)) if match else default_delay
+    def _retry_delay_from_error(error_message, default_delay=60.0):
+        """Extract retry delay from error message (handles both text and JSON formats)"""
+        # First try to find 'retryDelay' in JSON format (e.g., 'retryDelay': '59s')
+        json_match = re.search(r"'retryDelay':\s*'([0-9]+(?:\.[0-9]+)?)s'", error_message)
+        if json_match:
+            return float(json_match.group(1))
+        
+        # Try to find "retry in XXs" format
+        text_match = re.search(r"retry in\s+([0-9]+(?:\.[0-9]+)?)s", error_message, re.IGNORECASE)
+        if text_match:
+            return float(text_match.group(1))
+        
+        # Return default delay
+        return default_delay
 
     @staticmethod
     def _is_quota_exhausted(error_message):
@@ -240,9 +251,9 @@ User says: {user_message}"""
                 context_pieces=context_pieces,
             )
             
-            # Generate response using Gemini, with quota-aware retry handling
+            # Generate response using Gemini, with retry handling for rate limiting
             logger.info(f"Generating response using {self.model_name}...")
-            max_retries = 2
+            max_retries = 5  # More retries for rate limiting (429)
             response = None
             for attempt in range(1, max_retries + 1):
                 try:
@@ -253,15 +264,24 @@ User says: {user_message}"""
                     break
                 except Exception as exc:
                     error_message = str(exc)
-                    if not self._is_quota_exhausted(error_message) or attempt == max_retries:
+                    
+                    # Try to detect if we should retry
+                    if self._is_quota_exhausted(error_message):
+                        if attempt < max_retries:
+                            retry_delay = self._retry_delay_from_error(error_message)
+                            logger.warning(
+                                f"Rate limited (429). Waiting {retry_delay:.1f}s before retrying "
+                                f"(attempt {attempt}/{max_retries})"
+                            )
+                            time.sleep(retry_delay)
+                            continue
+                        else:
+                            # All retries exhausted
+                            logger.error(f"Max retries exhausted. Error: {error_message[:200]}")
+                            raise
+                    else:
+                        # Other errors - fail immediately
                         raise
-
-                    retry_delay = self._retry_delay_from_error(error_message)
-                    logger.warning(
-                        f"Gemini quota hit for chat message; waiting {retry_delay:.1f}s before retrying "
-                        f"(attempt {attempt}/{max_retries})"
-                    )
-                    time.sleep(retry_delay)
             
             if response and response.text:
                 if verbose:
@@ -272,8 +292,23 @@ User says: {user_message}"""
                 return "I appreciate you reaching out, but I'm having trouble processing that right now. Could you try again?"
             
         except Exception as e:
-            logger.error(f"Error in chat: {e}")
-            return f"I'm sorry, I encountered an error while trying to help. Please try again in a moment."
+            error_str = str(e)
+            logger.error(f"Error in chat: {error_str}")
+            
+            # Provide helpful error messages
+            if "429" in error_str or "rate" in error_str.lower():
+                return (
+                    "I'm being rate-limited by the API right now (too many requests). "
+                    "Please wait a few moments and try again. "
+                    "If this persists, you may need to upgrade your Gemini API plan at console.cloud.google.com"
+                )
+            elif "quota" in error_str.lower() or "resource_exhausted" in error_str.lower():
+                return (
+                    "I'm unable to respond right now due to API quota limits. "
+                    "Please check your Google Cloud console billing and quota settings."
+                )
+            else:
+                return f"I'm sorry, I encountered an error while trying to help: {error_str[:100]}. Please try again in a moment."
 
 
 def get_financial_therapy(user_message):
