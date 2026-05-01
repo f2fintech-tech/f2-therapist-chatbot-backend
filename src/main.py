@@ -31,11 +31,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ==================== Rate Limiting Setup ====================
+"""
 limiter = Limiter(key_func=get_remote_address)
 
 @limiter.limit("200/minute")
 def rate_limit_handler(request, exc):
-    """Custom rate limit error handler."""
+    # Custom rate limit error handler.
     return JSONResponse(
         status_code=429,
         content={
@@ -44,7 +45,7 @@ def rate_limit_handler(request, exc):
             "retry_after": 60
         }
     )
-
+"""
 # ==================== FastAPI Initialization ====================
 app = FastAPI(
     title="Financial Therapist Chatbot",
@@ -56,8 +57,8 @@ app = FastAPI(
 )
 
 # Add rate limiter to app
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
+# app.state.limiter = limiter
+# app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 # ==================== Middleware Stack ====================
 # Order matters: Security → Logging → CORS (outermost)
