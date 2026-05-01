@@ -24,6 +24,9 @@ Thumbs.db
 *.log
 logs/
 
+# Test outputs
+src/model/model_test_results.json
+
 # Data
 src/data/raw/
 src/data/processed/
