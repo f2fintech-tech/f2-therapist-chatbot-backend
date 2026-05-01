@@ -42,3 +42,55 @@ src/data/langchain/
 # Docker configuration (keep .dockerignore tracked)
 # docker-compose.yml  # optional: track or ignore
 # Dockerfile         # optional: track or ignore
+# Additional patterns for ML/Python projects
+
+# Environment variations
+.env.*
+
+# Python cache and testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+junit.xml
+.cache/
+*.cache
+*.pyc
+.venv/
+
+# Temporary and backup files
+*.tmp
+*.bak
+*.swo
+*~
+
+# Test results and logs
+test_results/
+.test-results/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# CSV and cache files
+*.csv
+*.json.cache
+
+# Model files (large)
+*.pickle
+*.pt
+*.h5
+*.joblib
+
+# LangChain cache
+.langchain/
+
+# Build output
+dist/
+build/
+
+# Runtime temporary files
+.tmp/
+temp/
+*.pid
