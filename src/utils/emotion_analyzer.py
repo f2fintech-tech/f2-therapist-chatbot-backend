@@ -28,7 +28,10 @@ STRESS_KEYWORDS = {
         "constant tension","i feel trapped financially","can't manage anymore","i'm at my breaking point","i'm exhausted",
         "too much responsibility","my family depends on me","i can't fail","fear of losing job","fear of losing business",
         "can't breathe","this is too much","i'm mentally tired","financial nightmare","out of control","emotionally drained",
-        "i feel cornered","pressure is killing me"
+        "i feel cornered","pressure is killing me",
+        "credit card debt", "credit card debts", "medical bills", "multiple debts", "multiple loans",
+        "sales dropped", "sales down", "dropped sales", "business failing", "business collapsed",
+        "don't know how to manage"
     ],
 
     "moderate": [
@@ -41,7 +44,10 @@ STRESS_KEYWORDS = {
         "not sure what to do","handling somehow","things are difficult","little stressed",
         "feels risky","too many expenses","money is tight","things feel unstable",
         "i'm worried about future","not financially secure","not confident","unsure about decision",
-        "need guidance","feeling pressured"
+        "need guidance","feeling pressured",
+        "credit score", "don't understand", "confused", "confusing",
+        "need help understanding", "need explanation",
+        "processing fees", "loan terms", "interest rate", "emi"
     ],
 
     "low": [
@@ -53,7 +59,10 @@ STRESS_KEYWORDS = {
         "want better options", "looking for alternatives", "considering lenders",
         "exploring possibilities","financially stable",
         "checking rates","planning ahead","thinking strategically","looking for best deal",
-        "just comparing","want more clarity"
+        "just comparing","want more clarity",
+        "transparency", "compare", "breakdown", "data", "numbers",
+        "real cost", "total cost", "how does this compare", "show me",
+        "what is the", "can you explain", "data driven", "analytical"
     ]
 }
 
