@@ -208,7 +208,17 @@ User says: {user_message}"""
     @staticmethod
     def _is_quota_exhausted(error_message):
         lowered = error_message.lower()
-        return "resource_exhausted" in lowered or "quota exceeded" in lowered or "429" in lowered
+        return (
+            "resource_exhausted" in lowered
+            or "quota exceeded" in lowered
+            or "exceeded your current quota" in lowered
+            or "daily limit" in lowered
+        )
+
+    @staticmethod
+    def _is_rate_limited(error_message):
+        lowered = error_message.lower()
+        return "429" in lowered or "too many requests" in lowered or "rate limit" in lowered
     
     def chat(self, user_message, use_rag=True, conversation_history=None, verbose=True):
         """
@@ -253,12 +263,14 @@ User says: {user_message}"""
                     break
                 except Exception as exc:
                     error_message = str(exc)
-                    if not self._is_quota_exhausted(error_message) or attempt == max_retries:
+                    if not (self._is_quota_exhausted(error_message) or self._is_rate_limited(error_message)) or attempt == max_retries:
                         raise
 
-                    retry_delay = self._retry_delay_from_error(error_message)
+                    retry_delay = self._retry_delay_from_error(error_message, default_delay=5.0)
+                    retry_delay = min(retry_delay, 10.0)
+                    retry_reason = "quota" if self._is_quota_exhausted(error_message) else "rate limit"
                     logger.warning(
-                        f"Gemini quota hit for chat message; waiting {retry_delay:.1f}s before retrying "
+                        f"Gemini {retry_reason} hit for chat message; waiting {retry_delay:.1f}s before retrying "
                         f"(attempt {attempt}/{max_retries})"
                     )
                     time.sleep(retry_delay)
