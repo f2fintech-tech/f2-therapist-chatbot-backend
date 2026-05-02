@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, cast
 from google import genai
 from dotenv import load_dotenv
 import time
+from src.utils.emotion_analyzer import analyze_emotion
 
 try:
     from pinecone import Pinecone
@@ -360,7 +361,8 @@ Your response (remember to acknowledge emotion first, then provide guidance):"""
         logger.info("=" * 80)
 
     def _save_test_results(self, results_summary: Dict, output_path: Path) -> Path:
-        """Save results to the main JSON file and append them to run history."""
+        """Save results to the main JSON file and append them to run history.
+        Preserves existing data and only updates relevant sections."""
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         existing_summary: Dict = {}
@@ -371,28 +373,30 @@ Your response (remember to acknowledge emotion first, then provide guidance):"""
             except Exception:
                 existing_summary = {}
 
-        run_history = []
-        if isinstance(existing_summary, dict):
-            existing_history = existing_summary.get("run_history", [])
-            if isinstance(existing_history, list):
-                run_history = existing_history
-
-        run_history.append({
-            **results_summary,
-        })
-
-        latest_run = {
-            **results_summary,
-        }
-
-        aggregate_summary = {
-            "timestamp": latest_run.get("timestamp"),
-            "mode": latest_run.get("mode"),
-            "model": latest_run.get("model"),
-            "prompt_type": latest_run.get("prompt_type"),
-            "latest_run": latest_run,
-            "run_history": run_history[-20:],
-        }
+        # Determine which history to update based on mode
+        mode = results_summary.get("mode", "")
+        
+        if "persona" in mode.lower():
+            # Preserve persona mood test runs
+            persona_runs = existing_summary.get("persona_mood_test_runs", [])
+            if isinstance(persona_runs, list):
+                persona_runs.append({**results_summary})
+            aggregate_summary = existing_summary.copy()
+            aggregate_summary["persona_mood_test_runs"] = persona_runs[-20:]
+            aggregate_summary["latest_persona_mood_test_run"] = {**results_summary}
+        else:
+            # Preserve standard run history and other data
+            run_history = existing_summary.get("run_history", [])
+            if isinstance(run_history, list):
+                run_history.append({**results_summary})
+            
+            aggregate_summary = existing_summary.copy()
+            aggregate_summary["run_history"] = run_history[-20:]
+            aggregate_summary["latest_run"] = {**results_summary}
+            aggregate_summary["timestamp"] = results_summary.get("timestamp")
+            aggregate_summary["mode"] = mode
+            aggregate_summary["model"] = results_summary.get("model", aggregate_summary.get("model"))
+            aggregate_summary["prompt_type"] = results_summary.get("prompt_type", aggregate_summary.get("prompt_type"))
 
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(aggregate_summary, f, indent=2, default=str)
@@ -462,6 +466,18 @@ def main():
                 break
 
             conversation_history.append({"role": "user", "content": user_message})
+            
+            # Analyze user emotion/mood
+            mood_analysis = analyze_emotion(user_message, conversation_depth=len(conversation_history) - 1)
+            
+            # Display mood analysis if detected
+            stress_level = mood_analysis.get('stress_level', 'unknown')
+            if stress_level != 'unknown':
+                print(f"  📊 [Mood Detected] Stress Level: {stress_level.upper()}")
+                emotional_state = mood_analysis.get('indicators', {}).get('emotional_state', [])
+                if emotional_state:
+                    print(f"     Emotional State: {', '.join(emotional_state)}")
+                print()
 
             try:
                 response = chatbot.chat(
@@ -480,6 +496,7 @@ def main():
                 "assistant": response,
                 "rag_used": args.chat_rag,
                 "timestamp": time.time(),
+                "mood_analysis": mood_analysis,
             })
 
         if chat_transcript:
