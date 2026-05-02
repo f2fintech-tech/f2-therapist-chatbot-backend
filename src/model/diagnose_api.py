@@ -84,10 +84,14 @@ except Exception as e:
     error_str = str(e)
     print(f"✗ gemini-3-flash-preview failed: {e}")
     
-    # Check if it's a quota error
-    if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-        print("\n  🔴 QUOTA EXHAUSTED - You've hit your daily limit")
-        print("     This is a real quota issue, not a configuration issue")
+    # Check if it's a quota or rate-limit error
+    lowered = error_str.lower()
+    if "exceeded your current quota" in lowered or "daily limit" in lowered:
+        print("\n  🔴 QUOTA EXHAUSTED - You've hit a usage limit")
+        print("     This is a real quota issue")
+    elif "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+        print("\n  🟠 RATE LIMITED OR RESOURCE_EXHAUSTED")
+        print("     This does not necessarily mean your daily quota is exhausted")
     elif "404" in error_str or "NOT_FOUND" in error_str:
         print("\n  🟡 MODEL NOT FOUND - Check model name")
     else:
