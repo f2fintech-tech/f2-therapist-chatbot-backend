@@ -1,0 +1,162 @@
+{
+  "source": "https://www.notion.so/PERSONA-EXAMPLES-3-PRIMARY-PERSONAS-33e3a20e819280719c50fc21ca57199d",
+  "version": 1,
+  "personas": [
+    {
+      "id": "persona-1",
+      "name": "Anxious Priya",
+      "demographics": {
+        "name": "Priya Sharma",
+        "age": 28,
+        "location": "Pune, Maharashtra",
+        "occupation": "Junior Software Developer",
+        "monthly_income": 45000,
+        "family_status": "Single, supporting elderly parents"
+      },
+      "financial_situation": {
+        "current_debt": 80000,
+        "loan_history": "Never taken a formal loan before",
+        "credit_score": 680,
+        "financial_goals": [
+          "Clear credit card debt",
+          "Build emergency fund",
+          "Buy a flat in 5 years"
+        ],
+        "biggest_financial_fear": "Losing job and not being able to support parents"
+      },
+      "psychological_profile": {
+        "financial_literacy": "Medium",
+        "decision_making": "Anxious/Cautious",
+        "communication_preference": "Gentle, step-by-step, lots of reassurance",
+        "trust_level": "Low"
+      },
+      "stress_triggers": [
+        "Seeing large numbers",
+        "Not understanding financial jargon",
+        "Feeling judged for past financial mistakes",
+        "Fear of rejection"
+      ],
+      "test_cases": [
+        {
+          "label": "Debt consolidation fear",
+          "message": "I have 80k credit card debt after a medical emergency and I'm scared of taking another loan.",
+          "expected_stress_level": "high"
+        },
+        {
+          "label": "Credit score anxiety",
+          "message": "My credit score is only 680. Will I get rejected again?",
+          "expected_stress_level": "moderate"
+        },
+        {
+          "label": "Jargon confusion",
+          "message": "Can you explain debt consolidation in simple words? I don't understand EMI or processing fees.",
+          "expected_stress_level": "moderate"
+        }
+      ]
+    },
+    {
+      "id": "persona-2",
+      "name": "Overwhelmed Rajesh",
+      "demographics": {
+        "name": "Rajesh Kumar",
+        "age": 35,
+        "location": "Delhi NCR",
+        "occupation": "Small business owner (grocery store)",
+        "monthly_income": 60000,
+        "family_status": "Married, 2 kids (ages 6 and 9)"
+      },
+      "financial_situation": {
+        "current_debt": "₹3.5L business loan, ₹1.2L personal loan",
+        "loan_history": "3 previous loans, always paid on time but struggled",
+        "credit_score": 720,
+        "financial_goals": [
+          "Expand business",
+          "Kids' education",
+          "Buy delivery vehicle"
+        ],
+        "biggest_financial_fear": "Business failing and family suffering"
+      },
+      "psychological_profile": {
+        "financial_literacy": "Low",
+        "decision_making": "Reactive/Impulsive",
+        "communication_preference": "Simple language, practical examples",
+        "trust_level": "Medium"
+      },
+      "stress_triggers": [
+        "Multiple EMIs due same week",
+        "Unexpected business expenses",
+        "Feeling like he's failing as provider",
+        "Not understanding loan terms"
+      ],
+      "test_cases": [
+        {
+          "label": "Cash flow pressure",
+          "message": "Three EMIs are due this week and a supplier payment came up unexpectedly.",
+          "expected_stress_level": "high"
+        },
+        {
+          "label": "Business decline",
+          "message": "Sales dropped for the last 3 months and I don't know how to manage the loans.",
+          "expected_stress_level": "high"
+        },
+        {
+          "label": "Loan term confusion",
+          "message": "I need ₹2 lakhs for inventory, but I don't understand loan terms or interest.",
+          "expected_stress_level": "moderate"
+        }
+      ]
+    },
+    {
+      "id": "persona-3",
+      "name": "Analytical Amit",
+      "demographics": {
+        "name": "Amit Verma",
+        "age": 32,
+        "location": "Bangalore",
+        "occupation": "Data Analyst at tech company",
+        "monthly_income": 120000,
+        "family_status": "Married, no kids, planning to start family"
+      },
+      "financial_situation": {
+        "current_debt": "₹8L home loan",
+        "loan_history": "Home loan only, researched extensively",
+        "credit_score": 780,
+        "financial_goals": [
+          "Pay off home loan early",
+          "Invest in mutual funds",
+          "Retire at 50"
+        ],
+        "biggest_financial_fear": "Making suboptimal financial decisions"
+      },
+      "psychological_profile": {
+        "financial_literacy": "High",
+        "decision_making": "Analytical",
+        "communication_preference": "Direct, data-driven, respect his intelligence",
+        "trust_level": "Low initially"
+      },
+      "stress_triggers": [
+        "Feeling like he's being sold to",
+        "Lack of transparency in terms",
+        "Hidden fees",
+        "Generic advice"
+      ],
+      "test_cases": [
+        {
+          "label": "Transparency check",
+          "message": "What is the real total cost including fees, and how does this compare to other lenders?",
+          "expected_stress_level": "low"
+        },
+        {
+          "label": "Hidden fees concern",
+          "message": "I'm worried there are hidden charges in the offer. Show me everything upfront.",
+          "expected_stress_level": "moderate"
+        },
+        {
+          "label": "Generic advice rejection",
+          "message": "Please don't give me marketing fluff. I want the actual numbers and tradeoffs.",
+          "expected_stress_level": "low"
+        }
+      ]
+    }
+  ]
+}
