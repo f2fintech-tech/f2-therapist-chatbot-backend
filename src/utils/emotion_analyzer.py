@@ -22,7 +22,7 @@ STRESS_KEYWORDS = {
         "stressed out", "default", "late payment",
         "multiple emis", "collection calls", "financial pressure",
         "medical emergency", "salary delayed", "business loss",
-        "loan rejection", "fear of rejection", "EMIs due","can't pay bills","can't pay emi",
+        "loan rejection", "fear of rejection", "emis due","emis are due","can't pay bills","can't pay emi",
         "no money", "bills due", "eviction", "foreclosure","overdue", "can't manage", "handling too many things",
         "can't survive this","everything is collapsing", "i feel stuck","i'm drowning in debt", "i ruined my finances",
         "constant tension","i feel trapped financially","can't manage anymore","i'm at my breaking point","i'm exhausted",
@@ -260,13 +260,28 @@ OPENNESS_TO_SOLUTIONS_KEYWORDS = {
 def _extract_keywords(text: str, keyword_dict: Dict[str, List[str]]) -> Tuple[str, float]:
     """
     Extract the predominant category from text based on keyword matching.
+    Uses word-boundary matching to handle phrases with intervening words.
     Returns tuple of (category, confidence_score).
     """
     text_lower = text.lower()
     matches = {}
     
     for category, keywords in keyword_dict.items():
-        count = sum(1 for keyword in keywords if keyword in text_lower)
+        count = 0
+        for keyword in keywords:
+            # Use word-boundary regex for multi-word phrases (e.g., "emis due" matches "emis are due")
+            # For single words, use precise word-boundary matching
+            if " " in keyword:
+                # For phrases: match words in order, allowing other words between them
+                words = re.split(r'\s+', keyword)
+                pattern = r'\s+'.join(re.escape(w) for w in words)
+                if re.search(pattern, text_lower):
+                    count += 1
+            else:
+                # For single words: use strict word boundaries
+                if re.search(r'\b' + re.escape(keyword) + r'\b', text_lower):
+                    count += 1
+        
         if count > 0:
             matches[category] = count
     
