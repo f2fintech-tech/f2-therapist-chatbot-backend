@@ -22,7 +22,13 @@ STRESS_KEYWORDS = {
         "stressed out", "default", "late payment",
         "multiple emis", "collection calls", "financial pressure",
         "medical emergency", "salary delayed", "business loss",
-        "loan rejection", "fear of rejection"
+        "loan rejection", "fear of rejection", "EMIs due","can't pay bills","can't pay emi",
+        "no money", "bills due", "eviction", "foreclosure","overdue", "can't manage", "handling too many things",
+        "can't survive this","everything is collapsing", "i feel stuck","i'm drowning in debt", "i ruined my finances",
+        "constant tension","i feel trapped financially","can't manage anymore","i'm at my breaking point","i'm exhausted",
+        "too much responsibility","my family depends on me","i can't fail","fear of losing job","fear of losing business",
+        "can't breathe","this is too much","i'm mentally tired","financial nightmare","out of control","emotionally drained",
+        "i feel cornered","pressure is killing me"
     ],
 
     "moderate": [
@@ -31,7 +37,11 @@ STRESS_KEYWORDS = {
         "uncertain", "hesitant", "overthinking", "challenging",
         "tight budget", "managing somehow", "uncomfortable",
         "complicated", "pressure from family", "financial stress",
-        "unstable", "uneasy", "concerned about money"
+        "unstable", "uneasy", "concerned about money","trying to manage",
+        "not sure what to do","handling somehow","things are difficult","little stressed",
+        "feels risky","too many expenses","money is tight","things feel unstable",
+        "i'm worried about future","not financially secure","not confident","unsure about decision",
+        "need guidance","feeling pressured"
     ],
 
     "low": [
@@ -39,7 +49,11 @@ STRESS_KEYWORDS = {
         "learning", "wondering", "okay", "fine", "manageable",
         "planning", "researching", "comparing", "stable",
         "under control", "just checking", "evaluating",
-        "reviewing", "future planning", "financial goals"
+        "reviewing", "future planning", "financial goals","doing research",
+        "want better options", "looking for alternatives", "considering lenders",
+        "exploring possibilities","financially stable",
+        "checking rates","planning ahead","thinking strategically","looking for best deal",
+        "just comparing","want more clarity"
     ]
 }
 
@@ -51,7 +65,13 @@ EMOTIONAL_STATE_KEYWORDS = {
         "can't sleep", "stress", "pressure", "tight", "uneasy",
         "what if", "terrified", "rejected", "fear",
         "overthinking", "panic attack", "fear of failure",
-        "financial anxiety", "loan anxiety"
+        "financial anxiety", "loan anxiety","what if i fail",
+        "what if they reject me","what if i can't pay",
+        "i'm scared of debt","i'm terrified",
+        "i don't want another mistake","i'm afraid things get worse",
+        "constant worry","always stressed","i feel unsafe financially",
+        "worried about parents","worried about family",
+        "can't stop thinking","fear of making wrong choice"
     ],
 
     "confused": [
@@ -59,48 +79,60 @@ EMOTIONAL_STATE_KEYWORDS = {
         "struggling to", "what does", "how do", "explain", "don't know",
         "loan terms", "emi", "interest", "processing fee",
         "too complicated", "need clarification", "break it down",
-        "simple language", "hard to understand"
+        "simple language", "hard to understand","finance confuses me",
+        "i don't understand loans","all these terms confuse me",
+        "too many financial words","need simple explanation",
+        "don't know where to start","this feels overwhelming",
+        "please simplify","what does this mean","i don't know what to ask"
     ],
 
     "shameful": [
         "ashamed", "embarrassed", "stupid", "dumb", "feel bad", "regret",
         "shouldn't have", "failed", "mess", "irresponsible", "bad at",
-        "my mistake", "feel guilty", "humiliated",
-        "judged", "bad decisions", "i messed up",
-        "feel like failure", "not good enough"
+        "my mistake", "feel guilty", "humiliated","judged", "bad decisions", "i messed up",
+        "feel like failure", "not good enough","i ruined everything",
+        "i made bad choices","i feel guilty","people will judge me","i feel embarrassed",
+        "i should've known better","i feel irresponsible","i hate myself for this","i failed my family",
+        "i feel weak financially"
     ],
 
     "hopeless": [
         "hopeless", "despair", "never", "impossible", "can't change",
         "always fail", "give up", "what's the point", "useless",
-        "no way out", "never ending", "drowning",
-        "falling apart", "nothing works", "stuck forever",
-        "can't recover", "life is ruined"
+        "no way out", "never ending", "drowning","falling apart", "nothing works", "stuck forever",
+        "can't recover", "life is ruined","things will never improve",
+        "i'm stuck forever","there's no solution",
+        "nothing helps","i've tried everything","i don't see a future",
+        "i'm done","can't escape debt","everything feels pointless"
     ],
 
     "defensive": [
         "you don't understand", "not my fault", "everyone else", "but",
         "disagree", "right", "wrong", "criticism",
-        "stop judging", "i already know", "actually",
-        "that's wrong", "everyone does this",
-        "i had no choice"
+        "stop judging", "i already know", "actually","that's wrong", "everyone does this",
+        "i had no choice","people don't understand my situation",
+        "you don't know my life","i had to do it","there was no option","i'm trying my best",
+        "it's easy to judge","not everything is simple"
     ],
 
     "reflective": [
         "i think", "i realize", "i understand", "makes sense", "learned",
         "pattern", "i see", "perspective", "stepping back", "actually",
         "looking back", "thinking carefully", "i see now",
-        "understand better", "lesson learned",
-        "trying to improve"
+        "understand better", "lesson learned","trying to improve","i need better planning",
+        "i should be smarter financially","i'm learning from this",
+        "i understand my mistakes","i want to improve",
+        "trying to be responsible","i see the pattern now"
     ],
 
     "ready": [
         "ready", "want to", "let's", "how do i", "help me", "show me",
-        "do this", "start", "begin", "try",
-
-        "guide me", "next step", "what should i do",
+        "do this", "start", "begin", "try","guide me", "next step", "what should i do",
         "walk me through", "help me improve",
-        "best option", "need a plan"
+        "best option", "need a plan","i want a solution",
+        "tell me what to do","i'm ready to fix this",
+        "help me move forward","i want financial stability",
+        "i need a strategy","show me the safest option"
     ],
 
     # NEW CATEGORY
@@ -108,16 +140,22 @@ EMOTIONAL_STATE_KEYWORDS = {
         "too much", "everything at once", "buried",
         "exhausted", "drained", "multiple emis",
         "no breathing room", "can't manage",
-        "handling too many things"
+        "handling too many things","too many responsibilities",
+        "family pressure","business pressure","i'm mentally exhausted","too many payments",
+        "life feels heavy","i'm carrying everyone","financial burden is huge"
     ],
 
     # NEW CATEGORY
     "analytical": [
         "compare", "breakdown", "data", "numbers",
         "real cost", "hidden fees", "calculations",
-        "rate comparison", "pros and cons",
-        "financial decision", "statistics",
-        "best roi", "transparent"
+        "rate comparison", "pros and cons","financial decision", "statistics",
+        "best roi", "transparent","show me comparison",
+        "give me actual numbers","i need transparency",
+        "what's the total cost","show full breakdown",
+        "i want detailed analysis","what's financially optimal",
+        "need evidence","logical decision","data driven",
+        "i researched already","need smarter option"
     ]
 }
 
@@ -130,24 +168,28 @@ FINANCIAL_URGENCY_KEYWORDS = {
         "default", "collection call", "need money now",
         "medical emergency", "rent due", "can't pay emi",
         "salary delayed", "business loss", "loan overdue",
-        "late fees", "urgent payment"
+        "late fees", "urgent payment","need help immediately",
+        "business is collapsing","need money for surgery",
+        "can't survive this month","emi due tomorrow","credit card maxed out",
+        "bank keeps calling","cash flow crisis"
     ],
 
     "urgent": [
         "soon", "this week", "this month", "deadline", "coming up",
         "need to", "have to", "must", "important",
-        "upcoming emi", "inventory purchase",
-        "school fees", "working capital",
-        "festival season", "monthly dues",
-        "business expenses"
+        "upcoming emi", "inventory purchase","school fees", "working capital",
+        "festival season", "monthly dues","business expenses","need inventory soon",
+        "upcoming family expense","need working capital","need to manage payments",
+        "business season coming","need short term support"
     ],
 
     "routine": [
         "planning", "thinking about", "wondering", "considering",
         "eventually", "someday", "exploring", "research",
         "researching", "future goals", "financial planning",
-        "comparing lenders", "investment planning",
-        "loan comparison"
+        "comparing lenders", "investment planning","loan comparison","planning ahead",
+        "checking best rates","looking for better options","future investment",
+        "retirement planning","optimizing finances"
     ]
 }
 
