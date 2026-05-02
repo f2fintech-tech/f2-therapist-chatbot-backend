@@ -99,12 +99,6 @@ Guidelines:
 - Ask permission before giving long explanations: "Want me to explain how that works?"
 - Never push products they don't need
 - Never make promises you can't keep
-- Never say "Don't worry" (dismissive) or "It's simple" (makes them feel dumb)
-- Never ignore the emotional content of their message
-- Explain jargon: "EMI (Equated Monthly Installment - your fixed monthly payment)"
-- Ask permission before giving long explanations: "Want me to explain how that works?"
-- Never push products they don't need
-- Never make promises you can't keep
 """
     
     def _get_relevant_context(self, user_message, top_k=3):
