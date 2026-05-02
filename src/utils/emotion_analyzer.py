@@ -13,97 +13,263 @@ logger = logging.getLogger(__name__)
 # Keyword patterns for mood detection
 STRESS_KEYWORDS = {
     "high": [
+        # Existing
         "panic", "panicking", "terrified", "desperate", "crisis", "emergency",
         "can't", "can't handle", "breaking down", "suicidal", "hopeless",
-        "overwhelmed", "drowning", "trapped", "urgent", "immediately"
+        "overwhelmed", "drowning", "trapped", "urgent", "immediately",
+
+        # Enhanced
+        "humiliated", "can't sleep", "falling apart", "scared",
+        "afraid", "rejected", "rejection", "failing",
+        "losing everything", "burden", "pressure", "helpless",
+        "stressed out", "default", "late payment",
+        "multiple emis", "collection calls", "financial pressure",
+        "medical emergency", "salary delayed", "business loss",
+        "loan rejection", "fear of rejection"
     ],
+
     "moderate": [
+        # Existing
         "worried", "anxious", "stressed", "concerned", "nervous", "frustrated",
-        "confused", "lost", "stuck", "struggling", "difficult", "hard", "tough"
+        "confused", "lost", "stuck", "struggling", "difficult", "hard", "tough",
+
+        # Enhanced
+        "uncertain", "hesitant", "overthinking", "challenging",
+        "tight budget", "managing somehow", "uncomfortable",
+        "complicated", "pressure from family", "financial stress",
+        "unstable", "uneasy", "concerned about money"
     ],
+
     "low": [
+        # Existing
         "curious", "interested", "wondering", "exploring", "thinking",
-        "learning", "wondering", "okay", "fine", "manageable"
+        "learning", "wondering", "okay", "fine", "manageable",
+
+        # Enhanced
+        "planning", "researching", "comparing", "stable",
+        "under control", "just checking", "evaluating",
+        "reviewing", "future planning", "financial goals"
     ]
 }
+
 
 EMOTIONAL_STATE_KEYWORDS = {
+
     "anxious": [
+        # Existing
         "panic", "nervous", "worried", "afraid", "scared", "anxious",
-        "can't sleep", "stress", "pressure", "tight", "uneasy"
+        "can't sleep", "stress", "pressure", "tight", "uneasy",
+
+        # Enhanced
+        "what if", "terrified", "rejected", "fear",
+        "overthinking", "panic attack", "fear of failure",
+        "financial anxiety", "loan anxiety"
     ],
+
     "confused": [
+        # Existing
         "confused", "don't understand", "unclear", "lost", "bewildered",
-        "struggling to", "what does", "how do", "explain", "don't know"
+        "struggling to", "what does", "how do", "explain", "don't know",
+
+        # Enhanced
+        "loan terms", "emi", "interest", "processing fee",
+        "too complicated", "need clarification", "break it down",
+        "simple language", "hard to understand"
     ],
+
     "shameful": [
+        # Existing
         "ashamed", "embarrassed", "stupid", "dumb", "feel bad", "regret",
-        "shouldn't have", "failed", "mess", "irresponsible", "bad at"
+        "shouldn't have", "failed", "mess", "irresponsible", "bad at",
+
+        # Enhanced
+        "my mistake", "feel guilty", "humiliated",
+        "judged", "bad decisions", "i messed up",
+        "feel like failure", "not good enough"
     ],
+
     "hopeless": [
+        # Existing
         "hopeless", "despair", "never", "impossible", "can't change",
-        "always fail", "give up", "what's the point", "useless"
+        "always fail", "give up", "what's the point", "useless",
+
+        # Enhanced
+        "no way out", "never ending", "drowning",
+        "falling apart", "nothing works", "stuck forever",
+        "can't recover", "life is ruined"
     ],
+
     "defensive": [
+        # Existing
         "you don't understand", "not my fault", "everyone else", "but",
-        "disagree", "right", "wrong", "criticism"
+        "disagree", "right", "wrong", "criticism",
+
+        # Enhanced
+        "stop judging", "i already know", "actually",
+        "that's wrong", "everyone does this",
+        "i had no choice"
     ],
+
     "reflective": [
+        # Existing
         "i think", "i realize", "i understand", "makes sense", "learned",
-        "pattern", "i see", "perspective", "stepping back", "actually"
+        "pattern", "i see", "perspective", "stepping back", "actually",
+
+        # Enhanced
+        "looking back", "thinking carefully", "i see now",
+        "understand better", "lesson learned",
+        "trying to improve"
     ],
+
     "ready": [
+        # Existing
         "ready", "want to", "let's", "how do i", "help me", "show me",
-        "do this", "start", "begin", "try"
+        "do this", "start", "begin", "try",
+
+        # Enhanced
+        "guide me", "next step", "what should i do",
+        "walk me through", "help me improve",
+        "best option", "need a plan"
+    ],
+
+    # NEW CATEGORY
+    "overwhelmed": [
+        "too much", "everything at once", "buried",
+        "exhausted", "drained", "multiple emis",
+        "no breathing room", "can't manage",
+        "handling too many things"
+    ],
+
+    # NEW CATEGORY
+    "analytical": [
+        "compare", "breakdown", "data", "numbers",
+        "real cost", "hidden fees", "calculations",
+        "rate comparison", "pros and cons",
+        "financial decision", "statistics",
+        "best roi", "transparent"
     ]
 }
+
 
 FINANCIAL_URGENCY_KEYWORDS = {
+
     "crisis": [
+        # Existing
         "today", "now", "immediately", "emergency", "can't wait", "overdue",
-        "payment due", "bill", "eviction", "foreclosure", "urgent"
+        "payment due", "bill", "eviction", "foreclosure", "urgent",
+
+        # Enhanced
+        "default", "collection call", "need money now",
+        "medical emergency", "rent due", "can't pay emi",
+        "salary delayed", "business loss", "loan overdue",
+        "late fees", "urgent payment"
     ],
+
     "urgent": [
+        # Existing
         "soon", "this week", "this month", "deadline", "coming up",
-        "need to", "have to", "must", "important"
+        "need to", "have to", "must", "important",
+
+        # Enhanced
+        "upcoming emi", "inventory purchase",
+        "school fees", "working capital",
+        "festival season", "monthly dues",
+        "business expenses"
     ],
+
     "routine": [
+        # Existing
         "planning", "thinking about", "wondering", "considering",
-        "eventually", "someday", "exploring", "research"
+        "eventually", "someday", "exploring", "research",
+
+        # Enhanced
+        "researching", "future goals", "financial planning",
+        "comparing lenders", "investment planning",
+        "loan comparison"
     ]
 }
+
 
 WILLINGNESS_TO_LEARN_KEYWORDS = {
+
     "high": [
+        # Existing
         "explain", "how does", "understand", "teach", "learn", "educate",
-        "what is", "interested", "curious", "show me", "breakdown"
+        "what is", "interested", "curious", "show me", "breakdown",
+
+        # Enhanced
+        "guide me", "walk me through", "help me learn",
+        "simple explanation", "step by step",
+        "examples", "clarify", "teach me finance"
     ],
+
     "medium": [
+        # Existing
         "okay", "sure", "might", "could", "maybe", "i guess",
-        "depends", "depends on", "if you think"
+        "depends", "depends on", "if you think",
+
+        # Enhanced
+        "possibly", "open to learning",
+        "can try", "maybe helpful"
     ],
+
     "low": [
+        # Existing
         "don't care", "doesn't matter", "just", "already know",
-        "not interested", "whatever", "skip"
+        "not interested", "whatever", "skip",
+
+        # Enhanced
+        "skip details", "too much information",
+        "just tell me", "don't explain",
+        "keep it short"
     ]
 }
 
+
 OPENNESS_TO_SOLUTIONS_KEYWORDS = {
+
     "ready": [
+        # Existing
         "help me", "show me", "how do i", "what are options", "let's",
-        "ready", "want to", "curious", "explore"
+        "ready", "want to", "curious", "explore",
+
+        # Enhanced
+        "guide me", "best solution",
+        "want to improve", "let's start",
+        "need a plan", "what should i do"
     ],
+
     "exploratory": [
+        # Existing
         "could", "might", "maybe", "possibly", "consider", "explore",
-        "what if", "think about"
+        "what if", "think about",
+
+        # Enhanced
+        "researching options", "comparing",
+        "looking into", "open minded",
+        "trying to understand"
     ],
+
     "cautious": [
+        # Existing
         "not sure", "hesitant", "worried about", "concern", "risky",
-        "be careful", "but what if", "downside"
+        "be careful", "but what if", "downside",
+
+        # Enhanced
+        "hidden charges", "what's the catch",
+        "sounds risky", "don't want problems",
+        "need reassurance", "careful decision"
     ],
+
     "closed": [
+        # Existing
         "don't want", "can't", "impossible", "no way", "refuse",
-        "won't", "not interested", "no thanks"
+        "won't", "not interested", "no thanks",
+
+        # Enhanced
+        "leave it", "forget it", "won't work",
+        "don't trust this", "not doing that",
+        "stop suggesting"
     ]
 }
 
