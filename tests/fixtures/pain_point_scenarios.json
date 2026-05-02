@@ -1,0 +1,243 @@
+{
+  "source": "pain_point_mapping_workshop",
+  "version": 1,
+  "description": "Test scenarios based on identified pain points - covers emotional and practical triggers",
+  "pain_point_categories": {
+    "emotional": [
+      "Fear of Rejection",
+      "Shame/Embarrassment",
+      "Overwhelming Stress",
+      "Lack of Control",
+      "Trust Issues"
+    ],
+    "practical": [
+      "Information Overload",
+      "Process Anxiety",
+      "Financial Confusion",
+      "Urgency Pressure",
+      "Commitment Fear"
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "pp_fear_rejection_1",
+      "category": "Fear of Rejection",
+      "message": "My credit score isn't great. Will I get rejected if I apply?",
+      "expected_stress_level": "moderate",
+      "expected_emotional_state": ["anxiety", "fear"],
+      "expected_financial_urgency": "routine",
+      "bot_response_guidance": "Reassurance + eligibility check",
+      "what_not_to_say": "You'll definitely get approved",
+      "what_to_say": "Let's check your eligibility together - no judgment, just facts"
+    },
+    {
+      "id": "pp_fear_rejection_2",
+      "category": "Fear of Rejection",
+      "message": "I've been rejected for loans before and I'm scared it will happen again",
+      "expected_stress_level": "high",
+      "expected_emotional_state": ["fear", "helplessness"],
+      "expected_financial_urgency": "routine",
+      "bot_response_guidance": "Validation + differentiation",
+      "what_not_to_say": "Don't worry, you'll be approved this time",
+      "what_to_say": "That sounds frustrating. Past rejections don't define your future options. Let's explore what's changed"
+    },
+    {
+      "id": "pp_shame_1",
+      "category": "Shame/Embarrassment",
+      "message": "I made really bad financial decisions and now I'm drowning in debt. I feel stupid",
+      "expected_stress_level": "high",
+      "expected_emotional_state": ["shame", "embarrassment"],
+      "expected_financial_urgency": "urgent",
+      "bot_response_guidance": "Validation + normalize experience",
+      "what_not_to_say": "You should have been more careful",
+      "what_to_say": "Many people face this. You're taking a positive step by seeking help"
+    },
+    {
+      "id": "pp_shame_2",
+      "category": "Shame/Embarrassment",
+      "message": "I don't understand what EMI, APR, or floating interest means. Everyone else seems to get it",
+      "expected_stress_level": "moderate",
+      "expected_emotional_state": ["embarrassment", "confusion"],
+      "expected_financial_urgency": "routine",
+      "bot_response_guidance": "Simple explanation + normalize",
+      "what_not_to_say": "It's simple",
+      "what_to_say": "Let me break that down - [explain in plain language"
+    },
+    {
+      "id": "pp_stress_1",
+      "category": "Overwhelming Stress",
+      "message": "I can't sleep thinking about my money situation. I have too many EMIs and supplier bills due",
+      "expected_stress_level": "high",
+      "expected_emotional_state": ["overwhelm", "anxiety"],
+      "expected_financial_urgency": "crisis",
+      "bot_response_guidance": "Acknowledgment + break into steps",
+      "what_not_to_say": "Just prioritize your payments",
+      "what_to_say": "Let's take this one step at a time. First, let's just talk about what you need"
+    },
+    {
+      "id": "pp_stress_2",
+      "category": "Overwhelming Stress",
+      "message": "I don't know where to start. There are so many options and I feel paralyzed",
+      "expected_stress_level": "moderate",
+      "expected_emotional_state": ["overwhelm", "confusion"],
+      "expected_financial_urgency": "routine",
+      "bot_response_guidance": "Simplification + guided exploration",
+      "what_not_to_say": "Here are 10 options to consider",
+      "what_to_say": "Let's start with just one thing. Tell me about your biggest concern right now"
+    },
+    {
+      "id": "pp_control_1",
+      "category": "Lack of Control",
+      "message": "Life keeps throwing unexpected expenses at me. I feel completely helpless",
+      "expected_stress_level": "high",
+      "expected_emotional_state": ["helplessness", "frustration"],
+      "expected_financial_urgency": "crisis",
+      "bot_response_guidance": "Validation + empowerment",
+      "what_not_to_say": "You need to budget better",
+      "what_to_say": "That's genuinely tough. Let's talk about what you *can* control here"
+    },
+    {
+      "id": "pp_control_2",
+      "category": "Lack of Control",
+      "message": "Nothing I do seems to work. Every financial decision backfires",
+      "expected_stress_level": "moderate",
+      "expected_emotional_state": ["hopelessness", "frustration"],
+      "expected_financial_urgency": "routine",
+      "bot_response_guidance": "Reframe + identify patterns",
+      "what_not_to_say": "You just need to try harder",
+      "what_to_say": "Let's look at what's working, even if it's small. Sometimes patterns are hiding there"
+    },
+    {
+      "id": "pp_trust_1",
+      "category": "Trust Issues",
+      "message": "I'm hesitant because lenders always have hidden fees. I've been cheated before",
+      "expected_stress_level": "moderate",
+      "expected_emotional_state": ["distrust", "caution"],
+      "expected_financial_urgency": "routine",
+      "bot_response_guidance": "Transparency + full disclosure",
+      "what_not_to_say": "We're the best lender in the market",
+      "what_to_say": "Here's exactly what you'll pay - all fees included, no surprises"
+    },
+    {
+      "id": "pp_trust_2",
+      "category": "Trust Issues",
+      "message": "Everyone just wants to sell me something. I don't feel heard, just pitched",
+      "expected_stress_level": "moderate",
+      "expected_emotional_state": ["distrust", "frustration"],
+      "expected_financial_urgency": "routine",
+      "bot_response_guidance": "Listening + question-focused",
+      "what_not_to_say": "Our product is perfect for you",
+      "what_to_say": "I heard you. Let me ask - what matters most to you right now?"
+    },
+    {
+      "id": "pp_overload_1",
+      "category": "Information Overload",
+      "message": "There are too many loan options and I can't compare them effectively",
+      "expected_stress_level": "moderate",
+      "expected_emotional_state": ["overwhelm", "confusion"],
+      "expected_financial_urgency": "routine",
+      "bot_response_guidance": "Guided comparison + simplification",
+      "what_not_to_say": "Here's a spreadsheet of all options",
+      "what_to_say": "Let's narrow it down. What matters most - speed, low rate, or flexibility?"
+    },
+    {
+      "id": "pp_overload_2",
+      "category": "Information Overload",
+      "message": "I don't understand the differences between fixed rate, floating rate, and hybrid options",
+      "expected_stress_level": "low",
+      "expected_emotional_state": ["confusion"],
+      "expected_financial_urgency": "routine",
+      "bot_response_guidance": "Clear explanation with examples",
+      "what_not_to_say": "It's in the terms and conditions",
+      "what_to_say": "Fixed stays the same every month. Floating changes with market rates. Here's when each helps..."
+    },
+    {
+      "id": "pp_process_1",
+      "category": "Process Anxiety",
+      "message": "What documents will I need to apply? And how long will the whole process take?",
+      "expected_stress_level": "low",
+      "expected_emotional_state": ["concern", "curiosity"],
+      "expected_financial_urgency": "urgent",
+      "bot_response_guidance": "Clear timeline + document checklist",
+      "what_not_to_say": "The process is quick",
+      "what_to_say": "You'll need [documents]. Here's the timeline: [specific steps]"
+    },
+    {
+      "id": "pp_process_2",
+      "category": "Process Anxiety",
+      "message": "What happens if something goes wrong during the loan application?",
+      "expected_stress_level": "moderate",
+      "expected_emotional_state": ["anxiety", "concern"],
+      "expected_financial_urgency": "routine",
+      "bot_response_guidance": "Risk transparency + support",
+      "what_not_to_say": "Nothing will go wrong",
+      "what_to_say": "If [issue], here's what happens and how we'll help you"
+    },
+    {
+      "id": "pp_confusion_1",
+      "category": "Financial Confusion",
+      "message": "How is interest calculated? I never understand why the numbers don't add up",
+      "expected_stress_level": "low",
+      "expected_emotional_state": ["confusion"],
+      "expected_financial_urgency": "routine",
+      "bot_response_guidance": "Step-by-step calculation",
+      "what_not_to_say": "It's a standard formula",
+      "what_to_say": "Let me show you the calculation step by step with your numbers"
+    },
+    {
+      "id": "pp_confusion_2",
+      "category": "Financial Confusion",
+      "message": "What's considered a good interest rate? How do I know if 12% is too high?",
+      "expected_stress_level": "low",
+      "expected_emotional_state": ["curiosity", "concern"],
+      "expected_financial_urgency": "routine",
+      "bot_response_guidance": "Comparison + context",
+      "what_not_to_say": "Whatever we offer is competitive",
+      "what_to_say": "For your profile, 12% is [how it compares]. Here's how it breaks down per month"
+    },
+    {
+      "id": "pp_urgency_1",
+      "category": "Urgency Pressure",
+      "message": "I need money quickly. There's an unexpected medical emergency and I can't wait",
+      "expected_stress_level": "high",
+      "expected_financial_urgency": "crisis",
+      "expected_emotional_state": ["panic", "urgency"],
+      "bot_response_guidance": "Fast options + reassurance",
+      "what_not_to_say": "The process usually takes 5-7 days",
+      "what_to_say": "I understand this is urgent. Here's what we can do in [timeline] for you"
+    },
+    {
+      "id": "pp_urgency_2",
+      "category": "Urgency Pressure",
+      "message": "I have an unexpected business expense and I can't wait weeks for approval",
+      "expected_stress_level": "high",
+      "expected_financial_urgency": "crisis",
+      "expected_emotional_state": ["stress", "urgency"],
+      "bot_response_guidance": "Quick turnaround options",
+      "what_not_to_say": "You'll have to wait for normal processing",
+      "what_to_say": "For business situations, we can expedite. Here's what we need from you today"
+    },
+    {
+      "id": "pp_commitment_1",
+      "category": "Commitment Fear",
+      "message": "What if I can't pay the EMI in some months? Can I prepay if things improve?",
+      "expected_stress_level": "moderate",
+      "expected_financial_urgency": "routine",
+      "expected_emotional_state": ["anxiety", "caution"],
+      "bot_response_guidance": "Flexibility + options",
+      "what_not_to_say": "You have to pay on time, no exceptions",
+      "what_to_say": "You can prepay anytime without penalty. If there's a tough month, let's discuss options then"
+    },
+    {
+      "id": "pp_commitment_2",
+      "category": "Commitment Fear",
+      "message": "I'm worried about what happens if I miss an EMI. Will they come after me?",
+      "expected_stress_level": "moderate",
+      "expected_financial_urgency": "routine",
+      "expected_emotional_state": ["fear", "anxiety"],
+      "bot_response_guidance": "Clear consequences + support",
+      "what_not_to_say": "There will be penalties",
+      "what_to_say": "If you miss a payment, here's what happens. But first, here's how we can help you avoid that"
+    }
+  ]
+}
