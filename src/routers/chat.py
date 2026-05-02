@@ -7,10 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session
 from datetime import datetime
+from functools import lru_cache
 import os
 import logging
 import uuid
 import re
+import time
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -73,6 +75,7 @@ class ChatResponse(BaseModel):
     timestamp: datetime
 
 # ==================== LLM Configuration ====================
+@lru_cache(maxsize=1)
 def get_llm():
     """Initialize and return the Google Gemini 3 flash preview LLM instance."""
 
@@ -347,6 +350,8 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         HTTPException: For validation errors, missing API key, or database issues
     """
     try:
+        request_start = time.perf_counter()
+
         # Ensure user exists
         user = get_or_create_user(db, request.user_id)
         logger.info(f"User authenticated: {request.user_id}")
@@ -363,6 +368,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         logger.info(f"User message saved: {user_message_obj.id}")
         
         # Get conversation context for LLM
+        context_start = time.perf_counter()
         context_messages = get_conversation_context(
             db,
             conversation.id,
@@ -402,6 +408,11 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
                 logger.info(f"Built knowledge context with {len(knowledge_context)} documents")
             else:
                 logger.info("No relevant knowledge documents found in vector DB")
+
+            logger.info(
+                "RAG retrieval completed in %.2fs",
+                time.perf_counter() - context_start,
+            )
         
         except Exception as e:
             logger.warning(f"Knowledge base retrieval failed: {str(e)}. Continuing without context.")
@@ -432,7 +443,9 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         
         # Create the chain and get response (with knowledge context)
         chain = prompt | llm
+        generation_start = time.perf_counter()
         response = chain.invoke({"user_message": enhanced_message})
+        logger.info("Model generation completed in %.2fs", time.perf_counter() - generation_start)
         
         # Save assistant message
         assistant_message_obj = save_message(
@@ -447,6 +460,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         
         logger.info(f"Chat exchange completed for user {request.user_id} in conversation {conversation.id}")
         logger.info(f"Response length: {len(response.content)} characters")
+        logger.info("Total chat request completed in %.2fs", time.perf_counter() - request_start)
         
         return ChatResponse(
             response=response.content,
