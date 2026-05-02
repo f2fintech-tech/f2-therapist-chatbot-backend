@@ -15,6 +15,7 @@ import json
 from pathlib import Path
 
 from src.utils.emotion_analyzer import analyze_emotion
+from src.utils.results_store import append_test_result
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,36 +46,6 @@ def run_fixture(fixture: dict) -> list[dict]:
     return results
 
 
-def load_existing_results(path: Path) -> dict:
-    if not path.exists():
-        return {}
-    with path.open("r", encoding="utf-8") as handle:
-        data = json.load(handle)
-    return data if isinstance(data, dict) else {}
-
-
-def write_results(path: Path, results: list[dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    existing = load_existing_results(path)
-
-    existing_runs = existing.get("persona_mood_test_runs", [])
-    if not isinstance(existing_runs, list):
-        existing_runs = []
-
-    run_record = {
-        "timestamp": __import__("time").time(),
-        "total_cases": len(results),
-        "results": results,
-    }
-
-    existing_runs.append(run_record)
-    existing["persona_mood_test_runs"] = existing_runs
-    existing["latest_persona_mood_test_run"] = run_record
-
-    with path.open("w", encoding="utf-8") as handle:
-        json.dump(existing, handle, indent=2, ensure_ascii=False)
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fixture", type=Path, default=DEFAULT_FIXTURE, help="Path to persona fixture JSON")
@@ -86,7 +57,15 @@ def main() -> int:
 
     print(json.dumps(results, indent=2, ensure_ascii=False))
 
-    write_results(args.output, results)
+    append_test_result(
+        {
+            "timestamp": __import__("time").time(),
+            "mode": "persona_mood_test",
+            "total_cases": len(results),
+            "results": results,
+        },
+        args.output,
+    )
 
     return 0
 
