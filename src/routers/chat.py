@@ -8,11 +8,14 @@ from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session
 from datetime import datetime
 from functools import lru_cache
+from pathlib import Path
 import os
 import logging
 import uuid
 import re
 import time
+import json
+import threading
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -35,6 +38,11 @@ UUID_PATTERN = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-
 MAX_MESSAGE_LENGTH = 5000
 MIN_MESSAGE_LENGTH = 1
 CONTEXT_WINDOW_MESSAGES = 10
+MOOD_ADAPTATION_ENV = "ENABLE_MOOD_RESPONSE_ADAPTATION"
+MOOD_SNAPSHOT_ANALYZER_VERSION = "emotion_analyzer_v1"
+MOOD_SNAPSHOT_RESULTS_PATH = Path(__file__).resolve().parents[1] / "model" / "model_test_results.json"
+
+_mood_snapshot_lock = threading.Lock()
 
 # ==================== Pydantic Models ====================
 class ChatRequest(BaseModel):
@@ -285,6 +293,166 @@ def _is_rate_limited(error_message: str) -> bool:
     lowered = error_message.lower()
     return "429" in lowered or "too many requests" in lowered or "rate limit" in lowered
 
+
+def _is_feature_enabled(env_var: str, default: str = "true") -> bool:
+    """Read boolean-like env flags safely."""
+    value = os.getenv(env_var, default)
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _build_mood_adaptation_guidance(mood_analysis: dict | None) -> str:
+    """Build concise response-style instructions from detected mood signals."""
+    if not mood_analysis:
+        return ""
+
+    stress = mood_analysis.get("stress_level")
+    indicators = mood_analysis.get("indicators", {})
+    emotional_state = indicators.get("emotional_state")
+    urgency = indicators.get("financial_urgency")
+    willingness = indicators.get("willingness_to_learn")
+    openness = indicators.get("openness_to_solutions")
+    confidence = mood_analysis.get("overall_confidence", 0.0)
+
+    # Avoid over-steering when analysis confidence is weak.
+    if confidence < 0.35:
+        return ""
+
+    guidance = ["Mood-based response adaptation:"]
+
+    if stress == "high":
+        guidance.append("- Keep response short (about 70-140 words) and calming.")
+        guidance.append("- Acknowledge emotion first, then provide one immediate concrete step.")
+    elif stress == "moderate":
+        guidance.append("- Keep response medium length (about 100-180 words) with empathy and practical guidance.")
+        guidance.append("- Provide one or two clear next steps.")
+    elif stress == "low":
+        guidance.append("- User appears calmer; you may provide deeper but still concise explanation (about 140-240 words).")
+
+    if emotional_state == "confused":
+        guidance.append("- Use simple language and one concrete numeric example.")
+    elif emotional_state == "shameful":
+        guidance.append("- Normalize their feelings and avoid any judgmental framing.")
+    elif emotional_state == "hopeless":
+        guidance.append("- Emphasize small achievable progress and user agency.")
+    elif emotional_state == "defensive":
+        guidance.append("- Use non-confrontational language and ask one clarifying question.")
+
+    if urgency == "crisis":
+        guidance.append("- Prioritize immediate timeline-focused steps for the next 24-72 hours.")
+    elif urgency == "urgent":
+        guidance.append("- Prioritize a near-term plan for this week.")
+
+    if willingness == "high":
+        guidance.append("- User is willing to learn: add a brief explanation and ask if they want more detail.")
+    elif willingness == "low":
+        guidance.append("- Minimize theory; focus on direct actions.")
+
+    if openness == "closed":
+        guidance.append("- Do not push product or funding options; focus on supportive planning.")
+    elif openness == "ready":
+        guidance.append("- Offer actionable options with pros/cons, while staying non-salesy.")
+
+    return "\n".join(guidance)
+
+
+def _stress_level_to_score(stress_level: str | None) -> int | None:
+    """Map categorical stress to numeric score for trend analysis."""
+    mapping = {
+        "unknown": 0,
+        "low": 1,
+        "moderate": 2,
+        "high": 3,
+    }
+    return mapping.get((stress_level or "").lower())
+
+
+def _load_results_file(path: Path) -> dict:
+    """Load persisted results JSON safely, falling back to an empty dict."""
+    if not path.exists():
+        return {}
+    try:
+        with path.open("r", encoding="utf-8") as fp:
+            data = json.load(fp)
+            return data if isinstance(data, dict) else {}
+    except Exception as exc:
+        logger.warning("Failed to load mood snapshot store %s: %s", path, str(exc))
+        return {}
+
+
+def _save_results_file(path: Path, data: dict) -> None:
+    """Write results JSON atomically to avoid partial writes."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = path.with_suffix(path.suffix + ".tmp")
+    with temp_path.open("w", encoding="utf-8") as fp:
+        json.dump(data, fp, ensure_ascii=False, indent=2)
+    temp_path.replace(path)
+
+
+def _previous_stress_for_conversation(snapshots: list, conversation_id: str) -> str | None:
+    """Get previous stress level for the same conversation from existing snapshots."""
+    for item in reversed(snapshots):
+        if item.get("conversation_id") == conversation_id:
+            return item.get("stress_level")
+    return None
+
+
+def persist_mood_snapshot(
+    *,
+    user_id: str,
+    conversation_id: str,
+    user_message_id: str,
+    assistant_message_id: str,
+    user_message: str,
+    assistant_response: str,
+    mood_analysis: dict,
+    conversation_depth: int,
+    model_name: str,
+    file_path: Path = MOOD_SNAPSHOT_RESULTS_PATH,
+) -> None:
+    """Persist a mood snapshot to JSON for analytics/auditing without DB tables."""
+    stress_level = mood_analysis.get("stress_level")
+
+    with _mood_snapshot_lock:
+        data = _load_results_file(file_path)
+        snapshots = data.setdefault("mood_snapshots", [])
+
+        previous_stress = _previous_stress_for_conversation(snapshots, conversation_id)
+        current_score = _stress_level_to_score(stress_level)
+        previous_score = _stress_level_to_score(previous_stress)
+        stress_delta = None
+        if current_score is not None and previous_score is not None:
+            stress_delta = current_score - previous_score
+
+        snapshot = {
+            "timestamp": time.time(),
+            "analyzer_version": MOOD_SNAPSHOT_ANALYZER_VERSION,
+            "model": model_name,
+            "user_id": user_id,
+            "conversation_id": conversation_id,
+            "conversation_depth": conversation_depth,
+            "message_id": user_message_id,
+            "assistant_message_id": assistant_message_id,
+            "user_message": user_message,
+            "assistant_response": assistant_response,
+            "stress_level": stress_level,
+            "stress_score": current_score,
+            "stress_trend": {
+                "previous_stress_level": previous_stress,
+                "previous_stress_score": previous_score,
+                "delta": stress_delta,
+            },
+            "indicators": mood_analysis.get("indicators", {}),
+            "confidence_scores": mood_analysis.get("confidence_scores", {}),
+            "stress_confidence": mood_analysis.get("stress_confidence"),
+            "overall_confidence": mood_analysis.get("overall_confidence"),
+            "conversation_phase": mood_analysis.get("conversation_phase"),
+            "detected_keywords": mood_analysis.get("detected_keywords", []),
+        }
+
+        snapshots.append(snapshot)
+        data["latest_mood_snapshot"] = snapshot
+        _save_results_file(file_path, data)
+
 # ==================== Helper Functions ====================
 def get_or_create_conversation(db: Session, user_id: str, conversation_id: str | None = None):
     """Get existing conversation or create a new one."""
@@ -412,6 +580,15 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         conversation_depth = conversation.message_count // 2  # Each exchange = 2 messages
         mood_analysis = analyze_emotion(request.message, conversation_depth)
         logger.info(f"Mood analysis: stress={mood_analysis.get('stress_level')}, confidence={mood_analysis.get('stress_confidence')}")
+
+        mood_adaptation_enabled = _is_feature_enabled(MOOD_ADAPTATION_ENV, default="true")
+        mood_guidance_text = ""
+        if mood_adaptation_enabled:
+            mood_guidance_text = _build_mood_adaptation_guidance(mood_analysis)
+            if mood_guidance_text:
+                logger.info("Mood adaptation guidance applied to prompt")
+        else:
+            logger.info("Mood adaptation disabled via env var %s", MOOD_ADAPTATION_ENV)
         
         # Get conversation context for LLM
         context_start = time.perf_counter()
@@ -478,6 +655,9 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         if context_text:
             enhanced_message_parts.append(context_text)
 
+        if mood_guidance_text:
+            enhanced_message_parts.append(mood_guidance_text)
+
         enhanced_message_parts.append(f"**User's Question:**\n{request.message}")
         enhanced_message = "\n".join(enhanced_message_parts)
         
@@ -521,12 +701,32 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
             raise RuntimeError("No response generated from model")
 
         logger.info("Model generation completed in %.2fs", time.perf_counter() - generation_start)
-        
+
+        # Ensure assistant response is a string before saving/persisting
+        assistant_text = None
+        try:
+            assistant_text = response.content if isinstance(response.content, str) else str(response.content)
+        except Exception:
+            assistant_text = str(response)
+
         # Save assistant message
         assistant_message_obj = save_message(
-            db, conversation.id, MessageRole.ASSISTANT, response.content
+            db, conversation.id, MessageRole.ASSISTANT, assistant_text
         )
         logger.info(f"Assistant message saved: {assistant_message_obj.id}")
+
+        persist_mood_snapshot(
+            user_id=request.user_id,
+            conversation_id=conversation.id,
+            user_message_id=user_message_obj.id,
+            assistant_message_id=assistant_message_obj.id,
+            user_message=request.message,
+            assistant_response=assistant_text,
+            mood_analysis=mood_analysis,
+            conversation_depth=conversation_depth,
+            model_name="gemini-3-flash-preview",
+        )
+        logger.info("Mood snapshot persisted for conversation %s", conversation.id)
         
         # Update conversation metadata
         conversation.message_count += 2
@@ -534,11 +734,11 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         db.commit()
         
         logger.info(f"Chat exchange completed for user {request.user_id} in conversation {conversation.id}")
-        logger.info(f"Response length: {len(response.content)} characters")
+        logger.info(f"Response length: {len(assistant_text)} characters")
         logger.info("Total chat request completed in %.2fs", time.perf_counter() - request_start)
         
         return ChatResponse(
-            response=response.content,
+            response=assistant_text,
             user_id=request.user_id,
             conversation_id=conversation.id,
             message_id=assistant_message_obj.id,
