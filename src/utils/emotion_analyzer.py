@@ -36,7 +36,7 @@ STRESS_KEYWORDS = {
 
     "moderate": [
         "worried", "anxious", "stressed", "concerned", "nervous", "frustrated",
-        "confused", "lost", "stuck", "struggling", "difficult", "hard", "tough",
+        "confused", "confused", "lost", "stuck", "struggling", "difficult", "hard", "tough",
         "uncertain", "hesitant", "overthinking", "challenging",
         "tight budget", "managing somehow", "uncomfortable",
         "complicated", "pressure from family", "financial stress",
@@ -45,14 +45,24 @@ STRESS_KEYWORDS = {
         "feels risky","too many expenses","money is tight","things feel unstable",
         "i'm worried about future","not financially secure","not confident","unsure about decision",
         "need guidance","feeling pressured",
-        "credit score", "don't understand", "confused", "confusing",
-        "need help understanding", "need explanation",
-        "processing fees", "loan terms", "interest rate", "emi"
+        "credit score", "worried about", "concerned about", "will I be rejected",
+        "rejected before", "made bad decisions", "how long", 
+        "what documents", "what's a good rate",
+        "can't compare", "which one should", "hidden fees",
+        "been cheated", "just want to sell", "everyone pitches",
+        "pressure from family", "numbers don't add up", "ashamed",
+        "embarrassed about", "stupid decisions",
+        # Information Overload keywords
+        "too many options", "too many loan options", "comparing difficult",
+        # Additional pain point phrases
+        "don't know where to start", "feel paralyzed", "so many options",
+        "nothing I do", "every decision backfires", "feel helpless",
+        "everyone wants to sell", "don't feel heard", "hesitant because"
     ],
 
     "low": [
         "curious", "interested", "wondering", "exploring", "thinking",
-        "learning", "wondering", "okay", "fine", "manageable",
+        "learning", "okay", "fine", "manageable",
         "planning", "researching", "comparing", "stable",
         "under control", "just checking", "evaluating",
         "reviewing", "future planning", "financial goals","doing research",
@@ -60,9 +70,16 @@ STRESS_KEYWORDS = {
         "exploring possibilities","financially stable",
         "checking rates","planning ahead","thinking strategically","looking for best deal",
         "just comparing","want more clarity",
-        "transparency", "compare", "breakdown", "data", "numbers",
+        "transparency", "breakdown", "data", "numbers",
         "real cost", "total cost", "how does this compare", "show me",
-        "what is the", "can you explain", "data driven", "analytical"
+        "what is the", "can you explain", "data driven", "analytical",
+        # Pain point specific keywords for research mode
+        "how is interest calculated", "what's a good rate", "differences between",
+        "understand the", "want to understand", "help me learn", "teach me",
+        "what documents", "process", "timeline", "steps",
+        "can I prepay", "prepayment", "flexibility",
+        # Information seeking instead of distress
+        "i don't understand", "don't understand" 
     ]
 }
 
@@ -434,9 +451,37 @@ class EmotionAnalyzer:
         """Detect primary stress level: high, moderate, or low."""
         text_lower = text.lower()
         
-        high_count = sum(1 for kw in STRESS_KEYWORDS["high"] if kw in text_lower)
-        moderate_count = sum(1 for kw in STRESS_KEYWORDS["moderate"] if kw in text_lower)
-        low_count = sum(1 for kw in STRESS_KEYWORDS["low"] if kw in text_lower)
+        # Count keyword matches using word boundary matching for better accuracy
+        high_count = 0
+        for kw in STRESS_KEYWORDS["high"]:
+            # Use word boundary matching for short keywords (avoid false positives)
+            if len(kw) <= 5:  # Short keywords need word boundaries
+                pattern = r'\b' + re.escape(kw) + r'\b'
+                if re.search(pattern, text_lower):
+                    high_count += 1
+            else:  # Longer phrases can use simple substring match
+                if kw in text_lower:
+                    high_count += 1
+        
+        moderate_count = 0
+        for kw in STRESS_KEYWORDS["moderate"]:
+            if len(kw) <= 5:
+                pattern = r'\b' + re.escape(kw) + r'\b'
+                if re.search(pattern, text_lower):
+                    moderate_count += 1
+            else:
+                if kw in text_lower:
+                    moderate_count += 1
+        
+        low_count = 0
+        for kw in STRESS_KEYWORDS["low"]:
+            if len(kw) <= 5:
+                pattern = r'\b' + re.escape(kw) + r'\b'
+                if re.search(pattern, text_lower):
+                    low_count += 1
+            else:
+                if kw in text_lower:
+                    low_count += 1
         
         # Boost high stress if exclamation marks or all caps
         if "!" in text or text.isupper():
