@@ -2,12 +2,14 @@
 Handles embedding generation using Google Gemini
 """
 
+from functools import lru_cache
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import os
 import logging
 
 logger = logging.getLogger(__name__)
 
+@lru_cache(maxsize=1)
 def get_embeddings():
     """Initialize and return the embedding model."""
     api_key = os.getenv("GEMINI_API_KEY")
