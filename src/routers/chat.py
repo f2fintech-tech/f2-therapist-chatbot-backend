@@ -24,6 +24,7 @@ from src.utils.validators import (
     ValidatedMessage, ValidatedConversation, UUID_PATTERN,
     MAX_MESSAGE_LENGTH, MIN_MESSAGE_LENGTH
 )
+from src.utils.emotion_analyzer import analyze_emotion
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,25 @@ class ChatResponse(BaseModel):
     conversation_id: str
     message_id: str
     timestamp: datetime
+    mood: dict | None = Field(None, description="User's mood and emotion indicators")
+
+
+class MoodAnalysisRequest(BaseModel):
+    """Request model for mood analysis endpoint."""
+    message: str = Field(..., min_length=1, max_length=MAX_MESSAGE_LENGTH)
+    conversation_depth: int = Field(0, ge=0, le=100)
+
+
+class MoodAnalysisResponse(BaseModel):
+    """Response model for mood analysis."""
+    message: str
+    stress_level: str
+    stress_confidence: float
+    indicators: dict
+    confidence_scores: dict
+    conversation_phase: str
+    overall_confidence: float
+    detected_keywords: list | None = None
 
 # ==================== LLM Configuration ====================
 @lru_cache(maxsize=1)
@@ -388,6 +408,11 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         )
         logger.info(f"User message saved: {user_message_obj.id}")
         
+        # Analyze user's mood and emotional state
+        conversation_depth = conversation.message_count // 2  # Each exchange = 2 messages
+        mood_analysis = analyze_emotion(request.message, conversation_depth)
+        logger.info(f"Mood analysis: stress={mood_analysis.get('stress_level')}, confidence={mood_analysis.get('stress_confidence')}")
+        
         # Get conversation context for LLM
         context_start = time.perf_counter()
         context_messages = get_conversation_context(
@@ -517,7 +542,16 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
             user_id=request.user_id,
             conversation_id=conversation.id,
             message_id=assistant_message_obj.id,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
+            mood={
+                "stress_level": mood_analysis.get("stress_level"),
+                "emotional_state": mood_analysis.get("indicators", {}).get("emotional_state"),
+                "financial_urgency": mood_analysis.get("indicators", {}).get("financial_urgency"),
+                "willingness_to_learn": mood_analysis.get("indicators", {}).get("willingness_to_learn"),
+                "openness_to_solutions": mood_analysis.get("indicators", {}).get("openness_to_solutions"),
+                "stress_confidence": mood_analysis.get("stress_confidence"),
+                "overall_confidence": mood_analysis.get("overall_confidence"),
+            }
         )
     
     except ValueError as e:
@@ -552,4 +586,62 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while processing your request"
+        )
+
+
+# ==================== Emotion Analysis Endpoint ====================
+@router.post("/analyze-mood", response_model=MoodAnalysisResponse, status_code=status.HTTP_200_OK)
+async def analyze_user_mood(request: MoodAnalysisRequest):
+    """
+    Analyze user message for emotional state and mood indicators.
+    
+    Returns stress level, emotional state, financial urgency, willingness to learn,
+    and openness to solutions, along with confidence scores and detected keywords.
+    
+    Args:
+        request: MoodAnalysisRequest with user message and conversation depth
+        
+    Returns:
+        MoodAnalysisResponse with detailed mood and emotion analysis
+        
+    Raises:
+        HTTPException: For validation errors
+    """
+    try:
+        logger.info(f"Analyzing mood for message: {request.message[:80]}...")
+        
+        # Call emotion analyzer
+        analysis = analyze_emotion(request.message, request.conversation_depth)
+        
+        # Check for errors from analyzer
+        if "error" in analysis:
+            logger.error(f"Emotion analysis error: {analysis['error']}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not analyze mood. Please try again."
+            )
+        
+        # Build response
+        response = MoodAnalysisResponse(
+            message=request.message,
+            stress_level=analysis["stress_level"],
+            stress_confidence=analysis["stress_confidence"],
+            indicators=analysis["indicators"],
+            confidence_scores=analysis["confidence_scores"],
+            conversation_phase=analysis["conversation_phase"],
+            overall_confidence=analysis["overall_confidence"],
+            detected_keywords=analysis.get("detected_keywords")
+        )
+        
+        logger.info(f"Mood analysis complete: stress={response.stress_level}, confidence={response.overall_confidence}")
+        
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in mood analysis endpoint: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error analyzing mood. Please try again."
         )
