@@ -13,6 +13,7 @@ from google import genai
 from dotenv import load_dotenv
 import time
 from src.utils.emotion_analyzer import analyze_emotion
+from src.utils.results_store import append_test_result
 
 try:
     from pinecone import Pinecone
@@ -361,47 +362,8 @@ Your response (remember to acknowledge emotion first, then provide guidance):"""
         logger.info("=" * 80)
 
     def _save_test_results(self, results_summary: Dict, output_path: Path) -> Path:
-        """Save results to the main JSON file and append them to run history.
-        Preserves existing data and only updates relevant sections."""
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        existing_summary: Dict = {}
-        if output_path.exists():
-            try:
-                with open(output_path, "r", encoding="utf-8") as f:
-                    existing_summary = json.load(f)
-            except Exception:
-                existing_summary = {}
-
-        # Determine which history to update based on mode
-        mode = results_summary.get("mode", "")
-        
-        if "persona" in mode.lower():
-            # Preserve persona mood test runs
-            persona_runs = existing_summary.get("persona_mood_test_runs", [])
-            if isinstance(persona_runs, list):
-                persona_runs.append({**results_summary})
-            aggregate_summary = existing_summary.copy()
-            aggregate_summary["persona_mood_test_runs"] = persona_runs[-20:]
-            aggregate_summary["latest_persona_mood_test_run"] = {**results_summary}
-        else:
-            # Preserve standard run history and other data
-            run_history = existing_summary.get("run_history", [])
-            if isinstance(run_history, list):
-                run_history.append({**results_summary})
-            
-            aggregate_summary = existing_summary.copy()
-            aggregate_summary["run_history"] = run_history[-20:]
-            aggregate_summary["latest_run"] = {**results_summary}
-            aggregate_summary["timestamp"] = results_summary.get("timestamp")
-            aggregate_summary["mode"] = mode
-            aggregate_summary["model"] = results_summary.get("model", aggregate_summary.get("model"))
-            aggregate_summary["prompt_type"] = results_summary.get("prompt_type", aggregate_summary.get("prompt_type"))
-
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(aggregate_summary, f, indent=2, default=str)
-
-        return output_path
+        """Save results without overwriting prior runs."""
+        return append_test_result(results_summary, output_path)
 
 
 def main():
