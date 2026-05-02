@@ -11,6 +11,7 @@ from pathlib import Path
 from google import genai
 from pinecone import Pinecone
 from dotenv import load_dotenv
+from src.utils.emotion_analyzer import analyze_emotion
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -231,6 +232,17 @@ User says: {user_message}"""
             logger.info(f"User: {user_message[:80]}...")
         
         try:
+            # Analyze user emotion/mood
+            conversation_depth = len(conversation_history) if conversation_history else 0
+            mood_analysis = analyze_emotion(user_message, conversation_depth=conversation_depth)
+            
+            # Log mood analysis
+            if verbose and mood_analysis:
+                stress_level = mood_analysis.get('stress_level', 'unknown')
+                emotional_state = mood_analysis.get('emotional_state', [])
+                if stress_level != 'unknown' or emotional_state:
+                    logger.info(f"  [Mood] Stress: {stress_level}, Emotional State: {', '.join(emotional_state) if emotional_state else 'neutral'}")
+            
             context_pieces = []
             
             # Retrieve context if RAG is enabled
