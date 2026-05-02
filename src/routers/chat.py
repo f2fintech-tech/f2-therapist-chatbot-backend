@@ -244,6 +244,27 @@ the dignity, respect, and patience you'd want if you were in their shoes."""
         ("human", "{user_message}")
     ])
 
+
+def _retry_delay_from_error(error_message: str, default_delay: float = 5.0) -> float:
+    """Extract retry-after seconds from provider error text when available."""
+    match = re.search(r"retry in\s+([0-9]+(?:\.[0-9]+)?)s", error_message, re.IGNORECASE)
+    return float(match.group(1)) if match else default_delay
+
+
+def _is_quota_exhausted(error_message: str) -> bool:
+    lowered = error_message.lower()
+    return (
+        "resource_exhausted" in lowered
+        or "quota exceeded" in lowered
+        or "exceeded your current quota" in lowered
+        or "daily limit" in lowered
+    )
+
+
+def _is_rate_limited(error_message: str) -> bool:
+    lowered = error_message.lower()
+    return "429" in lowered or "too many requests" in lowered or "rate limit" in lowered
+
 # ==================== Helper Functions ====================
 def get_or_create_conversation(db: Session, user_id: str, conversation_id: str | None = None):
     """Get existing conversation or create a new one."""
@@ -444,7 +465,36 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         # Create the chain and get response (with knowledge context)
         chain = prompt | llm
         generation_start = time.perf_counter()
-        response = chain.invoke({"user_message": enhanced_message})
+        max_retries = 2
+        response = None
+        for attempt in range(1, max_retries + 1):
+            try:
+                response = chain.invoke({"user_message": enhanced_message})
+                break
+            except Exception as exc:
+                error_message = str(exc)
+                is_quota = _is_quota_exhausted(error_message)
+                is_rate_limit = _is_rate_limited(error_message)
+
+                # Retry only for temporary capacity/rate pressure and stop on final attempt.
+                if not (is_quota or is_rate_limit) or attempt == max_retries:
+                    raise
+
+                retry_delay = _retry_delay_from_error(error_message, default_delay=5.0)
+                retry_delay = min(retry_delay, 10.0)
+                retry_reason = "quota" if is_quota else "rate limit"
+                logger.warning(
+                    "Gemini %s hit for chat route; waiting %.1fs before retrying (attempt %d/%d)",
+                    retry_reason,
+                    retry_delay,
+                    attempt,
+                    max_retries,
+                )
+                time.sleep(retry_delay)
+
+        if response is None:
+            raise RuntimeError("No response generated from model")
+
         logger.info("Model generation completed in %.2fs", time.perf_counter() - generation_start)
         
         # Save assistant message
@@ -479,8 +529,24 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
     
     except HTTPException:
         raise
-    
+
     except Exception as e:
+        error_message = str(e)
+        if _is_quota_exhausted(error_message):
+            logger.error(f"Quota exhausted in chat endpoint: {error_message}")
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Model usage quota reached. Please try again later.",
+            )
+        if _is_rate_limited(error_message):
+            logger.warning(f"Rate-limited in chat endpoint: {error_message}")
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Model is temporarily rate-limited. Please retry shortly.",
+            )
+    
         logger.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
         db.rollback()
         raise HTTPException(
