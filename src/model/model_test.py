@@ -12,8 +12,8 @@ from typing import Any, Dict, List, Optional, cast
 from google import genai
 from dotenv import load_dotenv
 import time
-from src.utils.emotion_analyzer import analyze_emotion
-from src.utils.results_store import append_test_result
+from utils.emotion_analyzer import analyze_emotion
+from utils.results_store import append_test_result
 
 try:
     from pinecone import Pinecone
@@ -21,7 +21,7 @@ except ImportError:
     Pinecone = None
 
 try:
-    from src.inference.predictor import TherapyChatbot
+    from inference.predictor import TherapyChatbot
 except ImportError:
     TherapyChatbot = None
 

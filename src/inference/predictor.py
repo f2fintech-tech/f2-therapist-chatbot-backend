@@ -11,7 +11,7 @@ from pathlib import Path
 from google import genai
 from pinecone import Pinecone
 from dotenv import load_dotenv
-from src.utils.emotion_analyzer import analyze_emotion
+from utils.emotion_analyzer import analyze_emotion
 
 logger = logging.getLogger(__name__)
 load_dotenv()

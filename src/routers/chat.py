@@ -27,7 +27,7 @@ from src.utils.validators import (
     ValidatedMessage, ValidatedConversation, UUID_PATTERN,
     MAX_MESSAGE_LENGTH, MIN_MESSAGE_LENGTH
 )
-from src.utils.emotion_analyzer import analyze_emotion
+from utils.emotion_analyzer import analyze_emotion
 
 logger = logging.getLogger(__name__)
 
