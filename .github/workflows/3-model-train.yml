@@ -46,6 +46,14 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       # Store the last successful fingerprint so we can skip API-heavy training
       # when the raw data and training inputs are unchanged.
       - name: Restore training fingerprint
@@ -96,7 +104,13 @@ jobs:
       - name: Skip unchanged training
         if: steps.fingerprint.outputs.changed == 'false'
         run: echo "No training rerun needed. Use force_run=true to override this gate."
-
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
       - name: Install dependencies
         if: steps.fingerprint.outputs.changed == 'true'
         run: pip install -r requirements.txt
