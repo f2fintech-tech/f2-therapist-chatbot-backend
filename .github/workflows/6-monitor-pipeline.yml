@@ -6,12 +6,71 @@ on:
 jobs:
   monitor:
     runs-on: ubuntu-latest
+    env:
+      # Secrets
+      PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # Repository variables
+      ENVIRONMENT: ${{ vars.ENVIRONMENT }}
+      APP_ENV: ${{ vars.APP_ENV }}
+      HOST: ${{ vars.HOST }}
+      PORT: ${{ vars.PORT }}
+      LOG_LEVEL: ${{ vars.LOG_LEVEL }}
+      ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
+      CORS_ORIGINS: ${{ vars.CORS_ORIGINS }}
+      POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+      POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_S3_BUCKET_NAME: ${{ vars.AWS_S3_BUCKET_NAME }}
+      SQL_ECHO: ${{ vars.SQL_ECHO }}
+      PYTHONPATH: src
+
     permissions:
       contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Monitor placeholder
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run health checks
         run: |
-          echo "No monitoring steps configured. Add checks to .github/workflows/6-monitor-pipeline.yml"
+          python - <<'PY'
+          from pathlib import Path
+          import os
+
+          required = ["GEMINI_API_KEY", "PINECONE_API_KEY"]
+          missing = [name for name in required if not os.getenv(name)]
+          if missing:
+              raise SystemExit(f"Missing environment variables: {', '.join(missing)}")
+
+          required_files = [
+              Path("src/model/model_test.py"),
+              Path("src/inference/predictor.py"),
+              Path("src/data/processed/system_prompt.md"),
+              Path("src/data/processed/conversation_training_data.json"),
+          ]
+          missing_files = [str(path) for path in required_files if not path.exists()]
+          if missing_files:
+              raise SystemExit(f"Missing required files: {', '.join(missing_files)}")
+
+          from inference.predictor import TherapyChatbot
+          from utils.results_store import append_test_result
+
+          print("Health checks passed.")
+          print(f"TherapyChatbot import: {TherapyChatbot.__name__}")
+          print(f"results_store helper: {append_test_result.__name__}")
+          PY
+
+      - name: Run chatbot smoke test
+        run: python src/model/model_test.py --query "I am stressed about debt" --no-rag --skip-training
