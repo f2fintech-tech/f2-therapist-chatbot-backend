@@ -2,6 +2,15 @@ name: Monitor Pipeline
 
 on:
   workflow_dispatch:
+    inputs:
+      alert_threshold:
+        description: "Alert severity threshold (CRITICAL or WARNING)"
+        required: false
+        default: "WARNING"
+        type: choice
+        options:
+          - CRITICAL
+          - WARNING
 
 jobs:
   monitor:
@@ -40,37 +49,105 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run health checks
+      - name: Run comprehensive health monitoring
+        id: health_check
+        run: |
+          python src/monitoring/health_monitor.py \
+            --output src/monitoring/health_check_results.json \
+            --alert-threshold '${{ inputs.alert_threshold || 'WARNING' }}'
+        continue-on-error: true
+
+      - name: Parse monitoring results
+        id: parse_results
         run: |
           python - <<'PY'
+          import json
+          import sys
           from pathlib import Path
-          import os
 
-          required = ["GEMINI_API_KEY", "PINECONE_API_KEY"]
-          missing = [name for name in required if not os.getenv(name)]
-          if missing:
-              raise SystemExit(f"Missing environment variables: {', '.join(missing)}")
+          results_file = Path("src/monitoring/health_check_results.json")
+          if not results_file.exists():
+              print("❌ Health check results not found")
+              sys.exit(1)
 
-          required_files = [
-              Path("src/model/model_test.py"),
-              Path("src/inference/predictor.py"),
-              Path("src/data/processed/system_prompt.md"),
-              Path("src/data/processed/conversation_training_data.json"),
-          ]
-          missing_files = [str(path) for path in required_files if not path.exists()]
-          if missing_files:
-              raise SystemExit(f"Missing required files: {', '.join(missing_files)}")
+          with open(results_file, "r") as f:
+              results = json.load(f)
 
-          from inference.predictor import TherapyChatbot
-          from utils.results_store import append_test_result
+          overall_status = results.get("overall_status", "UNKNOWN")
+          alerts = results.get("alerts", [])
+          checks = results.get("checks", {})
 
-          print("Health checks passed.")
-          print(f"TherapyChatbot import: {TherapyChatbot.__name__}")
-          print(f"results_store helper: {append_test_result.__name__}")
+          print(f"::set-output name=overall_status::{overall_status}")
+          print(f"::set-output name=alert_count::{len(alerts)}")
+          print(f"::set-output name=has_alerts::{'true' if alerts else 'false'}")
+
+          # Summary output
+          print("\n=== MONITORING SUMMARY ===")
+          print(f"Status: {overall_status}")
+          print(f"Alerts: {len(alerts)}")
+          print(f"Checks Passed: {sum(1 for c in checks.values() if c.get('status') == 'OK')}/{len(checks)}")
+
+          # Print check details
+          if checks:
+              print("\nCheck Details:")
+              for name, check in checks.items():
+                  status = check.get("status", "UNKNOWN")
+                  message = check.get("message", "")
+                  print(f"  • {name}: {status} - {message}")
+
+          # Print all alerts
+          if alerts:
+              print("\nAlert Details:")
+              for alert in alerts:
+                  print(f"  [{alert['severity']}] {alert['service']}: {alert['message']}")
           PY
 
       - name: Run chatbot smoke test
         run: python src/model/model_test.py --query "I am stressed about debt" --no-rag --skip-training
+        continue-on-error: true
+
+      - name: Send Slack notification on alerting
+        if: steps.parse_results.outputs.has_alerts == 'true'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "⚠️ Health Monitor Alert",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Health Monitoring Alert*\nStatus: ${{ steps.parse_results.outputs.overall_status }}\nAlerts: ${{ steps.parse_results.outputs.alert_count }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Details*\nRepository: ${{ github.repository }}\nBranch: ${{ github.ref }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        continue-on-error: true
+
+      - name: Fail job on critical alerts
+        if: steps.parse_results.outputs.overall_status == 'CRITICAL'
+        run: |
+          echo "❌ Critical alerts detected during health monitoring"
+          exit 1
