@@ -5,9 +5,6 @@ FastAPI application with Google Gemini 3 flash preview API integration
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -23,6 +20,12 @@ from src.models import init_db
 
 # Import middleware
 from src.middleware.logging import RequestLoggingMiddleware, SecurityLoggingMiddleware
+from src.middleware.security import (
+    CSRFMiddleware,
+    RateLimitMiddleware,
+    RequestSizeLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
 
 # Load environment variables
 load_dotenv()
@@ -63,22 +66,18 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 # ==================== Rate Limiting Setup ====================
-"""
-limiter = Limiter(key_func=get_remote_address)
-
-@limiter.limit("200/minute")
-def rate_limit_handler(request, exc):
-    # Custom rate limit error handler.
-    return JSONResponse(
-        status_code=429,
-        content={
-            "error": "Rate limit exceeded",
-            "detail": "Too many requests. Please try again later.",
-            "retry_after": 60
-        }
-    )
-"""
 # ==================== FastAPI Initialization ====================
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+RATE_LIMIT_REQUESTS_PER_MINUTE = int(os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "200"))
+MAX_REQUEST_BODY_BYTES = int(os.getenv("MAX_REQUEST_BODY_BYTES", str(1_048_576)))
+CSRF_PROTECTION_ENABLED = os.getenv("CSRF_PROTECTION_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
+CSRF_STRICT = os.getenv("CSRF_STRICT", "false").strip().lower() in {"1", "true", "yes", "on"}
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", os.getenv("ALLOWED_ORIGINS", "")).split(",")
+    if origin.strip()
+]
+
 app = FastAPI(
     title="Financial Therapist Chatbot",
     description="AI-powered financial therapy chatbot backend with Google Gemini 3 Flash preview integration.",
@@ -88,21 +87,11 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
-# Add rate limiter to app
-# app.state.limiter = limiter
-# app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
-
 # ==================== Middleware Stack ====================
 # Order matters: Security → Logging → CORS (outermost)
 
-# Security and observability middleware (added first, processed last)
-app.add_middleware(SecurityLoggingMiddleware)
-app.add_middleware(RequestLoggingMiddleware)
-app.add_middleware(HTTPSRedirectMiddleware)
-
 # Trusted host middleware prevents host header attacks in production.
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
-DEFAULT_ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
+DEFAULT_ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "testserver"]
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS")
 
 if ALLOWED_HOSTS:
@@ -122,6 +111,17 @@ if ENVIRONMENT == "production" and not ALLOWED_HOSTS:
 logger.info(f"Allowed hosts: {ALLOWED_HOSTS}")
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
+# Security middleware
+app.add_middleware(SecurityHeadersMiddleware, production=ENVIRONMENT == "production")
+app.add_middleware(CSRFMiddleware, enabled=CSRF_PROTECTION_ENABLED, trusted_origins=CSRF_TRUSTED_ORIGINS, strict=CSRF_STRICT)
+app.add_middleware(RateLimitMiddleware, requests_per_minute=RATE_LIMIT_REQUESTS_PER_MINUTE, exempt_paths={"/health", "/docs", "/redoc", "/openapi.json"})
+app.add_middleware(RequestSizeLimitMiddleware, max_body_bytes=MAX_REQUEST_BODY_BYTES, exempt_paths={"/health", "/docs", "/redoc", "/openapi.json"})
+app.add_middleware(HTTPSRedirectMiddleware)
+
+# Security and observability middleware
+app.add_middleware(SecurityLoggingMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+
 # CORS middleware (added last, processed first)
 # Get allowed origins from environment variable
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
@@ -134,6 +134,9 @@ if ENVIRONMENT == "production":
 
 logger.info(f"Environment: {ENVIRONMENT}")
 logger.info(f"CORS allowed origins: {ALLOWED_ORIGINS}")
+logger.info(f"Rate limit: {RATE_LIMIT_REQUESTS_PER_MINUTE} requests/minute per IP")
+logger.info(f"Max request body: {MAX_REQUEST_BODY_BYTES} bytes")
+logger.info(f"CSRF protection enabled: {CSRF_PROTECTION_ENABLED}")
 
 # Configure CORS with secure settings
 app.add_middleware(
@@ -169,7 +172,7 @@ async def root():
         "environment": ENVIRONMENT,
         "documentation": "/docs",
         "api_base": "/api/v1",
-        "rate_limit": "200 requests per minute"
+        "rate_limit": f"{RATE_LIMIT_REQUESTS_PER_MINUTE} requests per minute"
     }
 
 # ==================== Startup/Shutdown Events ====================
@@ -182,9 +185,11 @@ async def startup_event():
     logger.info(f"Environment: {ENVIRONMENT}")
     logger.info(f"Google Gemini API configured: {bool(os.getenv('GEMINI_API_KEY'))}")
     logger.info(f"Database configured: {bool(os.getenv('DATABASE_URL'))}")
-    logger.info("Rate limiting: 200 requests per minute per IP")
+    logger.info(f"Rate limiting: {RATE_LIMIT_REQUESTS_PER_MINUTE} requests per minute per IP")
     logger.info("Logging middleware: Enabled")
     logger.info("Security logging: Enabled")
+    logger.info(f"Request size limit: {MAX_REQUEST_BODY_BYTES} bytes")
+    logger.info(f"CSRF protection: {CSRF_PROTECTION_ENABLED}")
     logger.info("API Documentation available at: /docs")
     logger.info("=" * 60)
 
@@ -200,10 +205,13 @@ async def shutdown_event():
 async def global_exception_handler(request, exc):
     """Global exception handler for unhandled errors."""
     logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-    return {
-        "error": "An unexpected error occurred",
-        "detail": "Please contact support if this issue persists"
-    }
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "An unexpected error occurred",
+            "detail": "Please contact support if this issue persists",
+        },
+    )
 
 # ==================== Entry Point ====================
 if __name__ == "__main__":
