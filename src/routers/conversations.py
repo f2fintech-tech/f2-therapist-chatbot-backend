@@ -38,14 +38,14 @@ class ConversationCreate(BaseModel):
     """Create conversation request model with validation."""
     user_id: str = Field(..., min_length=1, max_length=36, description="User ID")
     title: str | None = Field(None, min_length=MIN_TITLE_LENGTH, max_length=MAX_TITLE_LENGTH, description="Conversation title")
-    
+
     @validator('user_id')
     def validate_user_id(cls, v):
         """Validate user_id is a valid UUID format."""
         if not UUID_PATTERN.match(v):
             raise ValueError("Invalid user_id format. Must be a valid UUID.")
         return v.lower()
-    
+
     @validator('title')
     def validate_title(cls, v):
         """Sanitize and validate title."""
@@ -61,7 +61,7 @@ class ConversationCreate(BaseModel):
 class ConversationUpdate(BaseModel):
     """Update conversation request model with validation."""
     title: str | None = Field(None, min_length=MIN_TITLE_LENGTH, max_length=MAX_TITLE_LENGTH, description="New conversation title")
-    
+
     @validator('title')
     def validate_title(cls, v):
         """Sanitize and validate title."""
@@ -81,7 +81,7 @@ class ConversationDetail(BaseModel):
     message_count: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -93,7 +93,7 @@ class ConversationList(BaseModel):
     message_count: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -103,7 +103,7 @@ class MessageDetail(BaseModel):
     role: str
     content: str
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -122,20 +122,20 @@ def verify_conversation_ownership(db: Session, conversation_id: str, user_id: st
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid ID format"
         )
-    
+
     conversation = db.query(Conversation).filter(
         and_(
             Conversation.id == conversation_id,
             Conversation.user_id == user_id
         )
     ).first()
-    
+
     if not conversation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found"
         )
-    
+
     return conversation
 
 # ==================== Routes ====================
@@ -146,36 +146,36 @@ async def create_conversation(
 ):
     """
     Create a new conversation.
-    
+
     Args:
         request: Conversation creation request
         db: Database session
-        
+
     Returns:
         Created conversation details
-        
+
     Raises:
         HTTPException: If user not found or database error occurs
     """
     try:
         # Ensure user exists
         user = get_or_create_user(db, request.user_id)
-        
+
         # Create new conversation with unique ID
         conversation = Conversation(
             id=str(uuid.uuid4()),
             user_id=request.user_id,
             title=request.title
         )
-        
+
         db.add(conversation)
         db.commit()
         db.refresh(conversation)
-        
+
         logger.info(f"Created conversation {conversation.id} for user {request.user_id}")
-        
+
         return ConversationDetail.from_orm(conversation)
-    
+
     except ValueError as e:
         logger.warning(f"Validation error creating conversation: {str(e)}")
         raise HTTPException(
@@ -199,16 +199,16 @@ async def list_conversations(
 ):
     """
     List conversations for a user with pagination.
-    
+
     Args:
         user_id: User ID (must own the conversations)
         limit: Maximum number of conversations to return (1-100, default 20)
         offset: Number of conversations to skip (0-10000)
         db: Database session
-        
+
     Returns:
         List of user conversations ordered by most recent
-        
+
     Raises:
         HTTPException: If user_id is invalid or database error occurs
     """
@@ -219,15 +219,15 @@ async def list_conversations(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid user_id format"
             )
-        
+
         conversations = db.query(Conversation).filter(
             Conversation.user_id == user_id
         ).order_by(
             Conversation.updated_at.desc()
         ).offset(offset).limit(limit).all()
-        
+
         return [ConversationList.from_orm(conv) for conv in conversations]
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -245,22 +245,22 @@ async def get_conversation(
 ):
     """
     Get conversation details.
-    
+
     Args:
         conversation_id: Conversation ID
         user_id: User ID (for authorization verification)
         db: Database session
-        
+
     Returns:
         Conversation details
-        
+
     Raises:
         HTTPException: If conversation not found, user doesn't own it, or invalid ID format
     """
     try:
         conversation = verify_conversation_ownership(db, conversation_id, user_id)
         return ConversationDetail.from_orm(conversation)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -279,33 +279,33 @@ async def update_conversation(
 ):
     """
     Update conversation details (only title).
-    
+
     Args:
         conversation_id: Conversation ID
         request: Update request with new title
         user_id: User ID (for authorization verification)
         db: Database session
-        
+
     Returns:
         Updated conversation details
-        
+
     Raises:
         HTTPException: If conversation not found, user doesn't own it, or invalid data
     """
     try:
         conversation = verify_conversation_ownership(db, conversation_id, user_id)
-        
+
         if request and request.title is not None:
             conversation.title = request.title
-        
+
         conversation.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(conversation)
-        
+
         logger.info(f"Updated conversation {conversation_id} for user {user_id}")
-        
+
         return ConversationDetail.from_orm(conversation)
-    
+
     except HTTPException:
         raise
     except ValueError as e:
@@ -330,24 +330,24 @@ async def delete_conversation(
 ):
     """
     Delete a conversation and all its messages.
-    
+
     Args:
         conversation_id: Conversation ID
         user_id: User ID (for authorization verification)
         db: Database session
-        
+
     Raises:
         HTTPException: If conversation not found, user doesn't own it, or database error occurs
     """
     try:
         conversation = verify_conversation_ownership(db, conversation_id, user_id)
-        
+
         # Delete conversation (cascades to messages due to foreign key)
         db.delete(conversation)
         db.commit()
-        
+
         logger.info(f"Deleted conversation {conversation_id} for user {user_id}")
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -368,32 +368,32 @@ async def get_conversation_messages(
 ):
     """
     Get messages from a conversation with pagination.
-    
+
     Args:
         conversation_id: Conversation ID
         user_id: User ID (for authorization verification)
         limit: Maximum number of messages to return (1-100, default 50)
         offset: Number of messages to skip (0-10000)
         db: Database session
-        
+
     Returns:
         List of messages in chronological order
-        
+
     Raises:
         HTTPException: If conversation not found, user doesn't own it, or database error occurs
     """
     try:
         # Verify conversation exists and belongs to user
         conversation = verify_conversation_ownership(db, conversation_id, user_id)
-        
+
         messages = db.query(ConversationMessage).filter(
             ConversationMessage.conversation_id == conversation_id
         ).order_by(
             ConversationMessage.created_at.asc()
         ).offset(offset).limit(limit).all()
-        
+
         return [MessageDetail.from_orm(msg) for msg in messages]
-    
+
     except HTTPException:
         raise
     except Exception as e:

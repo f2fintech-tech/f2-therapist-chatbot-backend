@@ -30,7 +30,7 @@ class StatusResponse(BaseModel):
 async def health_check():
     """
     Health check endpoint.
-    
+
     Returns status of the service and configuration.
     """
     return HealthCheckResponse(
@@ -47,7 +47,7 @@ async def health_check():
 async def get_status():
     """
     Get service status and configuration info.
-    
+
     Returns current service status and environment information.
     """
     return StatusResponse(
@@ -61,7 +61,7 @@ async def get_status():
 async def readiness_check():
     """
     Readiness check endpoint for Kubernetes or load balancers.
-    
+
     Returns true if service is ready to accept requests.
     """
     return {

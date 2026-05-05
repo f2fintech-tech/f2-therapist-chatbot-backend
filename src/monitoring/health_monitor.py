@@ -296,7 +296,7 @@ class HealthMonitor:
             status = check_result.get("status", "UNKNOWN")
             message = check_result.get("message", "")
             latency = check_result.get("latency_ms", 0)
-            
+
             symbol = "✓" if status == "OK" else "✗" if status in ["ERROR", "CRITICAL"] else "⚠"
             latency_str = f" ({latency:.0f}ms)" if latency else ""
             print(f"{symbol} {check_name}: {status}{latency_str}")
@@ -319,7 +319,7 @@ class HealthMonitor:
 def should_alert(results: Dict[str, Any], threshold: str = "WARNING") -> bool:
     """Determine if an alert should be triggered based on threshold."""
     status = results.get("overall_status", "OK")
-    
+
     if threshold == "CRITICAL":
         return status == "CRITICAL"
     elif threshold == "WARNING":
@@ -359,7 +359,7 @@ def main():
     if should_alert(results, args.alert_threshold):
         print(f"⚠ Alerts triggered (threshold: {args.alert_threshold})")
         return 1
-    
+
     return 0
 
 
