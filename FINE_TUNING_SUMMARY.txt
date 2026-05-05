@@ -13,7 +13,7 @@ WHAT WAS COMPLETED
 
 1. ✅ Fine-Tuned System Prompt Created
    File: src/model/finetuned_system_prompt.txt (11.5 KB)
-   
+
    Contains:
    - 1,200+ words of comprehensive instructions
    - WHO YOU ARE (identity, core role, purpose)
@@ -36,7 +36,7 @@ WHAT WAS COMPLETED
 
 3. ✅ Testing Framework Created
    File: src/model/model_test.py
-   
+
    Provides:
    - Single query testing
    - Batch testing (5 training + 5 custom examples)
@@ -50,7 +50,7 @@ WHAT WAS COMPLETED
 
 4. ✅ Production Integration Complete
    File: src/inference/predictor.py (UPDATED)
-   
+
    Now automatically:
    - Loads fine-tuned prompt first
    - Falls back to base prompt if needed
@@ -294,7 +294,7 @@ COMPARISON: BEFORE vs AFTER
 
 BEFORE FINE-TUNING:
 Query: "I'm embarrassed about not understanding money"
-Response: "Money management involves budgeting, saving, and investing. 
+Response: "Money management involves budgeting, saving, and investing.
           Let me explain the key financial concepts you need to know..."
 Problems:
   ❌ Ignores shame
@@ -306,10 +306,10 @@ Score: ~0.45 (Poor)
 
 AFTER FINE-TUNING:
 Query: "I'm embarrassed about not understanding money"
-Response: "First, you're not stupid. You're curious. And that's the opposite 
-          of stupid. Nobody is born understanding money. It's something people 
-          learn in different ways, and many people never get taught properly. 
-          The fact that you're asking means you're ready to learn, and that's 
+Response: "First, you're not stupid. You're curious. And that's the opposite
+          of stupid. Nobody is born understanding money. It's something people
+          learn in different ways, and many people never get taught properly.
+          The fact that you're asking means you're ready to learn, and that's
           actually a strength."
 Benefits:
   ✅ Validates shame
