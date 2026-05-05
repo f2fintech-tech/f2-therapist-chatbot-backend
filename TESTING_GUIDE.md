@@ -36,7 +36,7 @@ def test_s3_upload():
         # Create test file
         with open('/tmp/test_file.txt', 'w') as f:
             f.write('Test content')
-        
+
         success = manager.upload_file('/tmp/test_file.txt', 'test/test_file.txt')
         if success:
             print("✓ File upload successful")
@@ -76,9 +76,9 @@ from pathlib import Path
 def test_data_processor():
     """Test data processing pipeline"""
     processor = DataProcessor()
-    
+
     print("\nTesting Data Processor...")
-    
+
     # Test scenarios processing
     print("\n1. Testing scenarios processing...")
     scenarios = processor.process_scenarios()
@@ -87,7 +87,7 @@ def test_data_processor():
         print(f"  Sample: {scenarios[0]}")
     else:
         print("✗ No scenarios processed")
-    
+
     # Test FAQs processing
     print("\n2. Testing FAQs processing...")
     faqs = processor.process_faqs()
@@ -96,7 +96,7 @@ def test_data_processor():
         print(f"  Sample: {faqs[0]['question'][:50]}...")
     else:
         print("✗ No FAQs processed")
-    
+
     # Test system prompt processing
     print("\n3. Testing system prompt processing...")
     prompt = processor.process_system_prompt()
@@ -105,7 +105,7 @@ def test_data_processor():
         print(f"  Preview: {prompt[:100]}...")
     else:
         print("✗ System prompt not processed")
-    
+
     # Verify files exist
     print("\n4. Checking processed files...")
     processed_dir = Path("src/data/processed")
@@ -132,7 +132,7 @@ load_dotenv()
 def test_embeddings():
     """Test embedding generation"""
     print("\nTesting Embedder...")
-    
+
     # Test model initialization
     print("\n1. Testing embeddings model initialization...")
     try:
@@ -141,7 +141,7 @@ def test_embeddings():
     except Exception as e:
         print(f"✗ Failed to initialize embeddings: {e}")
         return
-    
+
     # Test text embedding
     print("\n2. Testing text embedding...")
     test_texts = [
@@ -149,14 +149,14 @@ def test_embeddings():
         "What is an EMI?",
         "I'm stressed about my finances"
     ]
-    
+
     for text in test_texts:
         try:
             vector = embed_text(text)
             print(f"✓ Embedded text: '{text[:40]}...' (dimension: {len(vector)})")
         except Exception as e:
             print(f"✗ Failed to embed text: {e}")
-    
+
     # Test vector properties
     print("\n3. Testing vector properties...")
     vector = embed_text("financial stress")
@@ -186,7 +186,7 @@ load_dotenv()
 def test_pinecone():
     """Test Pinecone vector database"""
     print("\nTesting Pinecone Integration...")
-    
+
     # Test index existence
     print("\n1. Testing Pinecone index...")
     try:
@@ -195,7 +195,7 @@ def test_pinecone():
     except Exception as e:
         print(f"✗ Failed to connect: {e}")
         return
-    
+
     # Test loading documents
     print("\n2. Testing document loading...")
     try:
@@ -203,7 +203,7 @@ def test_pinecone():
         print("✓ Documents loaded to Pinecone")
     except Exception as e:
         print(f"✗ Failed to load documents: {e}")
-    
+
     # Test retrieval
     print("\n3. Testing document retrieval...")
     try:
@@ -211,7 +211,7 @@ def test_pinecone():
         query_vector = embed_text(query)
         retriever = KnowledgeRetriever()
         results = retriever.retrieve(query_vector, top_k=3)
-        
+
         print(f"✓ Retrieved {len(results)} documents for query: '{query}'")
         for i, result in enumerate(results, 1):
             metadata = result.get('metadata', {})
@@ -238,9 +238,9 @@ load_dotenv()
 def test_model_training():
     """Test model training pipeline"""
     print("\nTesting Model Training...")
-    
+
     trainer = ModelTrainer()
-    
+
     # Test training data preparation
     print("\n1. Testing training data preparation...")
     training_data = trainer.prepare_training_data()
@@ -249,7 +249,7 @@ def test_model_training():
         print(f"  Sample: {training_data[0]}")
     else:
         print("✗ No training data prepared")
-    
+
     # Test system prompt loading
     print("\n2. Testing system prompt loading...")
     prompt = trainer.load_system_prompt()
@@ -258,7 +258,7 @@ def test_model_training():
         print(f"  Preview: {prompt[:100]}...")
     else:
         print("✗ Failed to load system prompt")
-    
+
     # Test model validation
     print("\n3. Testing model validation...")
     try:
@@ -293,7 +293,7 @@ load_dotenv()
 def test_chatbot():
     """Test chatbot with RAG pipeline"""
     print("\nTesting Chatbot with RAG...")
-    
+
     # Initialize chatbot
     print("\n1. Testing chatbot initialization...")
     try:
@@ -302,7 +302,7 @@ def test_chatbot():
     except Exception as e:
         print(f"✗ Failed to initialize chatbot: {e}")
         return
-    
+
     # Test chat functionality
     print("\n2. Testing chat functionality...")
     test_queries = [
@@ -310,7 +310,7 @@ def test_chatbot():
         "How should I handle missed EMI payments?",
         "What's the difference between savings and checking accounts?"
     ]
-    
+
     for query in test_queries:
         try:
             print(f"\nQuery: '{query}'")
@@ -322,7 +322,7 @@ def test_chatbot():
                 print("✗ No response generated")
         except Exception as e:
             print(f"✗ Chat failed: {e}")
-    
+
     # Test RAG retrieval
     print("\n3. Testing RAG context retrieval...")
     query = "financial stress"
@@ -407,27 +407,27 @@ from src.inference.predictor import TherapyChatbot
 
 def test_performance():
     chatbot = TherapyChatbot()
-    
+
     test_queries = [
         "I have credit card debt",
         "How do I manage financial stress?",
         "What's an EMI?"
     ]
-    
+
     print("Performance Test Results:")
     print("-" * 60)
-    
+
     total_time = 0
     for query in test_queries:
         start = time.time()
         response = chatbot.chat(query)
         elapsed = time.time() - start
         total_time += elapsed
-        
+
         print(f"Query: '{query}'")
         print(f"Time: {elapsed:.2f}s")
         print()
-    
+
     avg_time = total_time / len(test_queries)
     print(f"Average response time: {avg_time:.2f}s")
     print(f"Total queries: {len(test_queries)}")
@@ -448,7 +448,7 @@ from src.inference.predictor import TherapyChatbot
 
 def test_response_quality():
     chatbot = TherapyChatbot()
-    
+
     test_cases = [
         {
             "query": "I'm embarrassed about my financial situation",
@@ -459,19 +459,19 @@ def test_response_quality():
             "expected_keywords": ["EMI", "monthly", "installment", "explain"]
         }
     ]
-    
+
     for test in test_cases:
         response = chatbot.chat(test["query"])
-        
+
         print(f"\nQuery: {test['query']}")
         print(f"Response: {response[:100]}...")
-        
+
         # Check for expected keywords
         found_keywords = [
             kw for kw in test["expected_keywords"]
             if kw.lower() in response.lower()
         ]
-        
+
         print(f"Expected keywords found: {len(found_keywords)}/{len(test['expected_keywords'])}")
 ```
 
@@ -554,10 +554,10 @@ def generate_test_report():
             "vector_db_size_mb": 45
         }
     }
-    
+
     with open("test_report.json", "w") as f:
         json.dump(report, f, indent=2)
-    
+
     print("Test report saved to test_report.json")
 
 if __name__ == "__main__":

@@ -61,7 +61,7 @@ python -c "
 import json
 with open('src/model/model_test_results.json') as f:
     results = json.load(f)
-    
+
 print('Test Results Summary:')
 print(f'Model: {results[\"model\"]}')
 print(f'Prompt Type: {results[\"prompt_type\"]}')

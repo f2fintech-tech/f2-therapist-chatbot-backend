@@ -10,9 +10,9 @@ This document shows what you can expect from your fine-tuned model and provides 
 
 **Expected Response Pattern (from fine-tuning example):**
 ```
-First, you're not stupid. You're curious. And that's the opposite of stupid. 
-Nobody is born understanding money. It's something people learn in different ways, 
-and many people never get taught properly. The fact that you're asking means you're 
+First, you're not stupid. You're curious. And that's the opposite of stupid.
+Nobody is born understanding money. It's something people learn in different ways,
+and many people never get taught properly. The fact that you're asking means you're
 ready to learn, and that's actually a strength.
 ```
 
@@ -38,9 +38,9 @@ ready to learn, and that's actually a strength.
 
 **Expected Response Pattern:**
 ```
-I hear you, and your panic is completely valid. You just lost your income, and 
-that is a real crisis. But right now, we are not trying to fix everything. 
-We are going to focus on getting through this week by handling the most urgent 
+I hear you, and your panic is completely valid. You just lost your income, and
+that is a real crisis. But right now, we are not trying to fix everything.
+We are going to focus on getting through this week by handling the most urgent
 things first. Can you stay with me and take this one step at a time?
 ```
 
@@ -66,8 +66,8 @@ things first. Can you stay with me and take this one step at a time?
 
 **Expected Response Pattern:**
 ```
-That sounds really frustrating. Feeling judged and not trusted by your partner 
-can hurt deeply. Before we look at solutions, I want to understand something. 
+That sounds really frustrating. Feeling judged and not trusted by your partner
+can hurt deeply. Before we look at solutions, I want to understand something.
 When these fights happen, what do you think you're actually arguing about underneath the money?
 ```
 
@@ -93,9 +93,9 @@ When these fights happen, what do you think you're actually arguing about undern
 
 **Expected Response Pattern:**
 ```
-Thank you for saying that out loud. That takes courage. What you're describing 
-sounds like compulsive spending, and it's important to know this is not about 
-being weak or lacking willpower. It's a behavioral pattern that can be addressed 
+Thank you for saying that out loud. That takes courage. What you're describing
+sounds like compulsive spending, and it's important to know this is not about
+being weak or lacking willpower. It's a behavioral pattern that can be addressed
 with the right support.
 ```
 
@@ -121,8 +121,8 @@ with the right support.
 
 **Expected Response Pattern:**
 ```
-What you're describing sounds like a trauma response. Given what you went through, 
-your reaction makes sense. Your system learned that money equals safety and that 
+What you're describing sounds like a trauma response. Given what you went through,
+your reaction makes sense. Your system learned that money equals safety and that
 safety can disappear. That kind of learning stays with you.
 ```
 
@@ -185,7 +185,7 @@ Overall Quality Score: 0.87/1.00
 
 **Bad Response (before fine-tuning):**
 ```
-"Taking a loan is a financial commitment. You should consider your debt-to-income 
+"Taking a loan is a financial commitment. You should consider your debt-to-income
 ratio and check your credit score. Our products include EMIs up to 60 months..."
 ```
 
@@ -197,8 +197,8 @@ ratio and check your credit score. Our products include EMIs up to 60 months..."
 
 **Good Response (after fine-tuning):**
 ```
-"I hear that fear - taking a loan is a big financial decision, and it's actually 
-smart that you're being cautious. Many people feel this way. Let me help you 
+"I hear that fear - taking a loan is a big financial decision, and it's actually
+smart that you're being cautious. Many people feel this way. Let me help you
 think through what's behind the fear..."
 ```
 
@@ -210,7 +210,7 @@ think through what's behind the fear..."
 
 **Bad Response:**
 ```
-"Don't worry, it's simple! Interest is just the cost of borrowing money. 
+"Don't worry, it's simple! Interest is just the cost of borrowing money.
 It's calculated as a percentage of the principal..."
 ```
 
@@ -222,9 +222,9 @@ It's calculated as a percentage of the principal..."
 
 **Good Response:**
 ```
-"Nobody is born knowing this stuff - it's something you learn. Interest can 
-feel confusing because there are different types. Let me explain with a real 
-example: If you borrow ₹10,000 at 12% interest for 1 year, you'll pay back 
+"Nobody is born knowing this stuff - it's something you learn. Interest can
+feel confusing because there are different types. Let me explain with a real
+example: If you borrow ₹10,000 at 12% interest for 1 year, you'll pay back
 about ₹1,200 extra as the cost of borrowing..."
 ```
 
@@ -329,12 +329,12 @@ Here's what you'll see when testing:
 ```
 [QUERY 1] You said you're struggling with money for years...
 Generated response (245 chars, 2.3s):
-"First, you are not broken. What you're describing is a cycle, not a personal 
-failure. Cycles can be interrupted. After dealing with this for 5 years, feeling 
+"First, you are not broken. What you're describing is a cycle, not a personal
+failure. Cycles can be interrupted. After dealing with this for 5 years, feeling
 exhausted makes complete sense. You've been putting in effort just to stay afloat...
 
 ✓ EMOTIONAL ACKNOWLEDGMENT: YES
-✓ SPECIFIC GUIDANCE: YES  
+✓ SPECIFIC GUIDANCE: YES
 ✓ CLARITY: YES
 ✓ APPROPRIATE LENGTH: YES
 Quality Score: 0.88/1.00
@@ -343,8 +343,8 @@ Quality Score: 0.88/1.00
 
 [QUERY 2] My partner calls me irresponsible with money...
 Generated response (218 chars, 2.1s):
-"That sounds really frustrating. Feeling judged and not trusted can hurt deeply. 
-Before we solve anything, let me ask: when you fight about money, what do you 
+"That sounds really frustrating. Feeling judged and not trusted can hurt deeply.
+Before we solve anything, let me ask: when you fight about money, what do you
 think you're really arguing about underneath?..."
 
 ✓ EMOTIONAL ACKNOWLEDGMENT: YES

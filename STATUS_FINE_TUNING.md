@@ -18,7 +18,7 @@ Contains:
 - **Conversation flow** templates
 
 ### 2. ✅ Implemented Few-Shot Learning Framework
-**Files:** 
+**Files:**
 - `src/model/model_finetune.py` - Creates the fine-tuned prompt
 - `src/model/model_test.py` - Tests model quality with metrics
 - `src/model/quick_demo.py` - Shows what was accomplished
@@ -246,7 +246,7 @@ Expected quality score: **0.60-0.75**
 
 ```
 User: "I'm ashamed I don't understand money"
-Bot: "Money management involves budgeting, saving, and investing. 
+Bot: "Money management involves budgeting, saving, and investing.
      Let me explain the key concepts..."
 ```
 ❌ Ignores shame | Jumps to education | Corporate tone
@@ -255,9 +255,9 @@ Bot: "Money management involves budgeting, saving, and investing.
 
 ```
 User: "I'm ashamed I don't understand money"
-Bot: "First, you're not stupid. You're curious. And that's the opposite 
-     of stupid. Nobody is born understanding money. It's something people 
-     learn in different ways. The fact that you're asking means you're 
+Bot: "First, you're not stupid. You're curious. And that's the opposite
+     of stupid. Nobody is born understanding money. It's something people
+     learn in different ways. The fact that you're asking means you're
      ready to learn, and that's a strength."
 ```
 ✅ Validates emotion | Reframes identity | Warm, human tone
