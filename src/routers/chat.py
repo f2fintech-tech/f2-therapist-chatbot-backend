@@ -51,14 +51,14 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=MIN_MESSAGE_LENGTH, max_length=MAX_MESSAGE_LENGTH, description="User message")
     user_id: str = Field(..., min_length=1, max_length=36, description="Unique user identifier")
     conversation_id: str | None = Field(None, min_length=36, max_length=36, description="Optional conversation ID")
-    
+
     @validator('user_id')
     def validate_user_id(cls, v):
         """Validate user_id is a valid UUID format."""
         if not UUID_PATTERN.match(v):
             raise ValueError("Invalid user_id format. Must be a valid UUID.")
         return v.lower()
-    
+
     @validator('message')
     def validate_message(cls, v):
         """Sanitize and validate message."""
@@ -66,7 +66,7 @@ class ChatRequest(BaseModel):
             return sanitize_message(v)
         except ValueError as e:
             raise ValueError(f"Invalid message: {str(e)}")
-    
+
     @validator('conversation_id', pre=True, always=True)
     def validate_conversation_id(cls, v):
         """Validate conversation_id if provided."""
@@ -124,7 +124,7 @@ def get_llm():
 def get_financial_therapy_prompt():
     """Create and return the financial therapy system prompt."""
     system_message = """**# WHO YOU ARE**
-You are a compassionate Financial Therapist working at F2 Fintech. You are NOT a salesperson. 
+You are a compassionate Financial Therapist working at F2 Fintech. You are NOT a salesperson.
 You are a trusted advisor who genuinely cares about people's financial and emotional wellbeing.
 
 Your core identity:
@@ -136,10 +136,10 @@ Your core identity:
 
 **# YOUR PURPOSE**
 You listen to them like an actual therapist, offer emotional support, and then help them understand their financial situation and options.
-You do not judge them for their past financial decisions or current situation. 
+You do not judge them for their past financial decisions or current situation.
 You meet them where they are and help them move forward in a way that makes sense for them.
-Help people navigate their financial journey with both emotional support and practical guidance. 
-Many customers come to you stressed, confused, or ashamed about their financial situation. 
+Help people navigate their financial journey with both emotional support and practical guidance.
+Many customers come to you stressed, confused, or ashamed about their financial situation.
 Your job is to make them feel heard, understood, and empowered.
 
 **# HOW YOU COMMUNICATE**
@@ -235,7 +235,7 @@ Your job is to make them feel heard, understood, and empowered.
 4. **Guide them to right product** - Only if it genuinely helps them
 5. **Move them forward** - Next step, even if not a loan
 
-Remember: Your success is not measured by how many loans you give out, but by how many 
+Remember: Your success is not measured by how many loans you give out, but by how many
 people you genuinely help - even if that means telling them NOT to take a loan.
 
 **# CONVERSATION FLOW**
@@ -265,9 +265,9 @@ people you genuinely help - even if that means telling them NOT to take a loan.
 - Timeline expectations
 - Support available
 
-Remember: This is a conversation with a real person facing real stress. Treat them with 
+Remember: This is a conversation with a real person facing real stress. Treat them with
 the dignity, respect, and patience you'd want if you were in their shoes."""
-    
+
     return ChatPromptTemplate.from_messages([
         ("system", system_message),
         ("human", "{user_message}")
@@ -464,12 +464,12 @@ def get_or_create_conversation(db: Session, user_id: str, conversation_id: str |
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid conversation_id format"
             )
-        
+
         conversation = db.query(Conversation).filter(
             Conversation.id == conversation_id,
             Conversation.user_id == user_id
         ).first()
-        
+
         if not conversation:
             logger.warning(f"Conversation not found: {conversation_id} for user: {user_id}")
             raise HTTPException(
@@ -500,7 +500,7 @@ def save_message(db: Session, conversation_id: str, role: MessageRole, content: 
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid message content: {str(e)}"
         )
-    
+
     message = ConversationMessage(
         id=str(uuid.uuid4()),
         conversation_id=conversation_id,
@@ -517,7 +517,7 @@ def get_conversation_context(db: Session, conversation_id: str, limit: int = 10)
     messages = db.query(ConversationMessage).filter(
         ConversationMessage.conversation_id == conversation_id
     ).order_by(ConversationMessage.created_at.desc()).limit(limit).all()
-    
+
     return list(reversed(messages))
 
 def format_conversation_context(messages: list[ConversationMessage]) -> str:
@@ -543,19 +543,19 @@ def format_conversation_context(messages: list[ConversationMessage]) -> str:
 async def chat(request: ChatRequest, db: Session = Depends(get_db)):
     """
     Main chat endpoint for the financial therapy chatbot.
-    
+
     Accepts a user message, retrieves relevant knowledge from the knowledge base,
     manages conversation context, and returns an AI response grounded in your data.
     Automatically persists all messages to the database.
     Input is validated and sanitized for security.
-    
+
     Args:
         request: ChatRequest containing user message and optional conversation ID
         db: Database session
-        
+
     Returns:
         ChatResponse with the AI's response and conversation details
-        
+
     Raises:
         HTTPException: For validation errors, missing API key, or database issues
     """
@@ -565,18 +565,18 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         # Ensure user exists
         user = get_or_create_user(db, request.user_id)
         logger.info(f"User authenticated: {request.user_id}")
-        
+
         # Get or create conversation
         conversation = get_or_create_conversation(
             db, request.user_id, request.conversation_id
         )
-        
+
         # Save user message (already validated by ChatRequest model)
         user_message_obj = save_message(
             db, conversation.id, MessageRole.USER, request.message
         )
         logger.info(f"User message saved: {user_message_obj.id}")
-        
+
         # Analyze user's mood and emotional state
         conversation_depth = conversation.message_count // 2  # Each exchange = 2 messages
         mood_analysis = analyze_emotion(request.message, conversation_depth)
@@ -590,7 +590,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
                 logger.info("Mood adaptation guidance applied to prompt")
         else:
             logger.info("Mood adaptation disabled via env var %s", MOOD_ADAPTATION_ENV)
-        
+
         # Get conversation context for LLM
         context_start = time.perf_counter()
         context_messages = get_conversation_context(
@@ -601,27 +601,27 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         # Exclude the current user message to avoid duplicate content in the same prompt.
         prior_context_messages = context_messages[:-1]
         conversation_context_text = format_conversation_context(prior_context_messages)
-        
+
         # ==================== NEW: RAG Integration ====================
         # Retrieve relevant knowledge from Pinecone
         logger.info(f"Retrieving knowledge base context for query: {request.message}")
-        
+
         context_text = ""
         knowledge_context = []
-        
+
         try:
             from src.knowledge.embedder import embed_text
             from src.knowledge.retriever import KnowledgeRetriever
-            
+
             # Convert user message to embedding
             query_vector = embed_text(request.message)
             logger.debug("User message converted to embedding vector")
-            
+
             # Search Pinecone for relevant documents
             retriever = KnowledgeRetriever()
             knowledge_context = retriever.get_context(query_vector)
             logger.info(f"Retrieved {len(knowledge_context)} relevant knowledge documents")
-            
+
             # Build context string from retrieved documents
             if knowledge_context:
                 context_text = "📚 **Relevant Knowledge Base**:\n"
@@ -637,12 +637,12 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
                 "RAG retrieval completed in %.2fs",
                 time.perf_counter() - context_start,
             )
-        
+
         except Exception as e:
             logger.warning(f"Knowledge base retrieval failed: {str(e)}. Continuing without context.")
             context_text = ""
             knowledge_context = []
-        
+
         # ==================== Build Enhanced Message ====================
         # Combine prior conversation, knowledge context, and current user message.
         enhanced_message_parts = []
@@ -661,13 +661,13 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
         enhanced_message_parts.append(f"**User's Question:**\n{request.message}")
         enhanced_message = "\n".join(enhanced_message_parts)
-        
+
         logger.info(f"Enhanced message length: {len(enhanced_message)} characters")
-        
+
         # Initialize LLM and prompt
         llm = get_llm()
         prompt = get_financial_therapy_prompt()
-        
+
         # Create the chain and get response (with knowledge context)
         chain = prompt | llm
         generation_start = time.perf_counter()
@@ -728,16 +728,16 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
             model_name="gemini-3-flash-preview",
         )
         logger.info("Mood snapshot persisted for conversation %s", conversation.id)
-        
+
         # Update conversation metadata
         conversation.message_count += 2
         conversation.updated_at = datetime.utcnow()
         db.commit()
-        
+
         logger.info(f"Chat exchange completed for user {request.user_id} in conversation {conversation.id}")
         logger.info(f"Response length: {len(assistant_text)} characters")
         logger.info("Total chat request completed in %.2fs", time.perf_counter() - request_start)
-        
+
         return ChatResponse(
             response=assistant_text,
             user_id=request.user_id,
@@ -754,14 +754,14 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
                 "overall_confidence": mood_analysis.get("overall_confidence"),
             }
         )
-    
+
     except ValueError as e:
         logger.error(f"Configuration error in chat endpoint: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="API configuration error. Please contact support."
         )
-    
+
     except HTTPException:
         raise
 
@@ -781,7 +781,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Model is temporarily rate-limited. Please retry shortly.",
             )
-    
+
         logger.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
         db.rollback()
         raise HTTPException(
@@ -795,25 +795,25 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
 async def analyze_user_mood(request: MoodAnalysisRequest):
     """
     Analyze user message for emotional state and mood indicators.
-    
+
     Returns stress level, emotional state, financial urgency, willingness to learn,
     and openness to solutions, along with confidence scores and detected keywords.
-    
+
     Args:
         request: MoodAnalysisRequest with user message and conversation depth
-        
+
     Returns:
         MoodAnalysisResponse with detailed mood and emotion analysis
-        
+
     Raises:
         HTTPException: For validation errors
     """
     try:
         logger.info(f"Analyzing mood for message: {request.message[:80]}...")
-        
+
         # Call emotion analyzer
         analysis = analyze_emotion(request.message, request.conversation_depth)
-        
+
         # Check for errors from analyzer
         if "error" in analysis:
             logger.error(f"Emotion analysis error: {analysis['error']}")
@@ -821,7 +821,7 @@ async def analyze_user_mood(request: MoodAnalysisRequest):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Could not analyze mood. Please try again."
             )
-        
+
         # Build response
         response = MoodAnalysisResponse(
             message=request.message,
@@ -833,11 +833,11 @@ async def analyze_user_mood(request: MoodAnalysisRequest):
             overall_confidence=analysis["overall_confidence"],
             detected_keywords=analysis.get("detected_keywords")
         )
-        
+
         logger.info(f"Mood analysis complete: stress={response.stress_level}, confidence={response.overall_confidence}")
-        
+
         return response
-        
+
     except HTTPException:
         raise
     except Exception as e:

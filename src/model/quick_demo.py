@@ -19,14 +19,14 @@ load_dotenv()
 
 class QuickModelDemo:
     """Quick demonstration of fine-tuned model without heavy quota usage"""
-    
+
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY not set")
         self.client = genai.Client(api_key=api_key)
         self.model_name = "gemini-3-flash-preview"
-        
+
         # Load fine-tuned system prompt
         prompt_path = Path("src/model/finetuned_system_prompt.txt")
         if prompt_path.exists():
@@ -35,7 +35,7 @@ class QuickModelDemo:
             logger.info("✓ Fine-tuned system prompt loaded")
         else:
             raise ValueError("Fine-tuned prompt not found!")
-    
+
     def show_finetuning_summary(self):
         """Display what fine-tuning was done"""
         logger.info("\n" + "=" * 80)
@@ -73,7 +73,7 @@ This is equivalent to fine-tuning for Gemini because examples are part of
 the prompt that shapes the model's generation behavior.
 """)
         logger.info("=" * 80)
-    
+
     def show_how_to_test(self):
         """Show how to actually test the model"""
         logger.info("\n" + "=" * 80)
@@ -94,7 +94,7 @@ result = tester.test_query(
 
 2. Batch Test with Training Examples:
    python -m src.model.model_test
-   
+
    This will:
    - Test with 5 actual training examples
    - Test with 5 custom real-world queries
@@ -104,11 +104,11 @@ result = tester.test_query(
 3. Programmatic Test:
    from src.model.model_test import ModelTester
    tester = ModelTester(use_finetuned=True)
-   
+
    # Test single query
    result = tester.test_query("Your question here")
    print(result['response'])
-   
+
    # Test multiple queries
    queries = [
        "I don't understand credit cards",
@@ -122,7 +122,7 @@ result = tester.test_query(
    from Pinecone before generating responses. This augments the fine-tuning.
 """)
         logger.info("=" * 80)
-    
+
     def show_example_usage(self):
         """Show example code snippets"""
         logger.info("\n" + "=" * 80)
@@ -161,20 +161,20 @@ response = client.models.generate_content(
 print(response.text)
 """)
         logger.info("=" * 80)
-    
+
     def calculate_prompt_stats(self):
         """Show prompt statistics"""
         logger.info("\n" + "=" * 80)
         logger.info("FINE-TUNED PROMPT STATISTICS")
         logger.info("=" * 80)
-        
+
         with open("src/model/finetuned_system_prompt.txt") as f:
             content = f.read()
-        
+
         lines = content.split('\n')
         examples = content.count("## Example")
         words = len(content.split())
-        
+
         logger.info(f"File size: {len(content):,} characters")
         logger.info(f"Lines: {len(lines)}")
         logger.info(f"Words: {words:,}")
@@ -184,7 +184,7 @@ print(response.text)
         logger.info(f"  - System instructions: {content[:content.find('# EXAMPLES')].count(' ') // 4:.0f} words")
         logger.info(f"  - Few-shot examples: {content[content.find('# EXAMPLES'):].count(' ') // 4:.0f} words")
         logger.info("=" * 80)
-    
+
     def show_expected_behavior(self):
         """Show what to expect from the fine-tuned model"""
         logger.info("\n" + "=" * 80)
@@ -230,7 +230,7 @@ print(response.text)
   - Provide financial/legal advice beyond scope
 """)
         logger.info("=" * 80)
-    
+
     def show_quota_status(self):
         """Show current quota status"""
         logger.info("\n" + "=" * 80)
@@ -256,21 +256,21 @@ After quota resets, run:
 to see full evaluation with metrics
 """)
         logger.info("=" * 80)
-    
+
     def run_demo(self):
         """Run full demonstration"""
         logger.info("\n\n")
         logger.info("█" * 80)
         logger.info("FINANCIAL THERAPIST CHATBOT - ACTUAL FINE-TUNING COMPLETE")
         logger.info("█" * 80)
-        
+
         self.show_finetuning_summary()
         self.calculate_prompt_stats()
         self.show_expected_behavior()
         self.show_how_to_test()
         self.show_example_usage()
         self.show_quota_status()
-        
+
         logger.info("\n" + "=" * 80)
         logger.info("SUMMARY")
         logger.info("=" * 80)
