@@ -52,7 +52,7 @@ output = json
 CONFIG
   chmod 600 ~/.aws/credentials ~/.aws/config
   echo "✓ AWS configured"
-  
+
   # Quick test
   if aws sts get-caller-identity > /dev/null 2>&1; then
     echo "✓ AWS credentials valid"
