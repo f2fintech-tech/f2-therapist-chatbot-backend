@@ -11,14 +11,14 @@ def setup_and_seed_pinecone():
     # The new SDK uses a Client object
     google_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-    
+
     index_name = "f2-therapy-index"
 
     # 2. Create Index if it doesn't exist
     if index_name not in [idx.name for idx in pc.list_indexes()]:
         pc.create_index(
             name=index_name,
-            dimension=768, 
+            dimension=768,
             metric="cosine",
             spec=ServerlessSpec(cloud="aws", region="us-east-1")
         )
@@ -37,7 +37,7 @@ def setup_and_seed_pinecone():
             model="gemini-embedding-2",
             contents=item["text"]
         )
-        
+
         # In the new SDK, embeddings are accessed like this:
         embedding_values = result.embeddings[0].values
 

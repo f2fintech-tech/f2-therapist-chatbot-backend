@@ -1,6 +1,6 @@
 """
 Emotion and mood analysis for user messages.
-Analyzes stress level, emotional state, financial urgency, willingness to learn, 
+Analyzes stress level, emotional state, financial urgency, willingness to learn,
 and openness to solutions to inform therapeutic response customization.
 """
 
@@ -46,7 +46,7 @@ STRESS_KEYWORDS = {
         "i'm worried about future","not financially secure","not confident","unsure about decision",
         "need guidance","feeling pressured",
         "credit score", "worried about", "concerned about", "will I be rejected",
-        "rejected before", "made bad decisions", "how long", 
+        "rejected before", "made bad decisions", "how long",
         "what documents", "what's a good rate",
         "can't compare", "which one should", "hidden fees",
         "been cheated", "just want to sell", "everyone pitches",
@@ -79,7 +79,7 @@ STRESS_KEYWORDS = {
         "what documents", "process", "timeline", "steps",
         "can I prepay", "prepayment", "flexibility",
         # Information seeking instead of distress
-        "i don't understand", "don't understand" 
+        "i don't understand", "don't understand"
     ]
 }
 
@@ -291,7 +291,7 @@ def _extract_keywords(text: str, keyword_dict: Dict[str, List[str]]) -> Tuple[st
     """
     text_lower = text.lower()
     matches = {}
-    
+
     for category, keywords in keyword_dict.items():
         count = 0
         for keyword in keywords:
@@ -307,19 +307,19 @@ def _extract_keywords(text: str, keyword_dict: Dict[str, List[str]]) -> Tuple[st
                 # For single words: use strict word boundaries
                 if re.search(r'\b' + re.escape(keyword) + r'\b', text_lower):
                     count += 1
-        
+
         if count > 0:
             matches[category] = count
-    
+
     if not matches:
         return None, 0.0
-    
+
     # Return category with highest match count
     top_category = max(matches, key=matches.get)
     max_matches = matches[top_category]
     total_matches = sum(matches.values())
     confidence = min(max_matches / 3.0, 1.0)  # Cap confidence at 1.0 (3 keywords = max confidence)
-    
+
     return top_category, confidence
 
 
@@ -327,23 +327,23 @@ def _analyze_sentence_structure(text: str) -> Dict[str, float]:
     """Analyze linguistic patterns: sentence length, punctuation, repetition."""
     sentences = text.split(".")
     avg_sentence_length = sum(len(s.split()) for s in sentences) / len(sentences) if sentences else 0
-    
+
     # Short choppy sentences indicate high emotion/panic
     short_sentence_ratio = sum(1 for s in sentences if len(s.split()) < 5) / len(sentences) if sentences else 0
-    
+
     # Exclamation marks indicate high emotion/urgency
     exclamation_count = text.count("!")
-    
+
     # Question marks indicate seeking help/confusion
     question_count = text.count("?")
-    
+
     # Repetition indicates obsessive thinking (anxiety)
     words = text.lower().split()
     word_freq = {}
     for word in words:
         word_freq[word] = word_freq.get(word, 0) + 1
     max_repetition = max(word_freq.values()) if word_freq else 0
-    
+
     return {
         "avg_sentence_length": avg_sentence_length,
         "short_sentence_ratio": short_sentence_ratio,
@@ -367,45 +367,45 @@ def _estimate_conversation_depth(message_count: int) -> str:
 
 class EmotionAnalyzer:
     """Analyze user messages for emotional state and mood indicators."""
-    
+
     def analyze(self, user_message: str, conversation_depth: int = 0) -> Dict:
         """
         Analyze a user message and return mood/emotion indicators.
-        
+
         Args:
             user_message: The user's text message
             conversation_depth: Number of previous messages in conversation (0 for first message)
-            
+
         Returns:
             Dictionary with stress_level, indicators, detected_keywords, and confidence scores
         """
         try:
             # Primary stress level detection
             stress_level, stress_confidence = self._detect_stress_level(user_message)
-            
+
             # Secondary indicators
             emotional_state, emotion_confidence = _extract_keywords(
                 user_message, EMOTIONAL_STATE_KEYWORDS
             )
-            
+
             financial_urgency, urgency_confidence = _extract_keywords(
                 user_message, FINANCIAL_URGENCY_KEYWORDS
             )
-            
+
             willingness_to_learn, willingness_confidence = _extract_keywords(
                 user_message, WILLINGNESS_TO_LEARN_KEYWORDS
             )
-            
+
             openness_to_solutions, openness_confidence = _extract_keywords(
                 user_message, OPENNESS_TO_SOLUTIONS_KEYWORDS
             )
-            
+
             # Linguistic analysis
             linguistic_patterns = _analyze_sentence_structure(user_message)
-            
+
             # Conversation depth
             conversation_phase = _estimate_conversation_depth(conversation_depth)
-            
+
             # Ensemble confidence (combine multiple signals)
             overall_confidence = self._calculate_ensemble_confidence(
                 stress_confidence,
@@ -413,7 +413,7 @@ class EmotionAnalyzer:
                 linguistic_patterns,
                 conversation_depth
             )
-            
+
             result = {
                 "stress_level": stress_level,
                 "stress_confidence": round(stress_confidence, 2),
@@ -434,24 +434,24 @@ class EmotionAnalyzer:
                 "conversation_phase": conversation_phase,
                 "overall_confidence": round(overall_confidence, 2),
             }
-            
+
             detected_keywords = self._extract_detected_keywords(user_message, stress_level)
             if detected_keywords:
                 result["detected_keywords"] = detected_keywords
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Error analyzing emotion: {str(e)}")
             return {
                 "stress_level": "unknown",
                 "error": str(e)
             }
-    
+
     def _detect_stress_level(self, text: str) -> Tuple[str, float]:
         """Detect primary stress level: high, moderate, or low."""
         text_lower = text.lower()
-        
+
         # Count keyword matches using word boundary matching for better accuracy
         high_count = 0
         for kw in STRESS_KEYWORDS["high"]:
@@ -463,7 +463,7 @@ class EmotionAnalyzer:
             else:  # Longer phrases can use simple substring match
                 if kw in text_lower:
                     high_count += 1
-        
+
         moderate_count = 0
         for kw in STRESS_KEYWORDS["moderate"]:
             if len(kw) <= 5:
@@ -473,7 +473,7 @@ class EmotionAnalyzer:
             else:
                 if kw in text_lower:
                     moderate_count += 1
-        
+
         low_count = 0
         for kw in STRESS_KEYWORDS["low"]:
             if len(kw) <= 5:
@@ -483,26 +483,26 @@ class EmotionAnalyzer:
             else:
                 if kw in text_lower:
                     low_count += 1
-        
+
         # Boost high stress if exclamation marks or all caps
         if "!" in text or text.isupper():
             high_count += 2
-        
+
         counts = {
             "high": high_count,
             "moderate": moderate_count,
             "low": low_count
         }
-        
+
         if all(v == 0 for v in counts.values()):
             return "unknown", 0.0
-        
+
         top_level = max(counts, key=counts.get)
         max_count = counts[top_level]
         confidence = min(max_count / 3.0, 1.0)
-        
+
         return top_level, confidence
-    
+
     def _calculate_ensemble_confidence(
         self,
         stress_conf: float,
@@ -517,13 +517,13 @@ class EmotionAnalyzer:
             linguistic["exclamation_ratio"],
             linguistic["question_ratio"]
         )
-        
+
         # Weight by conversation depth (early messages are noisier)
         depth_factor = min(depth / 5.0, 1.0) * 0.5 + 0.5  # Range: 0.5 to 1.0
-        
+
         combined = (stress_conf + emotion_conf + linguistic_signal) / 3.0
         return combined * depth_factor
-    
+
     def _extract_detected_keywords(self, text: str, stress_level: str) -> List[str]:
         """Extract actual keywords found in the text for transparency."""
         text_lower = text.lower()
@@ -539,11 +539,11 @@ _analyzer = EmotionAnalyzer()
 def analyze_emotion(user_message: str, conversation_depth: int = 0) -> Dict:
     """
     Analyze user message emotion and mood.
-    
+
     Args:
         user_message: The user's text
         conversation_depth: How many messages in the conversation so far
-        
+
     Returns:
         Dictionary with mood indicators
     """
