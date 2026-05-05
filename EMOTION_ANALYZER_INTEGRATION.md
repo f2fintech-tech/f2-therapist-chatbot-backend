@@ -18,7 +18,7 @@ The interactive chat mode uses `src/inference/predictor.py` (TherapyChatbot clas
   # Analyze user emotion/mood
   conversation_depth = len(conversation_history) if conversation_history else 0
   mood_analysis = analyze_emotion(user_message, conversation_depth=conversation_depth)
-  
+
   # Log mood analysis
   if verbose and mood_analysis:
       stress_level = mood_analysis.get('stress_level', 'unknown')

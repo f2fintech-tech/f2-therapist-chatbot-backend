@@ -1,7 +1,7 @@
 # Security Audit Report - RAG Pipeline Implementation
 
-**Date**: April 25, 2026  
-**Status**: Review Complete  
+**Date**: April 25, 2026
+**Status**: Review Complete
 **Severity**: LOW-MEDIUM (mostly best practice recommendations)
 
 ---
@@ -240,8 +240,8 @@ The following files would benefit from the security improvements:
 
 ## Summary
 
-✅ **No Critical Vulnerabilities Found**  
-⚠️ **4 Low-to-Medium Issues Identified** (mostly best practice)  
+✅ **No Critical Vulnerabilities Found**
+⚠️ **4 Low-to-Medium Issues Identified** (mostly best practice)
 ✅ **Security-Conscious Design** overall
 
 The code is safe to deploy with the recommended improvements.
