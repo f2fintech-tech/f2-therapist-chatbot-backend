@@ -21,6 +21,7 @@ psycopg2-binary
 langchain>=1.2.24
 langchain-core
 langchain-google-genai
+google-genai
 
 # Utilities
 python-dotenv
