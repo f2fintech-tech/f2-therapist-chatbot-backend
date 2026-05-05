@@ -27,11 +27,12 @@ from src.utils.validators import (
     ValidatedMessage, ValidatedConversation, UUID_PATTERN,
     MAX_MESSAGE_LENGTH, MIN_MESSAGE_LENGTH
 )
-from utils.emotion_analyzer import analyze_emotion
+from src.utils.api_security import require_api_key
+from src.utils.emotion_analyzer import analyze_emotion
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/chat", tags=["Chat"])
+router = APIRouter(prefix="/chat", tags=["Chat"], dependencies=[Depends(require_api_key)])
 
 # ==================== Constants ====================
 UUID_PATTERN = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
