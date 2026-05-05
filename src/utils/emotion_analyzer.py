@@ -417,6 +417,7 @@ class EmotionAnalyzer:
             result = {
                 "stress_level": stress_level,
                 "stress_confidence": round(stress_confidence, 2),
+                "stress_score": round(stress_confidence, 2),
                 "indicators": {
                     "emotional_state": emotional_state,
                     "financial_urgency": financial_urgency,
