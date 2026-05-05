@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  schedule:
+    - cron: '0 2 1,8,15,22,29 * *'
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Lint Python code
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}-lint
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest ruff
+
+      - name: Run lint checks
+        run: |
+          ruff check src tests --select E9,F63,F7,F82 --ignore E501
+
+  tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      DATABASE_URL: sqlite:///./test.db
+      GEMINI_API_KEY: test-gemini-key
+      PINECONE_API_KEY: test-pinecone-key
+      ENVIRONMENT: test
+      APP_ENV: ci
+      HOST: 127.0.0.1
+      PORT: 8000
+      LOG_LEVEL: info
+      ALLOWED_ORIGINS: http://localhost:3000
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      CORS_ORIGINS: http://localhost:3000
+      AWS_REGION: us-east-1
+      AWS_S3_BUCKET_NAME: test-bucket
+      SQL_ECHO: false
+      PYTHONPATH: src
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}-tests
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+
+      - name: Run unit and integration-safe tests
+        run: |
+          pytest tests -k "not api_integration" --maxfail=1 -q
