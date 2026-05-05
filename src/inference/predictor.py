@@ -19,11 +19,11 @@ load_dotenv()
 
 class TherapyChatbot:
     """Financial Therapist Chatbot with RAG integration"""
-    
+
     def __init__(self):
         """Initialize the chatbot with Gemini and Pinecone"""
         logger.info("Initializing TherapyChatbot...")
-        
+
         # Validate Gemini API key
         gemini_api_key = os.getenv("GEMINI_API_KEY")
         if not gemini_api_key or not gemini_api_key.strip():
@@ -31,11 +31,11 @@ class TherapyChatbot:
                 "GEMINI_API_KEY environment variable is not set or empty! "
                 "Please set it in your .env file or environment."
             )
-        
+
         # Initialize Gemini client
         self.client = genai.Client(api_key=gemini_api_key)
         self.model_name = "gemini-3-flash-preview"
-        
+
         # Validate Pinecone API key
         pinecone_api_key = os.getenv("PINECONE_API_KEY")
         if not pinecone_api_key or not pinecone_api_key.strip():
@@ -43,16 +43,16 @@ class TherapyChatbot:
                 "PINECONE_API_KEY environment variable is not set or empty! "
                 "Please set it in your .env file or environment."
             )
-        
+
         # Initialize Pinecone
         self.pc = Pinecone(api_key=pinecone_api_key)
         self.index = self.pc.Index("f2-therapy-index")
-        
+
         # Load system prompt
         self.system_prompt = self._load_system_prompt()
-        
+
         logger.info("✓ TherapyChatbot initialized successfully")
-    
+
     def _load_system_prompt(self):
         """Load the system prompt for the financial therapist"""
         # First, try to load fine-tuned prompt
@@ -64,10 +64,10 @@ class TherapyChatbot:
                     return f.read()
             except Exception as e:
                 logger.warning(f"Could not load fine-tuned prompt: {e}")
-        
+
         # Fallback to base prompt
         prompt_path = Path("src/data/processed/system_prompt.md")
-        
+
         if prompt_path.exists():
             try:
                 with open(prompt_path, 'r', encoding='utf-8') as f:
@@ -75,7 +75,7 @@ class TherapyChatbot:
                     return f.read()
             except Exception as e:
                 logger.warning(f"Could not load system prompt: {e}")
-        
+
         # Default system prompt
         logger.warning("Using default system prompt - fine-tuned version recommended")
         return """You are a compassionate Financial Therapist for F2 Fintech.
@@ -101,7 +101,7 @@ Guidelines:
 - Never push products they don't need
 - Never make promises you can't keep
 """
-    
+
     def _get_relevant_context(self, user_message, top_k=3):
         """Retrieve relevant knowledge base documents using RAG"""
         try:
@@ -111,14 +111,14 @@ Guidelines:
                 contents=user_message,
             )
             user_vector = embed_result.embeddings[0].values
-            
+
             # Search Pinecone for relevant documents
             search_results = self.index.query(
                 vector=user_vector,
                 top_k=top_k,
                 include_metadata=True
             )
-            
+
             # Extract context from search results
             context_pieces = []
             if search_results.get('matches'):
@@ -127,24 +127,24 @@ Guidelines:
                     content = metadata.get('content', '')
                     doc_type = metadata.get('type', 'unknown')
                     score = match.get('score', 0)
-                    
+
                     if content:
                         context_pieces.append({
                             'content': content,
                             'type': doc_type,
                             'relevance_score': score
                         })
-            
+
             logger.info(f"Retrieved {len(context_pieces)} relevant documents from knowledge base")
             return context_pieces
-            
+
         except Exception as e:
             logger.error(f"Error retrieving context: {e}")
             return []
-    
+
     def _build_rag_prompt(self, user_message, context_pieces):
         """Build a prompt with RAG context for the model"""
-        
+
         # Format context
         context_str = ""
         if context_pieces:
@@ -153,7 +153,7 @@ Guidelines:
                 doc_type = piece.get('type', 'document')
                 content = piece.get('content', '')[:300]  # Limit content length
                 context_str += f"\n{i}. [{doc_type.upper()}] {content}\n"
-        
+
         # Build the complete prompt
         rag_prompt = f"""{self.system_prompt}
 
@@ -165,7 +165,7 @@ Guidelines:
 
 === YOUR RESPONSE ===
 """
-        
+
         return rag_prompt
 
     def _build_chat_prompt(self, user_message, conversation_history=None, context_pieces=None):
@@ -214,48 +214,48 @@ User says: {user_message}"""
     def _is_rate_limited(error_message):
         lowered = error_message.lower()
         return "429" in lowered or "too many requests" in lowered or "rate limit" in lowered
-    
+
     def chat(self, user_message, use_rag=True, conversation_history=None, verbose=True):
         """
         Chat with the financial therapist
-        
+
         Args:
             user_message: The user's input message
             use_rag: Whether to use RAG (Retrieval-Augmented Generation)
             conversation_history: Optional list of recent turns to preserve context
             verbose: Whether to log the user and therapist messages
-        
+
         Returns:
             The therapist's response
         """
         if verbose:
             logger.info(f"User: {user_message[:80]}...")
-        
+
         try:
             # Analyze user emotion/mood
             conversation_depth = len(conversation_history) if conversation_history else 0
             mood_analysis = analyze_emotion(user_message, conversation_depth=conversation_depth)
-            
+
             # Log mood analysis
             if verbose and mood_analysis:
                 stress_level = mood_analysis.get('stress_level', 'unknown')
                 emotional_state = mood_analysis.get('emotional_state', [])
                 if stress_level != 'unknown' or emotional_state:
                     logger.info(f"  [Mood] Stress: {stress_level}, Emotional State: {', '.join(emotional_state) if emotional_state else 'neutral'}")
-            
+
             context_pieces = []
-            
+
             # Retrieve context if RAG is enabled
             if use_rag:
                 context_pieces = self._get_relevant_context(user_message)
-            
+
             # Build the prompt
             prompt = self._build_chat_prompt(
                 user_message,
                 conversation_history=conversation_history,
                 context_pieces=context_pieces,
             )
-            
+
             # Generate response using Gemini, with quota-aware retry handling
             logger.info(f"Generating response using {self.model_name}...")
             max_retries = 2
@@ -280,7 +280,7 @@ User says: {user_message}"""
                         f"(attempt {attempt}/{max_retries})"
                     )
                     time.sleep(retry_delay)
-            
+
             if response and response.text:
                 if verbose:
                     logger.info(f"Therapist: {response.text[:100]}...")
@@ -288,7 +288,7 @@ User says: {user_message}"""
             else:
                 logger.error("No response generated from model")
                 return "I appreciate you reaching out, but I'm having trouble processing that right now. Could you try again?"
-            
+
         except Exception as e:
             logger.error(f"Error in chat: {e}")
             return f"I'm sorry, I encountered an error while trying to help. Please try again in a moment."
@@ -307,19 +307,19 @@ def get_financial_therapy(user_message):
 if __name__ == "__main__":
     # Test the chatbot
     logging.basicConfig(level=logging.INFO)
-    
+
     chatbot = TherapyChatbot()
-    
+
     test_messages = [
         "I'm worried about my credit card debt",
         "How can I manage financial stress?",
         "What should I do if I missed an EMI payment?"
     ]
-    
+
     print("\n" + "="*60)
     print("FINANCIAL THERAPIST CHATBOT - TEST SESSION")
     print("="*60)
-    
+
     for msg in test_messages:
         print(f"\nUser: {msg}")
         response = chatbot.chat(msg)

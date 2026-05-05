@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 def get_database_url():
     """Get database URL with fallback for development."""
     url = os.getenv("DATABASE_URL")
-    
+
     if not url:
         logger.warning("DATABASE_URL not set, using SQLite for development")
         url = "sqlite:///./test.db"
-    
+
     return url
 
 DATABASE_URL = get_database_url()
@@ -43,23 +43,23 @@ class MessageRole(str, enum.Enum):
 class User(Base):
     """User model for storing user information."""
     __tablename__ = "users"
-    
+
     id = Column(String(36), primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=True)
     name = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    
+
     # Relationships
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
-    
+
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email})>"
 
 class Conversation(Base):
     """Conversation model for storing conversation sessions."""
     __tablename__ = "conversations"
-    
+
     id = Column(String(36), primary_key=True, index=True)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     title = Column(String(500), nullable=True)
@@ -67,28 +67,28 @@ class Conversation(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     message_count = Column(Integer, default=0)
-    
+
     # Relationships
     user = relationship("User", back_populates="conversations")
     messages = relationship("ConversationMessage", back_populates="conversation", cascade="all, delete-orphan")
-    
+
     def __repr__(self):
         return f"<Conversation(id={self.id}, user_id={self.user_id}, title={self.title})>"
 
 class ConversationMessage(Base):
     """ConversationMessage model for storing individual messages in a conversation."""
     __tablename__ = "conversation_messages"
-    
+
     id = Column(String(36), primary_key=True, index=True)
     conversation_id = Column(String(36), ForeignKey("conversations.id"), nullable=False, index=True)
     role = Column(SQLEnum(MessageRole), nullable=False)
     content = Column(Text, nullable=False)
     token_count = Column(Integer, nullable=True)  # For tracking token usage
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    
+
     # Relationships
     conversation = relationship("Conversation", back_populates="messages")
-    
+
     def __repr__(self):
         return f"<ConversationMessage(id={self.id}, role={self.role}, conversation_id={self.conversation_id})>"
 

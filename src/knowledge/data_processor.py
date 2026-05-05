@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 def _validate_scenario_schema(scenario: dict) -> bool:
     """
     Validate scenario has required fields.
-    
+
     Args:
         scenario: Scenario dictionary to validate
-    
+
     Returns:
         True if valid, False otherwise
     """
@@ -28,10 +28,10 @@ def _validate_scenario_schema(scenario: dict) -> bool:
 def _validate_faq_schema(faq: dict) -> bool:
     """
     Validate FAQ has required fields.
-    
+
     Args:
         faq: FAQ dictionary to validate
-    
+
     Returns:
         True if valid, False otherwise
     """
@@ -41,10 +41,10 @@ def _validate_faq_schema(faq: dict) -> bool:
 def _validate_conversation_schema(conversation: dict) -> bool:
     """
     Validate conversation has required fields.
-    
+
     Args:
         conversation: Conversation dictionary to validate
-    
+
     Returns:
         True if valid, False otherwise
     """
@@ -54,7 +54,7 @@ def _validate_conversation_schema(conversation: dict) -> bool:
 def _set_secure_permissions(file_path: Path):
     """
     Set restrictive file permissions (0o600 - owner read/write only).
-    
+
     Args:
         file_path: Path to file to secure
     """
@@ -73,7 +73,7 @@ class DataProcessor:
     def __init__(self):
         self.raw_dir = Path("src/data/raw")
         self.processed_dir = Path("src/data/processed")
-        
+
         # Create processed directory if it doesn't exist
         self.processed_dir.mkdir(parents=True, exist_ok=True)
 
@@ -172,16 +172,16 @@ class DataProcessor:
             return "\n".join(parts).strip()
 
         return item.get("content") or item.get("text") or item.get("question") or item.get("answer") or ""
-    
+
     def process_scenarios(self):
         """Process raw scenarios into formatted documents."""
         raw_file = self.raw_dir / "scenarios_raw.json"
         processed_file = self.processed_dir / "scenarios.json"
-        
+
         if not raw_file.exists():
             logger.warning(f"Raw scenarios file not found: {raw_file}")
             return []
-        
+
         try:
             with open(raw_file, 'r', encoding='utf-8') as f:
                 raw_scenarios = json.load(f)
@@ -192,7 +192,7 @@ class DataProcessor:
         state = self._load_embedding_state()
         source_state = state.get("scenarios", {})
         existing_map = self._load_existing_processed_map(processed_file, "scenarios")
-        
+
         processed_scenarios = []
         updated = False
         for scenario in raw_scenarios:
@@ -208,7 +208,7 @@ class DataProcessor:
             if source_state.get(record_key) == record_hash and existing_record and self._has_embedding(existing_record):
                 processed_scenarios.append(existing_record)
                 continue
-            
+
             processed = {
                 "id": scenario.get("id"),
                 "title": scenario.get("title"),
@@ -235,25 +235,25 @@ class DataProcessor:
         try:
             with open(processed_file, 'w', encoding='utf-8') as f:
                 json.dump(processed_scenarios, f, indent=2, ensure_ascii=False)
-            
+
             # Set secure permissions on the file
             _set_secure_permissions(processed_file)
-            
+
             logger.info(f"Processed {len(processed_scenarios)} scenarios")
             return processed_scenarios
         except IOError as e:
             logger.error(f"Error writing processed scenarios: {e}")
             return []
-    
+
     def process_faqs(self):
         """Process raw FAQs into formatted documents."""
         raw_file = self.raw_dir / "faqs_raw.json"
         processed_file = self.processed_dir / "faqs.json"
-        
+
         if not raw_file.exists():
             logger.warning(f"Raw FAQs file not found: {raw_file}")
             return []
-        
+
         try:
             with open(raw_file, 'r', encoding='utf-8') as f:
                 raw_faqs = json.load(f)
@@ -264,7 +264,7 @@ class DataProcessor:
         state = self._load_embedding_state()
         source_state = state.get("faqs", {})
         existing_map = self._load_existing_processed_map(processed_file, "faqs")
-        
+
         processed_faqs = []
         updated = False
         for faq in raw_faqs:
@@ -280,7 +280,7 @@ class DataProcessor:
             if source_state.get(record_key) == record_hash and existing_record and self._has_embedding(existing_record):
                 processed_faqs.append(existing_record)
                 continue
-            
+
             processed = {
                 "id": faq.get("id"),
                 "question": faq.get("question"),
@@ -299,20 +299,20 @@ class DataProcessor:
         if not updated and processed_file.exists():
             logger.info(f"FAQs already processed and embedded; skipping rewrite of {processed_file.name}")
             return processed_faqs
-        
+
         try:
             with open(processed_file, 'w', encoding='utf-8') as f:
                 json.dump(processed_faqs, f, indent=2, ensure_ascii=False)
-            
+
             # Set secure permissions on the file
             _set_secure_permissions(processed_file)
-            
+
             logger.info(f"Processed {len(processed_faqs)} FAQs")
             return processed_faqs
         except IOError as e:
             logger.error(f"Error writing processed FAQs: {e}")
             return []
-    
+
     def process_conversations(self):
         """Process raw conversations into training examples."""
         raw_file = self.raw_dir / "conversations.json"
@@ -405,20 +405,20 @@ class DataProcessor:
         except IOError as e:
             logger.error(f"Error writing processed conversations: {e}")
             return []
-    
+
     def process_system_prompt(self):
         """Process raw system prompt."""
         raw_file = self.raw_dir / "system_prompt_raw.md"
         processed_file = self.processed_dir / "system_prompt.md"
-        
+
         if not raw_file.exists():
             logger.warning(f"Raw system prompt not found: {raw_file}")
             return None
-        
+
         try:
             with open(raw_file, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
+
             processed_content = content.strip()
 
             state = self._load_embedding_state()
@@ -435,39 +435,39 @@ class DataProcessor:
             if system_state.get("system_prompt") == self._hash_text(processed_content) and existing_prompt == processed_content:
                 logger.info("System prompt already processed and embedded; skipping rewrite")
                 return processed_content
-            
+
             with open(processed_file, 'w', encoding='utf-8') as f:
                 f.write(processed_content)
-            
+
             # Set secure permissions on the file
             _set_secure_permissions(processed_file)
-            
+
             logger.info("Processed system prompt")
             return processed_content
         except IOError as e:
             logger.error(f"Error processing system prompt: {e}")
             return None
-    
+
     def process_all(self):
         """Process all raw data into processed format."""
         logger.info("Starting data processing...")
-        
+
         self.process_scenarios()
         self.process_faqs()
         self.process_conversations()
         self.process_system_prompt()
-        
+
         logger.info("Data processing complete!")
-    
+
     @staticmethod
     def _extract_keywords(text: str, limit: int = 10):
         """Extract keywords from text."""
         words = text.lower().split()
         stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for'}
-        keywords = [w.strip('.,!?;:') for w in words 
+        keywords = [w.strip('.,!?;:') for w in words
                    if len(w) > 3 and w not in stop_words]
         return list(set(keywords))[:limit]
 
 if __name__ == "__main__":
     processor = DataProcessor()
-    processor.process_all() 
+    processor.process_all()
