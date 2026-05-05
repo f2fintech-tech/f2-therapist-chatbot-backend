@@ -144,6 +144,18 @@ def sanitize_title(title: str) -> str:
     
     return title
 
+
+def normalize_uuid(value: str, field_name: str = "UUID") -> str:
+    """Validate and normalize UUID text."""
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+
+    value = value.strip()
+    if not UUID_PATTERN.match(value):
+        raise ValueError(f"Invalid {field_name} format")
+
+    return value.lower()
+
 # ==================== Validation Models ====================
 class ValidatedUser(BaseModel):
     """Validated user model."""
@@ -154,9 +166,7 @@ class ValidatedUser(BaseModel):
     @validator('id')
     def validate_id(cls, v):
         """Validate user ID is valid UUID."""
-        if not UUID_PATTERN.match(v):
-            raise ValueError("Invalid user ID format")
-        return v.lower()
+        return normalize_uuid(v, "user ID")
     
     @validator('email', pre=True, always=True)
     def validate_email(cls, v):
@@ -199,9 +209,7 @@ class ValidatedConversation(BaseModel):
     @validator('id', 'user_id')
     def validate_uuid(cls, v):
         """Validate UUID format."""
-        if not UUID_PATTERN.match(v):
-            raise ValueError("Invalid UUID format")
-        return v.lower()
+        return normalize_uuid(v)
     
     @validator('title', pre=True, always=True)
     def validate_title(cls, v):
