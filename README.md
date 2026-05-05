@@ -53,3 +53,95 @@ The Financial Therapist Chatbot is an intelligent conversational AI service that
 - **Health checks** - Readiness and liveness probes
 - **Comprehensive logging** - Debug and monitor everything
 
+---
+
+## 🔐 Environment Variables
+
+This project expects the following environment variables to be set in local development and/or production:
+
+### ==================== ENVIRONMENT ====================
+- `ENVIRONMENT` - App environment such as `development` or `production`
+
+### ==================== APPLICATION ====================
+- `APP_ENV` - Runtime app environment label
+
+### ==================== SERVER ====================
+- `HOST` - Host interface used by the API server
+- `PORT` - Port used by the API server
+- `LOG_LEVEL` - Logging level such as `info` or `debug`
+
+### ==================== CORS ====================
+- `ALLOWED_ORIGINS` - Comma-separated list of allowed CORS origins
+- `ALLOWED_HOSTS` - Comma-separated list of allowed hostnames for production
+- `CORS_ORIGINS` - Additional CORS origin configuration used by workflow/environment setup
+
+### ==================== MONITORING & ALERTS ====================
+- `SLACK_WEBHOOK_URL` - Optional Slack incoming webhook for monitor workflow alerts
+
+### ==================== GOOGLE GEMINI API ====================
+- `GEMINI_API_KEY` - Google Gemini API key used for generation and embeddings
+
+### ==================== PINECONE VECTOR DB ====================
+- `PINECONE_API_KEY` - Pinecone API key used for vector search and index operations
+
+### ==================== AWS S3 ====================
+- `AWS_ACCESS_KEY_ID` - AWS access key used for S3 operations
+- `AWS_SECRET_ACCESS_KEY` - AWS secret access key used for S3 operations
+- `AWS_REGION` - AWS region for S3 and other AWS services
+- `AWS_S3_BUCKET_NAME` - S3 bucket used for knowledge base and model artifacts
+
+### ==================== DATABASE ====================
+- `DATABASE_URL` - PostgreSQL connection string
+- `POSTGRES_USER` - PostgreSQL username
+- `POSTGRES_DB` - PostgreSQL database name
+
+### ==================== LOGGING ====================
+- `SQL_ECHO` - Enables SQLAlchemy SQL logging when set appropriately
+
+> Tip: In production, keep secret values in GitHub Secrets or your deployment platform's secret store, not in source control.
+
+---
+
+## 🤖 GitHub Actions Secrets and Variables
+
+The GitHub workflows in `.github/workflows/` use both **Secrets** and **Repository Variables**.
+
+### Add these as GitHub Secrets
+- `GEMINI_API_KEY`
+- `PINECONE_API_KEY`
+- `DATABASE_URL`
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `SLACK_WEBHOOK_URL` (optional, only needed if Slack alerts are enabled)
+
+### Add these as GitHub Variables
+- `ENVIRONMENT`
+- `APP_ENV`
+- `HOST`
+- `PORT`
+- `LOG_LEVEL`
+- `ALLOWED_ORIGINS`
+- `ALLOWED_HOSTS`
+- `CORS_ORIGINS`
+- `POSTGRES_USER`
+- `POSTGRES_DB`
+- `AWS_REGION`
+- `AWS_S3_BUCKET_NAME`
+- `SQL_ECHO`
+
+### Where they are used
+- `GEMINI_API_KEY` and `PINECONE_API_KEY` are used by the chatbot, training, evaluation, and monitoring jobs.
+- `DATABASE_URL` is used by the API and persistence layers.
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, and `AWS_S3_BUCKET_NAME` are used for S3 upload/download steps.
+- `ALLOWED_ORIGINS` and `ALLOWED_HOSTS` are used in `src/main.py` for security and browser access control.
+- `SLACK_WEBHOOK_URL` is used by `.github/workflows/6-monitor-pipeline.yml` for optional alert notifications.
+
+### How to add them in GitHub
+1. Open your repository on GitHub.
+2. Go to `Settings`.
+3. Select `Secrets and variables`.
+4. Add the values under either `Actions secrets` or `Actions variables`.
+5. Save each value carefully and keep production values separate from development values.
+
+> Tip: Secrets are masked in GitHub Actions logs. Variables are visible in workflow configuration, so only store non-sensitive values there.
+
