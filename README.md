@@ -143,5 +143,26 @@ The GitHub workflows in `.github/workflows/` use both **Secrets** and **Reposito
 4. Add the values under either `Actions secrets` or `Actions variables`.
 5. Save each value carefully and keep production values separate from development values.
 
-> Tip: Secrets are masked in GitHub Actions logs. Variables are visible in workflow configuration, so only store non-sensitive values there.
+---
 
+## 🪝 Pre-commit Hooks
+
+This repository includes a pre-commit configuration in [`.pre-commit-config.yaml`](.pre-commit-config.yaml) so contributors can catch common issues before committing.
+
+### What it checks
+- Trailing whitespace
+- Missing final newline / end-of-file cleanup
+- YAML syntax
+- Oversized files
+- Ruff lint checks for Python syntax and error-prone patterns
+
+### How to enable it locally
+1. Install the project dependencies.
+2. Run `pre-commit install` once in the repository.
+3. Commit as usual; the hooks will run automatically before each commit.
+
+### Useful manual commands
+- `pre-commit run --all-files` to check the entire repository
+- `pre-commit run --files <path>` to test specific files
+
+> Tip: Secrets are masked in GitHub Actions logs. Variables are visible in workflow configuration, so only store non-sensitive values there.

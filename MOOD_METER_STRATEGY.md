@@ -1,6 +1,6 @@
 # Mood/Emotion Meter System - Architecture & Strategy
 
-**Date:** May 2, 2026  
+**Date:** May 2, 2026
 **Status:** Implemented - Backend Complete
 
 ---
@@ -235,7 +235,7 @@ User: "I just lost my job and I'm panicking about bills due next week!"
 Current Response: [Generic 300-char explanation of options]
 ❌ WRONG: User gets overwhelmed, closes app
 
-Mood-Aware Response: "That's a real shock. Let's focus on this week. 
+Mood-Aware Response: "That's a real shock. Let's focus on this week.
 What's your biggest bill due first? Let's handle it one step at a time."
 ✅ CORRECT: Acknowledges urgency, offers control, keeps it simple
 
@@ -250,8 +250,8 @@ Strategy:
 ```
 User: "I'm confused about how EMIs work and worried about being approved"
 
-Response (Mood-aware): "That's a common worry. EMI is just your fixed 
-monthly payment. For example, borrow ₹1 lakh, pay ₹10k each month. 
+Response (Mood-aware): "That's a common worry. EMI is just your fixed
+monthly payment. For example, borrow ₹1 lakh, pay ₹10k each month.
 Want to see how approval works?"
 
 Strategy:
@@ -265,10 +265,10 @@ Strategy:
 ```
 User: "I'm interested in understanding how interest rates are calculated"
 
-Response (Mood-aware): "Great question! Interest rates depend on several 
-factors. Your credit score is biggest—higher score = lower rate. Then 
-loan amount, tenure, and income stability. At F2, rates range 10.99%-24% 
-(reducing balance = less interest paid over time). Want to see a worked 
+Response (Mood-aware): "Great question! Interest rates depend on several
+factors. Your credit score is biggest—higher score = lower rate. Then
+loan amount, tenure, and income stability. At F2, rates range 10.99%-24%
+(reducing balance = less interest paid over time). Want to see a worked
 example with your numbers?"
 
 Strategy:
@@ -503,19 +503,19 @@ curious, interested, wondering, exploring, thinking, learning, okay, fine, manag
 
 ## 9. FAQ
 
-**Q: Will the mood analysis affect the chat response I receive?**  
+**Q: Will the mood analysis affect the chat response I receive?**
 A: Currently, mood is detected and returned in the response, but doesn't automatically change the AI's output. That's phase 2 (response customization). Right now it's mainly for frontend display + future analytics.
 
-**Q: What if the mood analysis is wrong?**  
+**Q: What if the mood analysis is wrong?**
 A: The confidence score tells you how certain we are. Low confidence (<0.65) means we're unsure. Also, mood detection improves with more conversation context—early messages are noisier.
 
-**Q: Can the system detect sarcasm/irony?**  
+**Q: Can the system detect sarcasm/irony?**
 A: Not yet. That's complex NLP. Current system works best with straightforward emotional language.
 
-**Q: Is mood data stored in the database?**  
+**Q: Is mood data stored in the database?**
 A: Not currently, but could be. Right now it's computed on-demand. For analytics, you'd want to store it.
 
-**Q: When should I offer human escalation?**  
+**Q: When should I offer human escalation?**
 A: When `stress_level == "high"` AND `emotional_state == "hopeless"` repeatedly, or if user explicitly asks for support.
 
 ---
@@ -524,7 +524,7 @@ A: When `stress_level == "high"` AND `emotional_state == "hopeless"` repeatedly,
 
 Track these to measure mood meter effectiveness:
 
-1. **Mood Distribution** 
+1. **Mood Distribution**
    - % of users by stress level on first message
    - Healthy: 30% high, 40% moderate, 30% low
 
