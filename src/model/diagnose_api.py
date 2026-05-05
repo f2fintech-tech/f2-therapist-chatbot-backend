@@ -83,7 +83,7 @@ try:
 except Exception as e:
     error_str = str(e)
     print(f"✗ gemini-3-flash-preview failed: {e}")
-    
+
     # Check if it's a quota or rate-limit error
     lowered = error_str.lower()
     if "exceeded your current quota" in lowered or "daily limit" in lowered:
