@@ -47,7 +47,10 @@ from knowledge.s3_storage import S3StorageManager
 from knowledge.data_processor import DataProcessor
 from knowledge.embedder import get_embeddings
 from knowledge.loader import KnowledgeLoader
-from inference.predictor import TherapyChatbot
+try:
+    from src.inference.predictor import TherapyChatbot
+except ImportError:
+    from inference.predictor import TherapyChatbot
 from model.model_train import ModelTrainer
 
 

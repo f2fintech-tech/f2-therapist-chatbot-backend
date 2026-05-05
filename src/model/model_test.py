@@ -21,9 +21,12 @@ except ImportError:
     Pinecone = None
 
 try:
-    from inference.predictor import TherapyChatbot
+    from src.inference.predictor import TherapyChatbot
 except ImportError:
-    TherapyChatbot = None
+    try:
+        from inference.predictor import TherapyChatbot
+    except ImportError:
+        TherapyChatbot = None
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(message)s')
