@@ -15,10 +15,11 @@ import re
 from src.models import (
     get_db, Conversation, ConversationMessage, User, get_or_create_user
 )
+from src.utils.api_security import require_api_key
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/conversations", tags=["Conversations"])
+router = APIRouter(prefix="/conversations", tags=["Conversations"], dependencies=[Depends(require_api_key)])
 
 # ==================== Constants ====================
 MAX_TITLE_LENGTH = 500
