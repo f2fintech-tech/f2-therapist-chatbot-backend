@@ -10,10 +10,12 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.responses import RedirectResponse
 from dotenv import load_dotenv
 import os
 import logging
+from urllib.parse import urlparse
 
 # Import routers
 from src.routers import health, chat, conversations
@@ -31,6 +33,21 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+def _parse_hosts_from_origins(origins):
+    """Extract host names from CORS origin URLs."""
+    hosts = []
+    for origin in origins:
+        origin = origin.strip()
+        if not origin:
+            continue
+
+        parsed = urlparse(origin)
+        if parsed.hostname:
+            hosts.append(parsed.hostname)
+
+    return hosts
 
 
 class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
@@ -83,9 +100,30 @@ app.add_middleware(SecurityLoggingMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(HTTPSRedirectMiddleware)
 
+# Trusted host middleware prevents host header attacks in production.
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+DEFAULT_ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS")
+
+if ALLOWED_HOSTS:
+    ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS.split(",") if host.strip()]
+else:
+    ALLOWED_HOSTS = DEFAULT_ALLOWED_HOSTS if ENVIRONMENT != "production" else _parse_hosts_from_origins(
+        os.getenv("ALLOWED_ORIGINS", "").split(",")
+    )
+
+if ENVIRONMENT == "production" and not ALLOWED_HOSTS:
+    logger.warning(
+        "ALLOWED_HOSTS not set in production and no hosts could be derived from ALLOWED_ORIGINS. "
+        "Using localhost-only fallback; set ALLOWED_HOSTS explicitly for deployment."
+    )
+    ALLOWED_HOSTS = DEFAULT_ALLOWED_HOSTS
+
+logger.info(f"Allowed hosts: {ALLOWED_HOSTS}")
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
+
 # CORS middleware (added last, processed first)
 # Get allowed origins from environment variable
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
 
 # For production, default to no origins (explicitly set required)
