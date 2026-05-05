@@ -37,6 +37,10 @@ jobs:
         run: |
           ruff check src tests --select E9,F63,F7,F82 --ignore E501
 
+      - name: Run pre-commit hooks
+        run: |
+          pre-commit run --all-files --show-diff-on-failure
+
   tests:
     name: Run tests
     runs-on: ubuntu-latest
