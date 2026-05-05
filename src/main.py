@@ -3,12 +3,14 @@ Financial Therapist Chatbot Backend
 FastAPI application with Google Gemini 3 flash preview API integration
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import RedirectResponse
 from dotenv import load_dotenv
 import os
 import logging
@@ -29,6 +31,19 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+    """Redirect incoming HTTP requests to HTTPS in production."""
+
+    async def dispatch(self, request: Request, call_next):
+        if ENVIRONMENT == "production":
+            forwarded_proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+            if forwarded_proto != "https":
+                secure_url = request.url.replace(scheme="https")
+                return RedirectResponse(str(secure_url), status_code=308)
+
+        return await call_next(request)
 
 # ==================== Rate Limiting Setup ====================
 """
@@ -66,6 +81,7 @@ app = FastAPI(
 # Security and observability middleware (added first, processed last)
 app.add_middleware(SecurityLoggingMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(HTTPSRedirectMiddleware)
 
 # CORS middleware (added last, processed first)
 # Get allowed origins from environment variable
