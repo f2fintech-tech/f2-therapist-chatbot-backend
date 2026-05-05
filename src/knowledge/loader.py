@@ -282,17 +282,17 @@ class KnowledgeLoader:
             + (f" ({skipped} skipped)" if skipped else "")
         )
         return len(vectors)
-    
+
     def load_scenarios(self):
         """Load scenarios from JSON into vector DB."""
         scenarios_path = Path("src/data/processed/scenarios.json")
         return self._load_json_collection(scenarios_path)
-    
+
     def load_faqs(self):
         """Load FAQs from JSON into vector DB."""
         faqs_path = Path("src/data/processed/faqs.json")
         return self._load_json_collection(faqs_path)
-    
+
     def load_all(self):
         """Load all knowledge base documents."""
         logger.info("Loading knowledge base into Pinecone...")
