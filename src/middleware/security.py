@@ -76,6 +76,7 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
         self.exempt_paths = exempt_paths or set()
 
     async def dispatch(self, request: Request, call_next):
+        # We only enforce the limit on API routes; static/docs traffic is not part of the attack surface here.
         if not request.url.path.startswith("/api") or request.url.path in self.exempt_paths:
             return await call_next(request)
 
@@ -116,6 +117,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.exempt_paths = exempt_paths or set()
 
     async def dispatch(self, request: Request, call_next):
+        # Preflight requests should not count against the caller's quota.
         if not request.url.path.startswith("/api") or request.url.path in self.exempt_paths:
             return await call_next(request)
 
@@ -157,12 +159,15 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         self.strict = strict
 
     async def dispatch(self, request: Request, call_next):
+        # Safe methods are read-only, so they don't need origin validation.
         if not self.enabled or request.method in SAFE_METHODS or not request.url.path.startswith("/api"):
             return await call_next(request)
 
+        # Token-authenticated API callers are already protected by the API key/Bearer token check.
         if request.headers.get("authorization") or request.headers.get("x-api-key"):
             return await call_next(request)
 
+        # Only enforce browser-style CSRF checks when cookies are present, unless strict mode is enabled.
         has_browser_cookies = bool(request.cookies)
         if not has_browser_cookies and not self.strict:
             return await call_next(request)

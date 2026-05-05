@@ -3,7 +3,8 @@ Financial Therapist Chatbot Backend
 FastAPI application with Google Gemini 3 flash preview API integration
 """
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException as FastAPIHTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -70,6 +71,7 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 RATE_LIMIT_REQUESTS_PER_MINUTE = int(os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "200"))
 MAX_REQUEST_BODY_BYTES = int(os.getenv("MAX_REQUEST_BODY_BYTES", str(1_048_576)))
+# Keep CSRF on by default so browser-originated requests are validated unless explicitly disabled.
 CSRF_PROTECTION_ENABLED = os.getenv("CSRF_PROTECTION_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
 CSRF_STRICT = os.getenv("CSRF_STRICT", "false").strip().lower() in {"1", "true", "yes", "on"}
 CSRF_TRUSTED_ORIGINS = [
@@ -91,6 +93,7 @@ app = FastAPI(
 # Order matters: Security → Logging → CORS (outermost)
 
 # Trusted host middleware prevents host header attacks in production.
+# `testserver` is included so the TestClient can exercise the app without failing host checks.
 DEFAULT_ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "testserver"]
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS")
 
@@ -111,14 +114,14 @@ if ENVIRONMENT == "production" and not ALLOWED_HOSTS:
 logger.info(f"Allowed hosts: {ALLOWED_HOSTS}")
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
-# Security middleware
+# Security middleware is applied before observability so rejected requests do not waste work.
 app.add_middleware(SecurityHeadersMiddleware, production=ENVIRONMENT == "production")
 app.add_middleware(CSRFMiddleware, enabled=CSRF_PROTECTION_ENABLED, trusted_origins=CSRF_TRUSTED_ORIGINS, strict=CSRF_STRICT)
 app.add_middleware(RateLimitMiddleware, requests_per_minute=RATE_LIMIT_REQUESTS_PER_MINUTE, exempt_paths={"/health", "/docs", "/redoc", "/openapi.json"})
 app.add_middleware(RequestSizeLimitMiddleware, max_body_bytes=MAX_REQUEST_BODY_BYTES, exempt_paths={"/health", "/docs", "/redoc", "/openapi.json"})
 app.add_middleware(HTTPSRedirectMiddleware)
 
-# Security and observability middleware
+# Logging stays outermost so we still get a trace when one of the security layers rejects a request.
 app.add_middleware(SecurityLoggingMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 
@@ -201,16 +204,65 @@ async def shutdown_event():
     logger.info("=" * 60)
 
 # ==================== Global Error Handler ====================
+def _error_payload(error: str, detail, path: str) -> dict:
+    # Use one small helper so all error responses share the same JSON shape.
+    return {
+        "error": error,
+        "detail": detail,
+        "path": path,
+    }
+
+
+@app.exception_handler(FastAPIHTTPException)
+async def http_exception_handler(request: Request, exc: FastAPIHTTPException):
+    """Return structured JSON for expected HTTP errors."""
+    logger.warning(
+        "HTTP error on %s %s: %s",
+        request.method,
+        request.url.path,
+        exc.detail,
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=_error_payload(
+            error="Request failed",
+            detail=exc.detail,
+            path=request.url.path,
+        ),
+        headers=getattr(exc, "headers", None),
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Return structured JSON for request body and parameter validation errors."""
+    logger.warning(
+        "Validation error on %s %s: %s",
+        request.method,
+        request.url.path,
+        exc.errors(),
+    )
+    return JSONResponse(
+        status_code=422,
+        content=_error_payload(
+            error="Validation failed",
+            detail=exc.errors(),
+            path=request.url.path,
+        ),
+    )
+
+
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
+async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler for unhandled errors."""
-    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    logger.error("Unhandled exception on %s %s: %s", request.method, request.url.path, str(exc), exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={
-            "error": "An unexpected error occurred",
-            "detail": "Please contact support if this issue persists",
-        },
+        content=_error_payload(
+            error="An unexpected error occurred",
+            detail="Please contact support if this issue persists",
+            path=request.url.path,
+        ),
     )
 
 # ==================== Entry Point ====================
