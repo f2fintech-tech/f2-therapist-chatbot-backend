@@ -268,10 +268,15 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ==================== Entry Point ====================
 if __name__ == "__main__":
     import uvicorn
-    
-    host = os.getenv("HOST", "0.0.0.0")
+
+    # Security: Restrict bind address in production to localhost; allow 0.0.0.0 only in development
+    # For production, use a reverse proxy (nginx/load balancer) to expose the service
+    if ENVIRONMENT == "development":
+        host = os.getenv("HOST", "127.0.0.1")  # Default to localhost for safety
+    else:
+        host = os.getenv("HOST", "127.0.0.1")  # Production must explicitly set HOST to bind
     port = int(os.getenv("PORT", 8000))
-    
+
     uvicorn.run(
         "src.main:app",
         host=host,
