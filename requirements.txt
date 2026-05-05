@@ -18,10 +18,11 @@ sqlalchemy
 psycopg2-binary
 
 # LLM & NLP
-langchain
+langchain>=1.2.24
 langchain-core
 langchain-google-genai
 
 # Utilities
 python-dotenv
 pydantic
+pre-commit
