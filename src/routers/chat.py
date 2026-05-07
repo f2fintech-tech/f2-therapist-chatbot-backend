@@ -3,7 +3,7 @@ Chat router with message handling and conversation persistence.
 Integrates with Google Gemini 3 flash preview via LangChain and Knowledge Base (RAG).
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -29,6 +29,15 @@ from src.utils.validators import (
 )
 from src.utils.api_security import require_api_key
 from src.utils.emotion_analyzer import analyze_emotion
+from src.utils.experiments import (
+    CHAT_AB_EXPERIMENT_NAME,
+    assign_chat_variant,
+    build_chat_variant_guidance,
+    is_chat_ab_testing_enabled,
+    load_chat_experiment_summary,
+    log_chat_experiment_assignment,
+    log_chat_experiment_feedback,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +93,7 @@ class ChatResponse(BaseModel):
     message_id: str
     timestamp: datetime
     mood: dict | None = Field(None, description="User's mood and emotion indicators")
+    experiment: dict | None = Field(None, description="Experiment assignment metadata")
 
 
 class MoodAnalysisRequest(BaseModel):
@@ -102,6 +112,70 @@ class MoodAnalysisResponse(BaseModel):
     conversation_phase: str
     overall_confidence: float
     detected_keywords: list | None = None
+
+
+class ChatExperimentFeedbackRequest(BaseModel):
+    """Feedback payload for comparing experiment outcomes."""
+    user_id: str = Field(..., min_length=1, max_length=36)
+    conversation_id: str = Field(..., min_length=36, max_length=36)
+    message_id: str = Field(..., min_length=36, max_length=36)
+    experiment_name: str = Field(..., min_length=1, max_length=100)
+    experiment_variant: str = Field(..., min_length=1, max_length=20)
+    rating: int = Field(..., ge=1, le=5)
+    helpful: bool | None = None
+    outcome: str | None = Field(None, max_length=100)
+    notes: str | None = Field(None, max_length=1000)
+
+    @validator('user_id', 'conversation_id', 'message_id')
+    def validate_ids(cls, v):
+        if not UUID_PATTERN.match(v):
+            raise ValueError("Invalid UUID format")
+        return v.lower()
+
+    @validator('experiment_variant')
+    def validate_variant(cls, v):
+        normalized = v.strip().upper()
+        if normalized not in {"A", "B"}:
+            raise ValueError("Invalid experiment_variant. Must be A or B.")
+        return normalized
+
+
+class ChatExperimentFeedbackResponse(BaseModel):
+    """Response model for experiment feedback logging."""
+    status: str
+    experiment_name: str
+    experiment_variant: str
+    feedback_id: str
+    timestamp: datetime
+
+
+class ChatExperimentVariantSummary(BaseModel):
+    """Aggregated metrics for a single variant."""
+    variant: str
+    assignment_count: int
+    feedback_count: int
+    average_rating: float | None = None
+    helpful_rate: float | None = None
+    positive_outcome_rate: float | None = None
+    average_latency_seconds: float | None = None
+
+
+class ChatExperimentComparisonSummary(BaseModel):
+    """Comparison metadata for ranking variants."""
+    preferred_variant: str | None = None
+    runner_up_variant: str | None = None
+    basis: str
+
+
+class ChatExperimentSummaryResponse(BaseModel):
+    """Response model for experiment outcome summaries."""
+    experiment_name: str
+    total_assignments: int
+    total_feedback: int
+    variants: dict[str, ChatExperimentVariantSummary]
+    comparison: ChatExperimentComparisonSummary
+    generated_at: datetime
+    source_path: str | None = None
 
 # ==================== LLM Configuration ====================
 @lru_cache(maxsize=1)
@@ -356,6 +430,15 @@ def _build_mood_adaptation_guidance(mood_analysis: dict | None) -> str:
     return "\n".join(guidance)
 
 
+def _build_experiment_guidance(variant: str | None) -> str:
+    if not variant:
+        return ""
+    guidance = build_chat_variant_guidance(variant)
+    if not guidance:
+        return ""
+    return f"A/B testing guidance:\n{guidance}"
+
+
 def _stress_level_to_score(stress_level: str | None) -> int | None:
     """Map categorical stress to numeric score for trend analysis."""
     mapping = {
@@ -602,6 +685,23 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         mood_analysis = analyze_emotion(request.message, conversation_depth)
         logger.info(f"Mood analysis: stress={mood_analysis.get('stress_level')}, confidence={mood_analysis.get('stress_confidence')}")
 
+        experiment_enabled = is_chat_ab_testing_enabled()
+        experiment_assignment = None
+        experiment_guidance_text = ""
+        if experiment_enabled:
+            experiment_assignment = assign_chat_variant(
+                user_id=request.user_id,
+                conversation_id=conversation.id,
+                experiment_name=CHAT_AB_EXPERIMENT_NAME,
+            )
+            experiment_guidance_text = _build_experiment_guidance(experiment_assignment.get("variant"))
+            logger.info(
+                "Experiment assignment applied: %s variant %s (bucket %s)",
+                experiment_assignment.get("experiment_name"),
+                experiment_assignment.get("variant"),
+                experiment_assignment.get("bucket"),
+            )
+
         mood_adaptation_enabled = _is_feature_enabled(MOOD_ADAPTATION_ENV, default="true")
         mood_guidance_text = ""
         if mood_adaptation_enabled:
@@ -678,6 +778,9 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
         if mood_guidance_text:
             enhanced_message_parts.append(mood_guidance_text)
+
+        if experiment_guidance_text:
+            enhanced_message_parts.append(experiment_guidance_text)
 
         enhanced_message_parts.append(f"**User's Question:**\n{request.message}")
         enhanced_message = "\n".join(enhanced_message_parts)
@@ -759,9 +862,32 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         conversation.updated_at = datetime.utcnow()
         db.commit()
 
+        if experiment_enabled and experiment_assignment:
+            try:
+                log_chat_experiment_assignment(
+                    user_id=request.user_id,
+                    conversation_id=conversation.id,
+                    message_id=assistant_message_obj.id,
+                    response_text=assistant_text,
+                    latency_seconds=time.perf_counter() - request_start,
+                    experiment_assignment=experiment_assignment,
+                )
+            except Exception as exc:
+                logger.warning("Experiment assignment logging failed: %s", str(exc), exc_info=True)
+
         logger.info(f"Chat exchange completed for user {request.user_id} in conversation {conversation.id}")
         logger.info(f"Response length: {len(assistant_text)} characters")
         logger.info("Total chat request completed in %.2fs", time.perf_counter() - request_start)
+
+        experiment_response = None
+        if experiment_enabled and experiment_assignment:
+            experiment_response = {
+                "enabled": True,
+                "experiment_name": experiment_assignment.get("experiment_name"),
+                "variant": experiment_assignment.get("variant"),
+                "bucket": experiment_assignment.get("bucket"),
+                "assignment_key": experiment_assignment.get("assignment_key"),
+            }
 
         return ChatResponse(
             response=assistant_text,
@@ -769,6 +895,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
             conversation_id=conversation.id,
             message_id=assistant_message_obj.id,
             timestamp=datetime.utcnow(),
+            experiment=experiment_response,
             mood={
                 "stress_level": mood_analysis.get("stress_level"),
                 "emotional_state": mood_analysis.get("indicators", {}).get("emotional_state"),
@@ -812,6 +939,77 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while processing your request"
+        )
+
+
+@router.post("/experiment-feedback", response_model=ChatExperimentFeedbackResponse, status_code=status.HTTP_201_CREATED)
+async def submit_chat_experiment_feedback(
+    request: ChatExperimentFeedbackRequest,
+):
+    """Log user feedback for an experiment variant so outcomes can be compared later."""
+    try:
+        feedback = log_chat_experiment_feedback(
+            user_id=request.user_id,
+            conversation_id=request.conversation_id,
+            message_id=request.message_id,
+            experiment_name=request.experiment_name,
+            experiment_variant=request.experiment_variant,
+            rating=request.rating,
+            helpful=request.helpful,
+            outcome=request.outcome,
+            notes=request.notes,
+        )
+
+        return ChatExperimentFeedbackResponse(
+            status="logged",
+            experiment_name=feedback["experiment_name"],
+            experiment_variant=feedback["experiment_variant"],
+            feedback_id=feedback["id"],
+            timestamp=datetime.utcnow(),
+        )
+
+    except ValueError as e:
+        logger.warning("Invalid experiment feedback payload: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid experiment feedback data",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error logging experiment feedback: %s", str(e), exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error logging experiment feedback",
+        )
+
+
+@router.get("/experiment-summary", response_model=ChatExperimentSummaryResponse)
+async def get_chat_experiment_summary(
+    experiment_name: str = Query(CHAT_AB_EXPERIMENT_NAME, min_length=1, max_length=100),
+):
+    """Summarize A/B experiment performance across assignments and user feedback."""
+    try:
+        summary = load_chat_experiment_summary(experiment_name=experiment_name)
+
+        return ChatExperimentSummaryResponse(
+            experiment_name=summary["experiment_name"],
+            total_assignments=summary["total_assignments"],
+            total_feedback=summary["total_feedback"],
+            variants={
+                variant: ChatExperimentVariantSummary(**variant_summary)
+                for variant, variant_summary in summary["variants"].items()
+            },
+            comparison=ChatExperimentComparisonSummary(**summary["comparison"]),
+            generated_at=datetime.utcfromtimestamp(summary["generated_at"]),
+            source_path=summary.get("source_path"),
+        )
+
+    except Exception as e:
+        logger.error("Error building experiment summary: %s", str(e), exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error building experiment summary",
         )
 
 
