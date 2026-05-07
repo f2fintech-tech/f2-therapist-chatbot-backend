@@ -3,6 +3,9 @@ Handle uploading and downloading knowledge base from AWS S3
 """
 
 import boto3
+import hashlib
+import json
+from datetime import datetime
 from pathlib import Path
 import logging
 import os
@@ -128,6 +131,79 @@ class S3StorageManager:
             logger.error(f"Failed to download {s3_path}: {e}")
             return False
 
+    def _raw_sync_state_path(self):
+        """Store raw download state next to the local raw files."""
+        return Path("src/data/raw/.s3_sync_state.json")
+
+    def _load_raw_sync_state(self):
+        """Load the last known S3 signatures for raw files."""
+        state_path = self._raw_sync_state_path()
+        if not state_path.exists():
+            return {"files": {}, "last_sync": None}
+
+        try:
+            with open(state_path, "r", encoding="utf-8") as f:
+                state = json.load(f)
+            if not isinstance(state, dict):
+                return {"files": {}, "last_sync": None}
+            state.setdefault("files", {})
+            state.setdefault("last_sync", None)
+            return state
+        except Exception:
+            logger.warning(f"Could not read raw sync state from {state_path}; starting fresh")
+            return {"files": {}, "last_sync": None}
+
+    def _save_raw_sync_state(self, state):
+        """Persist the latest S3 signatures for raw files."""
+        state_path = self._raw_sync_state_path()
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(state_path, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+
+    @staticmethod
+    def _normalize_etag(etag):
+        """Remove S3 quotes around ETag values."""
+        if not etag:
+            return ""
+        return str(etag).strip('"')
+
+    @staticmethod
+    def _local_file_hash(file_path: Path):
+        """Compute an MD5 hash for a local file so we can compare it to S3 ETags."""
+        hasher = hashlib.md5()
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                hasher.update(chunk)
+        return hasher.hexdigest()
+
+    def list_objects(self, prefix: str = ""):
+        """
+        List objects in S3 using pagination.
+
+        This returns metadata so incremental sync can decide whether a file
+        is new or changed before downloading it.
+        """
+
+        try:
+            paginator = self.s3_client.get_paginator("list_objects_v2")
+            objects = []
+
+            for page in paginator.paginate(Bucket=self.bucket_name, Prefix=prefix):
+                for obj in page.get("Contents", []):
+                    objects.append({
+                        "Key": obj.get("Key", ""),
+                        "ETag": obj.get("ETag", ""),
+                        "Size": obj.get("Size", 0),
+                        "LastModified": obj.get("LastModified"),
+                    })
+
+            logger.info(f"Objects in s3://{self.bucket_name}/{prefix}: {[item['Key'] for item in objects]}")
+            return objects
+
+        except ClientError as e:
+            logger.error(f"Failed to list objects: {e}")
+            return []
+
     def list_files(self, prefix: str = ""):
         """
         List files in S3 using a prefix.
@@ -142,24 +218,7 @@ class S3StorageManager:
             List of file keys
         """
 
-        try:
-            response = self.s3_client.list_objects_v2(
-                Bucket=self.bucket_name,
-                Prefix=prefix
-            )
-
-            files = []
-
-            # Extract file keys if present
-            if 'Contents' in response:
-                files = [obj['Key'] for obj in response['Contents']]
-
-            logger.info(f"Files in s3://{self.bucket_name}/{prefix}: {files}")
-            return files
-
-        except ClientError as e:
-            logger.error(f"Failed to list files: {e}")
-            return []
+        return [obj["Key"] for obj in self.list_objects(prefix=prefix)]
 
     def sync_raw_to_s3(self):
         """
@@ -222,28 +281,81 @@ class S3StorageManager:
 
     def download_raw_from_s3(self):
         """
-        Download all raw files from S3 to local directory.
+        Download only new or changed raw files from S3.
+
+        The pipeline keeps any local file that already matches the remote S3
+        object, so a collaborator can upload just a few updates without forcing
+        a full re-download.
+        """
+
+        return self.download_raw_incremental_from_s3()
+
+    def download_raw_incremental_from_s3(self):
+        """
+        Download only raw files that are missing or have changed in S3.
+
+        The check uses two signals:
+        - Local file MD5 vs S3 ETag when the object is a simple upload.
+        - A small local sync state file for bookkeeping and repeat runs.
         """
 
         raw_dir = Path("src/data/raw")
         raw_dir.mkdir(parents=True, exist_ok=True)
 
-        files = self.list_files(prefix="raw/")
+        objects = self.list_objects(prefix="raw/")
+        sync_state = self._load_raw_sync_state()
+        tracked_files = sync_state.setdefault("files", {})
 
         success = True
+        downloaded = 0
+        skipped = 0
 
-        for s3_file in files:
-            if s3_file != "raw/":  # Skip empty directory placeholder
-                file_name = s3_file.split("/")[-1]
+        for obj in objects:
+            s3_file = obj.get("Key", "")
 
-                if file_name:
-                    local_path = f"src/data/raw/{file_name}"
+            if s3_file == "raw/":
+                # S3 sometimes returns a placeholder folder key; skip it.
+                continue
 
-                    if not self.download_file(s3_file, local_path):
-                        success = False
+            file_name = s3_file.split("/")[-1]
+            if not file_name:
+                continue
+
+            local_path = raw_dir / file_name
+            remote_signature = {
+                "etag": self._normalize_etag(obj.get("ETag", "")),
+                "size": obj.get("Size", 0),
+                "last_modified": obj.get("LastModified").isoformat() if obj.get("LastModified") else None,
+            }
+
+            # If the local file already matches the S3 object, skip the download.
+            local_matches_remote = False
+            if local_path.exists() and remote_signature["etag"] and "-" not in remote_signature["etag"]:
+                local_matches_remote = self._local_file_hash(local_path) == remote_signature["etag"]
+            elif local_path.exists():
+                previous_signature = tracked_files.get(s3_file)
+                local_matches_remote = previous_signature == remote_signature
+
+            if local_matches_remote:
+                tracked_files[s3_file] = remote_signature
+                skipped += 1
+                continue
+
+            # Only download files that are new or actually changed.
+            if self.download_file(s3_file, str(local_path)):
+                tracked_files[s3_file] = remote_signature
+                downloaded += 1
+            else:
+                success = False
+
+        sync_state["last_sync"] = datetime.utcnow().isoformat() + "Z"
+        sync_state["files"] = tracked_files
+        self._save_raw_sync_state(sync_state)
 
         if success:
-            logger.info("Successfully downloaded raw files from S3")
+            logger.info(
+                f"Successfully downloaded raw files from S3 (downloaded={downloaded}, skipped={skipped})"
+            )
 
         return success
 
