@@ -28,6 +28,9 @@ logs/
 src/model/model_test_results.json
 src/model/experiment_results.json
 
+# Monitoring
+src/monitoring/health_check_results.json
+
 # Data
 src/data/raw/
 src/data/processed/
