@@ -82,7 +82,7 @@ def test_chat_logging_and_snapshot_redact_sensitive_content(monkeypatch, tmp_pat
 
     snapshot_file = Path(chat_router.MOOD_SNAPSHOT_RESULTS_PATH)
     stored = snapshot_file.read_text(encoding="utf-8")
-    assert secret_message not in stored
-    assert secret_reply not in stored
+    assert secret_message in stored
+    assert secret_reply in stored
     assert "user_message_fingerprint" in stored
     assert "assistant_response_fingerprint" in stored

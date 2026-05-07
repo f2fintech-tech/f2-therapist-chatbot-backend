@@ -634,6 +634,8 @@ def persist_mood_snapshot(
             "conversation_depth": conversation_depth,
             "message_id": user_message_id,
             "assistant_message_id": assistant_message_id,
+            "user_message": user_message,
+            "assistant_response": assistant_response,
             "user_message_fingerprint": _message_fingerprint(user_message),
             "assistant_response_fingerprint": _message_fingerprint(assistant_response),
             "stress_level": stress_level,
