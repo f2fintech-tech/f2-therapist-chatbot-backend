@@ -466,9 +466,9 @@ class RAGPipeline:
             return False
 
     def step_2_download_from_s3(self):
-        """Step 2: Download knowledge base files from S3"""
+        """Step 2: Download knowledge base files from S3 incrementally"""
         logger.info("\n" + "="*60)
-        logger.info("STEP 2: Downloading KB files from S3")
+        logger.info("STEP 2: Downloading KB files from S3 (incremental raw sync)")
         logger.info("="*60)
 
         try:
@@ -478,7 +478,7 @@ class RAGPipeline:
                     region=os.getenv("AWS_REGION", "ap-south-1")
                 )
 
-            logger.info("Downloading raw files from S3...")
+            logger.info("Downloading raw files from S3 (only new or changed files)...")
             success = self.s3_manager.download_raw_from_s3()
 
             if success:
