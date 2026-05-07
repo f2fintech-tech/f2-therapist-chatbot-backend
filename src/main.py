@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 
 # Import routers
 from src.routers import health, chat, conversations
+from src.routers import personalization
 from src.models import init_db
 
 # Import middleware
@@ -162,6 +163,9 @@ app.include_router(chat.router, prefix="/api/v1")
 
 # Conversation management routes (v1 API) with rate limiting
 app.include_router(conversations.router, prefix="/api/v1")
+
+# Personalization management endpoints (personas, preferences)
+app.include_router(personalization.router, prefix="/api/v1")
 
 # ==================== Root Routes ====================
 @app.get("/", tags=["Root"])
