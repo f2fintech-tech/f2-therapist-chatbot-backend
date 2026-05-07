@@ -29,6 +29,7 @@ MIN_CONVERSATIONS_PER_REQUEST = 1
 MAX_MESSAGES_PER_REQUEST = 100
 MIN_MESSAGES_PER_REQUEST = 1
 MAX_OFFSET = 10000
+MAX_PREVIEW_LENGTH = 160
 
 # UUID validation regex
 UUID_PATTERN = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
@@ -78,6 +79,7 @@ class ConversationDetail(BaseModel):
     id: str
     user_id: str
     title: str | None
+    summary: str | None
     message_count: int
     created_at: datetime
     updated_at: datetime
@@ -90,9 +92,13 @@ class ConversationList(BaseModel):
     id: str
     user_id: str
     title: str | None
+    summary: str | None
     message_count: int
     created_at: datetime
     updated_at: datetime
+    last_message_preview: str | None = None
+    last_message_role: str | None = None
+    last_message_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -107,10 +113,56 @@ class MessageDetail(BaseModel):
     class Config:
         from_attributes = True
 
+
+class ConversationResumeResponse(BaseModel):
+    """Conversation detail plus recent messages for restoring a chat session."""
+    conversation: ConversationDetail
+    messages: list[MessageDetail]
+
 # ==================== Helper Functions ====================
 def validate_uuid(value: str) -> bool:
     """Validate UUID format to prevent SQL injection."""
     return bool(UUID_PATTERN.match(value))
+
+
+def _truncate_preview(text: str | None, limit: int = MAX_PREVIEW_LENGTH) -> str | None:
+    if not text:
+        return None
+
+    normalized = " ".join(text.split())
+    if len(normalized) <= limit:
+        return normalized
+    return normalized[: limit - 1].rstrip() + "…"
+
+
+def _build_sidebar_item(conversation: Conversation, db: Session) -> ConversationList:
+    latest_message = db.query(ConversationMessage).filter(
+        ConversationMessage.conversation_id == conversation.id
+    ).order_by(
+        ConversationMessage.created_at.desc()
+    ).first()
+
+    last_message_preview = None
+    last_message_role = None
+    last_message_at = None
+
+    if latest_message:
+        last_message_preview = _truncate_preview(latest_message.content)
+        last_message_role = latest_message.role.value if hasattr(latest_message.role, "value") else str(latest_message.role)
+        last_message_at = latest_message.created_at
+
+    return ConversationList(
+        id=conversation.id,
+        user_id=conversation.user_id,
+        title=conversation.title,
+        summary=_truncate_preview(conversation.summary),
+        message_count=conversation.message_count,
+        created_at=conversation.created_at,
+        updated_at=conversation.updated_at,
+        last_message_preview=last_message_preview,
+        last_message_role=last_message_role,
+        last_message_at=last_message_at,
+    )
 
 def verify_conversation_ownership(db: Session, conversation_id: str, user_id: str) -> Conversation:
     """
@@ -226,7 +278,7 @@ async def list_conversations(
             Conversation.updated_at.desc()
         ).offset(offset).limit(limit).all()
 
-        return [ConversationList.from_orm(conv) for conv in conversations]
+        return [_build_sidebar_item(conv, db) for conv in conversations]
 
     except HTTPException:
         raise
@@ -401,4 +453,41 @@ async def get_conversation_messages(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error retrieving messages"
+        )
+
+
+@router.get("/{conversation_id}/resume", response_model=ConversationResumeResponse)
+async def resume_conversation(
+    conversation_id: str = Path(..., min_length=36, max_length=36),
+    user_id: str = Query(..., min_length=1, max_length=36, description="User ID for verification"),
+    limit: int = Query(50, ge=MIN_MESSAGES_PER_REQUEST, le=MAX_MESSAGES_PER_REQUEST, description="Number of messages to return"),
+    db: Session = Depends(get_db)
+):
+    """
+    Restore a conversation session with its recent messages.
+
+    This endpoint is designed for clients that need to reopen the same thread after
+    a page refresh or when switching between chats in a sidebar.
+    """
+    try:
+        conversation = verify_conversation_ownership(db, conversation_id, user_id)
+
+        messages = db.query(ConversationMessage).filter(
+            ConversationMessage.conversation_id == conversation_id
+        ).order_by(
+            ConversationMessage.created_at.asc()
+        ).limit(limit).all()
+
+        return ConversationResumeResponse(
+            conversation=ConversationDetail.from_orm(conversation),
+            messages=[MessageDetail.from_orm(msg) for msg in messages],
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resuming conversation: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error resuming conversation"
         )

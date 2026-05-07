@@ -512,6 +512,26 @@ def save_message(db: Session, conversation_id: str, role: MessageRole, content: 
     db.refresh(message)
     return message
 
+
+def _truncate_preview(text: str, limit: int = 120) -> str:
+    normalized = " ".join((text or "").split())
+    if len(normalized) <= limit:
+        return normalized
+    return normalized[: limit - 1].rstrip() + "…"
+
+
+def _generate_conversation_title(user_message: str) -> str:
+    """Create a short, readable title from the first user message."""
+    preview = _truncate_preview(user_message, limit=64)
+    return preview or "New conversation"
+
+
+def _generate_conversation_summary(user_message: str, assistant_message: str) -> str:
+    """Create a compact summary for sidebar previews."""
+    user_preview = _truncate_preview(user_message, limit=72)
+    assistant_preview = _truncate_preview(assistant_message, limit=72)
+    return f"You: {user_preview} | Assistant: {assistant_preview}"
+
 def get_conversation_context(db: Session, conversation_id: str, limit: int = 10):
     """Get recent conversation messages for context (last N messages)."""
     messages = db.query(ConversationMessage).filter(
@@ -715,6 +735,11 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
             db, conversation.id, MessageRole.ASSISTANT, assistant_text
         )
         logger.info(f"Assistant message saved: {assistant_message_obj.id}")
+
+        if not conversation.title:
+            conversation.title = _generate_conversation_title(request.message)
+
+        conversation.summary = _generate_conversation_summary(request.message, assistant_text)
 
         persist_mood_snapshot(
             user_id=request.user_id,

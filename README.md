@@ -43,6 +43,8 @@ The Financial Therapist Chatbot is an intelligent conversational AI service that
 ### 📊 **Conversation Management**
 - **Persistent storage** - All conversations saved in PostgreSQL
 - **Conversation history** - Retrieve past conversations with full context
+- **Sidebar-ready chat list** - Fetch previous chats with title, preview, and latest activity metadata
+- **Resume support** - Restore a conversation thread with its recent messages after refresh or switch
 - **UUID-based tracking** - Unique identifiers for users and conversations
 - **Risk scoring** - Identifies conversations requiring escalation
 
