@@ -34,6 +34,7 @@ src/monitoring/health_check_results.json
 # Data
 src/data/raw/
 src/data/processed/
+src/data/personalization/*.json
 
 # Models
 models/
