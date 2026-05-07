@@ -17,7 +17,6 @@ api_key = os.getenv("GEMINI_API_KEY")
 if api_key:
     print(f"\n✓ GEMINI_API_KEY found")
     print(f"  Key length: {len(api_key)} characters")
-    print(f"  Preview: {api_key[:20]}...{api_key[-10:]}")
 else:
     print("\n✗ GEMINI_API_KEY not found!")
     exit(1)
