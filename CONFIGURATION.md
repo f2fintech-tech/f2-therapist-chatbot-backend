@@ -99,10 +99,10 @@ print('Pinecone indexes:', [idx.name for idx in pc.list_indexes()])
    - Region: `us-east-1`
 5. Add credentials to `.env`:
    ```bash
-   AWS_ACCESS_KEY_ID=AKIA...
+   AWS_ACCESS_KEY_ID=AAXSA...
    AWS_SECRET_ACCESS_KEY=xxx...
    AWS_REGION=us-east-1
-   S3_BUCKET_NAME=f2-fintech-kb
+   S3_BUCKET_NAME=your_bucket_name
    ```
 
 **Verify:**
