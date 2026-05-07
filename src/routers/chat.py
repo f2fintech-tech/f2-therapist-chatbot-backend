@@ -11,6 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 import os
 import logging
+import hashlib
 import uuid
 import re
 import time
@@ -29,6 +30,11 @@ from src.utils.validators import (
 )
 from src.utils.api_security import require_api_key
 from src.utils.emotion_analyzer import analyze_emotion
+from src.utils.persona_profiles import get_persona_profile
+from src.utils.personalization_context import (
+    build_personalization_fallback_guidance,
+    resolve_personalization_context,
+)
 from src.utils.experiments import (
     CHAT_AB_EXPERIMENT_NAME,
     assign_chat_variant,
@@ -38,6 +44,7 @@ from src.utils.experiments import (
     log_chat_experiment_assignment,
     log_chat_experiment_feedback,
 )
+from src.utils.user_preferences import get_user_preferences
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +58,7 @@ CONTEXT_WINDOW_MESSAGES = 10
 MOOD_ADAPTATION_ENV = "ENABLE_MOOD_RESPONSE_ADAPTATION"
 MOOD_SNAPSHOT_ANALYZER_VERSION = "emotion_analyzer_v1"
 MOOD_SNAPSHOT_RESULTS_PATH = Path(__file__).resolve().parents[1] / "model" / "model_test_results.json"
+MOOD_SNAPSHOT_TTL_DAYS = 30
 
 _mood_snapshot_lock = threading.Lock()
 
@@ -439,6 +447,76 @@ def _build_experiment_guidance(variant: str | None) -> str:
     return f"A/B testing guidance:\n{guidance}"
 
 
+def _build_persona_guidance(persona_profile) -> str:
+    """Convert a persona profile into a compact instruction block for the model.
+
+    Step 3 keeps the integration simple: the route loads a persona profile and
+    turns it into a prompt-ready summary, but it does not yet add UI controls or
+    a persistence layer for choosing the persona.
+    """
+
+    if not persona_profile:
+        return ""
+
+    style = persona_profile.style
+    lines = [
+        "Persona guidance:",
+        f"- Persona name: {persona_profile.name}",
+        f"- Description: {persona_profile.description}",
+        f"- Tone: {style.tone}",
+        f"- Empathy level: {style.empathy_level}/5",
+        f"- Directness: {style.directness}/5",
+        f"- Verbosity: {style.verbosity}",
+        f"- Formality: {style.formality}",
+        f"- Advice style: {style.advice_style}",
+    ]
+
+    if persona_profile.do_listen:
+        lines.append("- Start by listening and validating the user's concern.")
+    if persona_profile.do_offer_steps:
+        lines.append("- Include clear next steps after the emotional acknowledgment.")
+    if persona_profile.response_goals:
+        lines.append("- Response goals:")
+        lines.extend(f"  - {goal}" for goal in persona_profile.response_goals)
+    if persona_profile.tags:
+        lines.append(f"- Tags: {', '.join(persona_profile.tags)}")
+
+    return "\n".join(lines)
+
+
+def _build_user_preference_guidance(user_preferences) -> str:
+    """Convert stored user preferences into prompt instructions.
+
+    The preferences are loaded for each request so future persistence work can
+    immediately shape the response without changing the chat route again.
+    """
+
+    if not user_preferences:
+        return ""
+
+    lines = [
+        "User preference guidance:",
+        f"- Preferred tone: {user_preferences.preferred_tone or 'default'}",
+        f"- Response length: {user_preferences.response_length}",
+        f"- Detail level: {user_preferences.detail_level}",
+        f"- Action preference: {user_preferences.action_preference}",
+        f"- Question style: {user_preferences.question_style}",
+    ]
+
+    if user_preferences.prefers_emotional_validation:
+        lines.append("- Prioritize emotional validation before advice.")
+    if user_preferences.prefers_practical_steps:
+        lines.append("- Offer practical steps the user can try right away.")
+    if user_preferences.prefers_follow_up_questions:
+        lines.append("- Ask a short follow-up question if clarification would help.")
+    if user_preferences.avoids_topics:
+        lines.append(f"- Avoid topics: {', '.join(user_preferences.avoids_topics)}")
+    if user_preferences.notes:
+        lines.append(f"- Notes: {user_preferences.notes}")
+
+    return "\n".join(lines)
+
+
 def _stress_level_to_score(stress_level: str | None) -> int | None:
     """Map categorical stress to numeric score for trend analysis."""
     mapping = {
@@ -472,6 +550,44 @@ def _save_results_file(path: Path, data: dict) -> None:
     temp_path.replace(path)
 
 
+def _snapshot_retention_seconds() -> int:
+    """Return how long mood snapshots should be retained before pruning."""
+    raw_days = os.getenv("MOOD_SNAPSHOT_TTL_DAYS")
+    try:
+        days = int(raw_days) if raw_days is not None else MOOD_SNAPSHOT_TTL_DAYS
+    except (TypeError, ValueError):
+        days = MOOD_SNAPSHOT_TTL_DAYS
+    return max(1, days) * 24 * 60 * 60
+
+
+def _snapshot_timestamp(item: dict) -> float | None:
+    """Extract a comparable timestamp from a persisted snapshot."""
+    timestamp = item.get("timestamp")
+    if isinstance(timestamp, (int, float)):
+        return float(timestamp)
+    return None
+
+
+def _prune_expired_snapshots(snapshots: list[dict]) -> None:
+    """Drop mood snapshots that are older than the configured retention window."""
+    cutoff = time.time() - _snapshot_retention_seconds()
+    snapshots[:] = [
+        snapshot
+        for snapshot in snapshots
+        if (snapshot_time := _snapshot_timestamp(snapshot)) is None or snapshot_time >= cutoff
+    ]
+
+
+def _message_fingerprint(message: str | None) -> dict[str, int | str]:
+    """Return non-reversible message metadata for analytics."""
+    normalized_message = (message or "").strip()
+    digest = hashlib.sha256(normalized_message.encode("utf-8")).hexdigest()
+    return {
+        "hash": digest,
+        "length": len(normalized_message),
+    }
+
+
 def _previous_stress_for_conversation(snapshots: list, conversation_id: str) -> str | None:
     """Get previous stress level for the same conversation from existing snapshots."""
     for item in reversed(snapshots):
@@ -491,14 +607,16 @@ def persist_mood_snapshot(
     mood_analysis: dict,
     conversation_depth: int,
     model_name: str,
-    file_path: Path = MOOD_SNAPSHOT_RESULTS_PATH,
+    file_path: Path | None = None,
 ) -> None:
     """Persist a mood snapshot to JSON for analytics/auditing without DB tables."""
     stress_level = mood_analysis.get("stress_level")
 
     with _mood_snapshot_lock:
+        file_path = file_path or MOOD_SNAPSHOT_RESULTS_PATH
         data = _load_results_file(file_path)
         snapshots = data.setdefault("mood_snapshots", [])
+        _prune_expired_snapshots(snapshots)
 
         previous_stress = _previous_stress_for_conversation(snapshots, conversation_id)
         current_score = _stress_level_to_score(stress_level)
@@ -516,8 +634,8 @@ def persist_mood_snapshot(
             "conversation_depth": conversation_depth,
             "message_id": user_message_id,
             "assistant_message_id": assistant_message_id,
-            "user_message": user_message,
-            "assistant_response": assistant_response,
+            "user_message_fingerprint": _message_fingerprint(user_message),
+            "assistant_response_fingerprint": _message_fingerprint(assistant_response),
             "stress_level": stress_level,
             "stress_score": current_score,
             "stress_trend": {
@@ -702,6 +820,26 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
                 experiment_assignment.get("bucket"),
             )
 
+        # Resolve the user's personalization context once so we can reuse the
+        # same fallback-aware defaults throughout the rest of the route.
+        personalization_context = resolve_personalization_context(request.user_id)
+        persona_profile = personalization_context.persona_profile
+        user_preferences = personalization_context.user_preferences
+        persona_guidance_text = _build_persona_guidance(persona_profile)
+        preference_guidance_text = _build_user_preference_guidance(user_preferences)
+        fallback_guidance_text = build_personalization_fallback_guidance(personalization_context)
+        if persona_guidance_text:
+            logger.info("Persona guidance applied to prompt: %s", persona_profile.name)
+        if preference_guidance_text:
+            logger.info("User preference guidance applied to prompt for %s", request.user_id)
+        if fallback_guidance_text:
+            logger.info(
+                "Personalization fallback applied for %s (default persona=%s, default preferences=%s)",
+                request.user_id,
+                personalization_context.used_default_persona,
+                personalization_context.used_default_preferences,
+            )
+
         mood_adaptation_enabled = _is_feature_enabled(MOOD_ADAPTATION_ENV, default="true")
         mood_guidance_text = ""
         if mood_adaptation_enabled:
@@ -724,7 +862,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
         # ==================== NEW: RAG Integration ====================
         # Retrieve relevant knowledge from Pinecone
-        logger.info(f"Retrieving knowledge base context for query: {request.message}")
+        logger.info("Retrieving knowledge base context for user message")
 
         context_text = ""
         knowledge_context = []
@@ -775,6 +913,15 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
         if context_text:
             enhanced_message_parts.append(context_text)
+
+        if persona_guidance_text:
+            enhanced_message_parts.append(persona_guidance_text)
+
+        if preference_guidance_text:
+            enhanced_message_parts.append(preference_guidance_text)
+
+        if fallback_guidance_text:
+            enhanced_message_parts.append(fallback_guidance_text)
 
         if mood_guidance_text:
             enhanced_message_parts.append(mood_guidance_text)
@@ -1032,7 +1179,7 @@ async def analyze_user_mood(request: MoodAnalysisRequest):
         HTTPException: For validation errors
     """
     try:
-        logger.info(f"Analyzing mood for message: {request.message[:80]}...")
+        logger.info("Analyzing mood for incoming user message")
 
         # Call emotion analyzer
         analysis = analyze_emotion(request.message, request.conversation_depth)

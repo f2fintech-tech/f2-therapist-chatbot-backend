@@ -5,7 +5,6 @@ Logs all incoming requests and outgoing responses.
 
 import logging
 import time
-import json
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -36,20 +35,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         # Extract request details
         method = request.method
         path = request.url.path
-        query_params = dict(request.query_params) if request.query_params else {}
-        client_ip = request.client.host if request.client else "unknown"
-        user_agent = request.headers.get("user-agent", "unknown")
 
         # Log incoming request
-        logger.info(
-            f"Incoming Request",
-            extra={
-                "method": method,
-                "path": path,
-                "client_ip": client_ip,
-                "query_params": query_params
-            }
-        )
+        logger.info("Incoming Request: %s %s", method, path)
 
         try:
             # Process request
@@ -67,8 +55,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             log_message = (
                 f"{method} {path} | "
                 f"Status: {status_code} | "
-                f"Duration: {duration:.3f}s | "
-                f"IP: {client_ip}"
+                f"Duration: {duration:.3f}s"
             )
 
             if log_level == "INFO":
@@ -78,7 +65,6 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
             # Add custom headers for tracing
             response.headers["X-Process-Time"] = str(duration)
-            response.headers["X-Client-IP"] = client_ip
 
             return response
 
@@ -89,8 +75,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             logger.error(
                 f"{method} {path} | "
                 f"Error: {str(e)} | "
-                f"Duration: {duration:.3f}s | "
-                f"IP: {client_ip}",
+                f"Duration: {duration:.3f}s",
                 exc_info=True
             )
 
