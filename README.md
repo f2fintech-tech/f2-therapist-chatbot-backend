@@ -45,6 +45,8 @@ The Financial Therapist Chatbot is an intelligent conversational AI service that
 - **Conversation history** - Retrieve past conversations with full context
 - **Sidebar-ready chat list** - Fetch previous chats with title, preview, and latest activity metadata
 - **Resume support** - Restore a conversation thread with its recent messages after refresh or switch
+- **A/B testing layer** - Deterministically assigns chat response variants and logs feedback outcomes
+- **Experiment summary** - Compare A vs B results in one response payload
 - **UUID-based tracking** - Unique identifiers for users and conversations
 - **Risk scoring** - Identifies conversations requiring escalation
 
