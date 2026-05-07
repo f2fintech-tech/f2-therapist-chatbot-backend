@@ -26,6 +26,7 @@ logs/
 
 # Test outputs
 src/model/model_test_results.json
+src/model/experiment_results.json
 
 # Data
 src/data/raw/
