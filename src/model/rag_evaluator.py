@@ -138,7 +138,7 @@ def evaluate_rag_response(
         prompt = _build_judge_prompt(user_query, retrieved_chunks, assistant_response)
 
         gemini_response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-3-flash-preview",
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.1,
