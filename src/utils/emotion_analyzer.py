@@ -93,7 +93,11 @@ SAFETY_KEYWORDS = {
     "self_harm": [
         "suicidal", "kill myself", "kill myself", "end my life", "want to die",
         "i'll kill myself", "i will kill myself", "hurt myself", "want to hurt myself",
-        "don't want to live", "not worth living", "no reason to live", "wish I was dead"
+        "don't want to live", "not worth living", "no reason to live", "wish I was dead", "KMS",
+        "i'm going to kill myself", "i want to end my life", "i'm going to end my life", "i'll end my life",
+        "i will end my life", "SMH", "self harm", "self-harm", "cut myself", "want to cut myself", "burn myself", "want to burn myself",
+        "take my life", "i want to take my life", "i'm going to take my life", "i will take my life",
+        "i want to die", "i want to die because of", "i want to die from", "i want to die over"
     ]
 }
 
