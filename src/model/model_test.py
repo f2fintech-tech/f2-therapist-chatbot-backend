@@ -418,13 +418,8 @@ def main():
         chat_started_at = time.time()
         session_conversation_id = f"terminal-chat-{int(chat_started_at)}"
 
-        evaluate_rag_response = None
         if args.chat_rag:
-            try:
-                from src.model.rag_evaluator import evaluate_rag_response as _evaluate_rag_response
-                evaluate_rag_response = _evaluate_rag_response
-            except Exception as exc:
-                logger.warning(f"RAG evaluator not available in terminal mode: {exc}")
+            logger.info("RAG evaluation is now included inline in the single chatbot API call.")
 
         while True:
             try:
@@ -465,12 +460,15 @@ def main():
                 if args.chat_rag and isinstance(chat_result, dict):
                     response = str(chat_result.get("response", ""))
                     retrieved_chunks = cast(List[str], chat_result.get("retrieved_chunks", []))
+                    evaluation = cast(Dict[str, Any], chat_result.get("evaluation", {}))
                 else:
                     response = cast(str, chat_result)
                     retrieved_chunks = []
+                    evaluation = {}
             except Exception as exc:
                 response = f"I'm sorry, I ran into an error: {exc}"
                 retrieved_chunks = []
+                evaluation = {}
 
             print(f"Bot: {response}\n")
             conversation_history.append({"role": "assistant", "content": response})
@@ -481,20 +479,8 @@ def main():
                 "chunks_retrieved": len(retrieved_chunks),
                 "timestamp": time.time(),
                 "mood_analysis": mood_analysis,
+                "evaluation": evaluation if args.chat_rag else None,
             })
-
-            if args.chat_rag and evaluate_rag_response:
-                try:
-                    evaluate_rag_response(
-                        user_query=user_message,
-                        retrieved_chunks=retrieved_chunks,
-                        assistant_response=response,
-                        conversation_id=session_conversation_id,
-                        message_id=f"terminal-turn-{len(chat_transcript)}",
-                        user_id="terminal_user",
-                    )
-                except Exception as exc:
-                    logger.warning(f"Terminal RAG evaluation failed: {exc}")
 
         if chat_transcript:
             output_path = Path("src/model/model_test_results.json")
