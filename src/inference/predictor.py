@@ -9,6 +9,7 @@ import re
 import time
 from pathlib import Path
 from google import genai
+from google.genai import types
 from pinecone import Pinecone
 from dotenv import load_dotenv
 from src.utils.emotion_analyzer import analyze_emotion
@@ -203,6 +204,21 @@ Guidelines:
 
 {history_block}
 User says: {user_message}"""
+    def _build_structured_prompt(self, user_message, conversation_history=None, context_pieces=None):
+        """Build prompt requesting JSON response."""
+        base = self._build_chat_prompt(user_message, conversation_history, context_pieces)
+        return base + "\n\n=== RESPOND WITH JSON: {\"response\": \"...\", \"evaluation\": {\"relevance\": 0.8, \"groundedness\": 0.9, \"completeness\": 0.85}} ==="
+
+    @staticmethod
+    def _parse_json_response(text):
+        """Parse JSON response with evaluation."""
+        try:
+            data = json.loads(text)
+            e = data.get("evaluation", {})
+            return {"response": data.get("response", ""), "relevance": max(0.0, min(1.0, float(e.get("relevance", 0.5)))), "groundedness": max(0.0, min(1.0, float(e.get("groundedness", 0.5)))), "completeness": max(0.0, min(1.0, float(e.get("completeness", 0.5)))), "parsed": True}
+        except:
+            return {"response": text[:300], "relevance": 0.5, "groundedness": 0.5, "completeness": 0.5, "parsed": False}
+
 
     @staticmethod
     def _retry_delay_from_error(error_message, default_delay=15.0):
@@ -259,12 +275,11 @@ User says: {user_message}"""
             if use_rag:
                 context_pieces = self._get_relevant_context(user_message)
 
-            # Build the prompt
-            prompt = self._build_chat_prompt(
-                user_message,
-                conversation_history=conversation_history,
-                context_pieces=context_pieces,
-            )
+            # Build the prompt (structured for metadata requests)
+            if return_metadata:
+                prompt = self._build_structured_prompt(user_message, conversation_history, context_pieces)
+            else:
+                prompt = self._build_chat_prompt(user_message, conversation_history, context_pieces)
 
             # Generate response using Gemini, with quota-aware retry handling
             logger.info(f"Generating response using {self.model_name}...")
@@ -272,10 +287,10 @@ User says: {user_message}"""
             response = None
             for attempt in range(1, max_retries + 1):
                 try:
-                    response = self.client.models.generate_content(
-                        model=self.model_name,
-                        contents=prompt,
-                    )
+                    kw = {"model": self.model_name, "contents": prompt}
+                    if return_metadata:
+                        kw["config"] = types.GenerateContentConfig(response_mime_type="application/json", temperature=0.2, max_output_tokens=2048)
+                    response = self.client.models.generate_content(**kw)
                     break
                 except Exception as exc:
                     error_message = str(exc)
@@ -293,37 +308,26 @@ User says: {user_message}"""
 
             if response and response.text:
                 response_text = response.text
+                if return_metadata:
+                    p = self._parse_json_response(response_text)
+                    if verbose:
+                        logger.info(f"Therapist: {p['response'][:100]}...")
+                    return {"response": p["response"], "retrieved_chunks": [piece.get("content", "") for piece in context_pieces], "mood_analysis": mood_analysis, "evaluation": {"relevance": p["relevance"], "groundedness": p["groundedness"], "completeness": p["completeness"], "parsed": p["parsed"]}}
                 if verbose:
                     logger.info(f"Therapist: {response_text[:100]}...")
-
-                if return_metadata:
-                    return {
-                        "response": response_text,
-                        "retrieved_chunks": [piece.get("content", "") for piece in context_pieces],
-                        "mood_analysis": mood_analysis,
-                    }
-
                 return response_text
             else:
                 logger.error("No response generated from model")
                 fallback = "I appreciate you reaching out, but I'm having trouble processing that right now. Could you try again?"
                 if return_metadata:
-                    return {
-                        "response": fallback,
-                        "retrieved_chunks": [piece.get("content", "") for piece in context_pieces],
-                        "mood_analysis": mood_analysis,
-                    }
+                    return {"response": fallback, "retrieved_chunks": [piece.get("content", "") for piece in context_pieces], "mood_analysis": mood_analysis, "evaluation": {"relevance": 0.0, "groundedness": 0.0, "completeness": 0.0, "parsed": False}}
                 return fallback
 
         except Exception as e:
             logger.error(f"Error in chat: {e}")
             fallback = "I'm sorry, I encountered an error while trying to help. Please try again in a moment."
             if return_metadata:
-                return {
-                    "response": fallback,
-                    "retrieved_chunks": [],
-                    "mood_analysis": None,
-                }
+                return {"response": fallback, "retrieved_chunks": [], "mood_analysis": None, "evaluation": {"relevance": 0.0, "groundedness": 0.0, "completeness": 0.0, "parsed": False}}
             return fallback
 
 
