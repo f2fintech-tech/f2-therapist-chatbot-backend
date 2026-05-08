@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import re
+import ast
 import time
 import threading
 from pathlib import Path
@@ -43,7 +44,12 @@ def _extract_json_payload(raw_text: str) -> str:
 
 
 def _extract_float(text: str, key: str) -> float | None:
-    match = re.search(rf"\b{re.escape(key)}\b\s*[:=\-]?\s*([01](?:\.\d+)?)", text, re.IGNORECASE)
+    float_pattern = r"(?:0?\.\d+|1(?:\.0+)?|0(?:\.0+)?)"
+    match = re.search(
+        rf"\b{re.escape(key)}\b\s*[:=\-]?\s*[\"']?({float_pattern})[\"']?",
+        text,
+        re.IGNORECASE,
+    )
     if not match:
         return None
     try:
@@ -68,6 +74,32 @@ def _extract_reason(text: str, key: str) -> str:
 
 def _coerce_scores_from_text(raw_text: str) -> dict | None:
     """Best-effort parser when model output is not valid JSON."""
+    # Try the retry format first: relevance=0.5; groundedness=0.7; completeness=0.6
+    retry_pattern = r"relevance\s*=\s*([\d.]+).*?groundedness\s*=\s*([\d.]+).*?completeness\s*=\s*([\d.]+)"
+    retry_match = re.search(retry_pattern, raw_text, re.IGNORECASE | re.DOTALL)
+    if retry_match:
+        try:
+            relevance = float(retry_match.group(1))
+            groundedness = float(retry_match.group(2))
+            completeness = float(retry_match.group(3))
+            relevance = max(0.0, min(1.0, relevance))
+            groundedness = max(0.0, min(1.0, groundedness))
+            completeness = max(0.0, min(1.0, completeness))
+        except ValueError:
+            pass
+        else:
+            return {
+                "relevance": relevance,
+                "relevance_reason": "",
+                "groundedness": groundedness,
+                "groundedness_reason": "",
+                "completeness": completeness,
+                "completeness_reason": "",
+                "failed": False,
+                "failure_reason": None,
+            }
+
+    # Fallback to key-based extraction
     relevance = _extract_float(raw_text, "relevance")
     groundedness = _extract_float(raw_text, "groundedness")
     completeness = _extract_float(raw_text, "completeness")
@@ -85,6 +117,64 @@ def _coerce_scores_from_text(raw_text: str) -> dict | None:
         "failed": False,
         "failure_reason": None,
     }
+
+
+def _default_scores(reason: str) -> dict:
+    return {
+        "relevance": 0.5,
+        "relevance_reason": "Fallback score used",
+        "groundedness": 0.5,
+        "groundedness_reason": "Fallback score used",
+        "completeness": 0.5,
+        "completeness_reason": "Fallback score used",
+        "failed": True,
+        "failure_reason": reason,
+    }
+
+
+def _build_plain_retry_prompt(
+    user_query: str,
+    retrieved_chunks: list[str],
+    assistant_response: str,
+) -> str:
+    chunks_text = "\n".join(f"- {chunk[:250]}" for chunk in retrieved_chunks[:3]) or "- no chunks"
+    return f"""Score this response from 0.0 to 1.0.
+Return EXACTLY one line in this format and nothing else:
+relevance=<float>; groundedness=<float>; completeness=<float>
+
+Query: {user_query}
+Chunks:
+{chunks_text}
+Response: {assistant_response}
+"""
+
+
+def _parse_scores(raw_text: str) -> tuple[dict | None, str]:
+    """Parse evaluator output using layered fallbacks."""
+    payload = _extract_json_payload(raw_text)
+
+    # 1) Strict JSON
+    try:
+        parsed = json.loads(payload)
+        if isinstance(parsed, dict):
+            return parsed, "json"
+    except json.JSONDecodeError:
+        pass
+
+    # 2) Python-like dict (single quotes, True/False/None)
+    try:
+        parsed = ast.literal_eval(payload)
+        if isinstance(parsed, dict):
+            return parsed, "literal_eval"
+    except Exception:
+        pass
+
+    # 3) Regex-based key extraction
+    coerced = _coerce_scores_from_text(raw_text)
+    if coerced:
+        return coerced, "regex"
+
+    return None, "unparsed"
 
 
 def _load_results(path: Path) -> dict:
@@ -183,6 +273,7 @@ def evaluate_rag_response(
         "conversation_id": conversation_id,
         "message_id": message_id,
         "user_query": user_query,
+        "assistant_response": assistant_response,
         "chunks_retrieved": len(retrieved_chunks),
         "response_length": len(assistant_response),
         "relevance": None,
@@ -215,14 +306,32 @@ def evaluate_rag_response(
         )
 
         raw_text = gemini_response.text.strip()
-        try:
-            scores = json.loads(_extract_json_payload(raw_text))
-        except json.JSONDecodeError:
-            coerced = _coerce_scores_from_text(raw_text)
-            if not coerced:
-                raise
-            scores = coerced
-            logger.warning("RAG evaluator returned malformed JSON; used fallback parser.")
+        scores, parse_mode = _parse_scores(raw_text)
+        if scores is None:
+            # Retry with a simpler output format that is easier to parse deterministically.
+            retry_prompt = _build_plain_retry_prompt(user_query, retrieved_chunks, assistant_response)
+            retry_response = client.models.generate_content(
+                model="gemini-3-flash-preview",
+                contents=retry_prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.0,
+                    max_output_tokens=120,
+                )
+            )
+            retry_text = (retry_response.text or "").strip()
+            scores = _coerce_scores_from_text(retry_text)
+            if scores is None:
+                scores = _default_scores("Evaluator output unparseable after retry")
+                result["evaluator_raw_excerpt"] = raw_text[:240]
+                result["evaluator_retry_excerpt"] = retry_text[:240]
+                logger.debug("RAG evaluator used default fallback scores for message %s", message_id)
+            else:
+                scores["failed"] = False
+                scores["failure_reason"] = None
+                logger.debug("RAG evaluator retry parser succeeded for message %s", message_id)
+
+        if parse_mode != "json":
+            logger.debug("RAG evaluator used %s fallback parser.", parse_mode)
 
         result["relevance"] = round(float(scores.get("relevance", 0)), 2)
         result["relevance_reason"] = scores.get("relevance_reason", "")
@@ -244,11 +353,6 @@ def evaluate_rag_response(
             result["overall_score"],
             conversation_id,
         )
-
-    except json.JSONDecodeError as exc:
-        logger.warning("RAG evaluator JSON parse failed: %s", exc)
-        result["failed"] = True
-        result["failure_reason"] = f"JSON parse error: {exc}"
 
     except Exception as exc:
         logger.warning("RAG evaluator failed: %s", exc)
