@@ -1081,29 +1081,29 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
             model_name="gemini-3-flash-preview",
         )
         logger.info("Mood snapshot persisted for conversation %s", conversation.id)
-    # ==================== RAG Evaluation (async, non-blocking) ====================
-if knowledge_context:
-    try:
-        import threading
-        from src.model.rag_evaluator import evaluate_rag_response
 
-        chunks_text = [doc.get("content", "") for doc in knowledge_context]
+        # ==================== RAG Evaluation (async, non-blocking) ====================
+        if knowledge_context:
+            try:
+                from src.model.rag_evaluator import evaluate_rag_response
 
-        def _run_eval():
-            evaluate_rag_response(
-                user_query=request.message,
-                retrieved_chunks=chunks_text,
-                assistant_response=assistant_text,
-                conversation_id=conversation.id,
-                message_id=assistant_message_obj.id,
-                user_id=request.user_id,
-            )
+                chunks_text = [doc.get("content", "") for doc in knowledge_context]
 
-        threading.Thread(target=_run_eval, daemon=True).start()
-        logger.info("RAG evaluation triggered async for message %s", assistant_message_obj.id)
+                def _run_eval():
+                    evaluate_rag_response(
+                        user_query=request.message,
+                        retrieved_chunks=chunks_text,
+                        assistant_response=assistant_text,
+                        conversation_id=conversation.id,
+                        message_id=assistant_message_obj.id,
+                        user_id=request.user_id,
+                    )
 
-    except Exception as exc:
-        logger.warning("Failed to trigger RAG evaluation: %s", exc)
+                threading.Thread(target=_run_eval, daemon=True).start()
+                logger.info("RAG evaluation triggered async for message %s", assistant_message_obj.id)
+
+            except Exception as exc:
+                logger.warning("Failed to trigger RAG evaluation: %s", exc)
 
         # Update conversation metadata
         conversation.message_count += 2
