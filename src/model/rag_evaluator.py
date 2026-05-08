@@ -11,6 +11,9 @@ import time
 import threading
 from pathlib import Path
 
+from google import genai
+from google.genai import types
+
 logger = logging.getLogger(__name__)
 
 EVALUATOR_RESULTS_PATH = Path(__file__).resolve().parent / "model_test_results.json"
@@ -124,22 +127,20 @@ def evaluate_rag_response(
     }
 
     try:
-        import google.generativeai as genai
-
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             result["failed"] = True
             result["failure_reason"] = "GEMINI_API_KEY not set"
             return result
 
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        client = genai.Client(api_key=api_key)
 
         prompt = _build_judge_prompt(user_query, retrieved_chunks, assistant_response)
 
-        gemini_response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
+        gemini_response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
                 temperature=0.1,
                 max_output_tokens=512,
             )
