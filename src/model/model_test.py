@@ -91,7 +91,7 @@ class ModelTester:
             with open(prompt_path, 'r', encoding='utf-8') as f:
                 return f.read()
 
-        return "You are a compassionate financial therapist."
+        return "You are a compassionate financial support specialist. You are not a licensed therapist."
 
     def _get_rag_context(self, query: str, top_k: int = 3) -> str:
         """Retrieve relevant context from Pinecone"""
