@@ -86,3 +86,45 @@ def test_chat_logging_and_snapshot_redact_sensitive_content(monkeypatch, tmp_pat
     assert secret_reply in stored
     assert "user_message_fingerprint" in stored
     assert "assistant_response_fingerprint" in stored
+
+
+def test_chat_immediate_safety_risk_short_circuits_generation(monkeypatch, tmp_path):
+    import uuid
+
+    monkeypatch.setattr(chat_router, "MOOD_SNAPSHOT_RESULTS_PATH", tmp_path / "model_test_results.json")
+    monkeypatch.setattr(chat_router, "analyze_emotion", lambda message, conversation_depth=0: {
+        "stress_level": "high",
+        "stress_confidence": 0.98,
+        "indicators": {
+            "emotional_state": "hopeless",
+            "financial_urgency": "crisis",
+            "willingness_to_learn": "low",
+            "openness_to_solutions": "closed",
+        },
+        "confidence_scores": {"stress": 0.98},
+        "conversation_phase": "discovery",
+        "overall_confidence": 0.99,
+        "safety_risk": {"level": "immediate", "confidence": 1.0},
+    })
+
+    def _should_not_be_called(*args, **kwargs):
+        raise AssertionError("LLM/retrieval should not run for immediate safety risk")
+
+    monkeypatch.setattr(chat_router, "get_llm", _should_not_be_called)
+    monkeypatch.setattr("src.knowledge.embedder.embed_text", _should_not_be_called)
+
+    class _FakeRetriever:
+        def get_context(self, query_vector):
+            raise AssertionError("Retriever should not run for immediate safety risk")
+
+    monkeypatch.setattr("src.knowledge.retriever.KnowledgeRetriever", lambda: _FakeRetriever())
+
+    response = client.post(
+        "/api/v1/chat/",
+        json={"message": "I want to end my life because of my debt.", "user_id": str(uuid.uuid4())},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "emergency services" in body["response"].lower()
+    assert body["mood"]["safety_risk"]["level"] == "immediate"
