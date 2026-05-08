@@ -13,6 +13,7 @@ from google.genai import types
 from pinecone import Pinecone
 from dotenv import load_dotenv
 from src.utils.emotion_analyzer import analyze_emotion
+from src.utils.conversation_state import build_conversation_state_guidance, infer_conversation_state
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -178,7 +179,7 @@ Guidelines:
 
         return rag_prompt
 
-    def _build_chat_prompt(self, user_message, conversation_history=None, context_pieces=None):
+    def _build_chat_prompt(self, user_message, conversation_history=None, context_pieces=None, state_guidance_text=None):
         """Build a chat prompt that includes optional conversation history."""
         history_block = ""
         if conversation_history:
@@ -196,17 +197,26 @@ Guidelines:
             rag_block = self._build_rag_prompt(user_message, context_pieces)
             return f"""{self.system_prompt}
 
+{state_guidance_text or ""}
+
 {history_block}
 {rag_block}
 """
 
         return f"""{self.system_prompt}
 
+{state_guidance_text or ""}
+
 {history_block}
 User says: {user_message}"""
-    def _build_structured_prompt(self, user_message, conversation_history=None, context_pieces=None):
+    def _build_structured_prompt(self, user_message, conversation_history=None, context_pieces=None, state_guidance_text=None):
         """Build prompt requesting JSON response."""
-        base = self._build_chat_prompt(user_message, conversation_history, context_pieces)
+        base = self._build_chat_prompt(
+            user_message,
+            conversation_history,
+            context_pieces,
+            state_guidance_text=state_guidance_text,
+        )
         return base + "\n\n=== RESPOND WITH JSON: {\"response\": \"...\", \"evaluation\": {\"relevance\": 0.8, \"groundedness\": 0.9, \"completeness\": 0.85}} ==="
 
     @staticmethod
@@ -271,15 +281,36 @@ User says: {user_message}"""
 
             context_pieces = []
 
+            prior_turn_texts = []
+            if conversation_history:
+                prior_turn_texts = [
+                    f"{turn.get('role', 'user').capitalize()}: {turn.get('content', '').strip()}"
+                    for turn in conversation_history[-6:]
+                    if turn.get("content", "").strip()
+                ]
+
+            conversation_state = infer_conversation_state(user_message, prior_turn_texts)
+            state_guidance_text = build_conversation_state_guidance(conversation_state)
+
             # Retrieve context if RAG is enabled
             if use_rag:
                 context_pieces = self._get_relevant_context(user_message)
 
             # Build the prompt (structured for metadata requests)
             if return_metadata:
-                prompt = self._build_structured_prompt(user_message, conversation_history, context_pieces)
+                prompt = self._build_structured_prompt(
+                    user_message,
+                    conversation_history,
+                    context_pieces,
+                    state_guidance_text=state_guidance_text,
+                )
             else:
-                prompt = self._build_chat_prompt(user_message, conversation_history, context_pieces)
+                prompt = self._build_chat_prompt(
+                    user_message,
+                    conversation_history,
+                    context_pieces,
+                    state_guidance_text=state_guidance_text,
+                )
 
             # Generate response using Gemini, with quota-aware retry handling
             logger.info(f"Generating response using {self.model_name}...")
@@ -312,7 +343,18 @@ User says: {user_message}"""
                     p = self._parse_json_response(response_text)
                     if verbose:
                         logger.info(f"Therapist: {p['response'][:100]}...")
-                    return {"response": p["response"], "retrieved_chunks": [piece.get("content", "") for piece in context_pieces], "mood_analysis": mood_analysis, "evaluation": {"relevance": p["relevance"], "groundedness": p["groundedness"], "completeness": p["completeness"], "parsed": p["parsed"]}}
+                    return {
+                        "response": p["response"],
+                        "retrieved_chunks": [piece.get("content", "") for piece in context_pieces],
+                        "mood_analysis": mood_analysis,
+                        "evaluation": {
+                            "relevance": p["relevance"],
+                            "groundedness": p["groundedness"],
+                            "completeness": p["completeness"],
+                            "parsed": p["parsed"],
+                        },
+                        "conversation_state": conversation_state.to_dict(),
+                    }
                 if verbose:
                     logger.info(f"Therapist: {response_text[:100]}...")
                 return response_text
@@ -327,7 +369,7 @@ User says: {user_message}"""
             logger.error(f"Error in chat: {e}")
             fallback = "I'm sorry, I encountered an error while trying to help. Please try again in a moment."
             if return_metadata:
-                return {"response": fallback, "retrieved_chunks": [], "mood_analysis": None, "evaluation": {"relevance": 0.0, "groundedness": 0.0, "completeness": 0.0, "parsed": False}}
+                return {"response": fallback, "retrieved_chunks": [], "mood_analysis": None, "evaluation": {"relevance": 0.0, "groundedness": 0.0, "completeness": 0.0, "parsed": False}, "conversation_state": conversation_state.to_dict()}
             return fallback
 
 
