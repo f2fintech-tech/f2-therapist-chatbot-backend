@@ -626,6 +626,8 @@ class RAGPipeline:
         logger.info("="*60)
 
         try:
+            from model.rag_evaluator import evaluate_rag_response
+
             logger.info("Initializing chatbot...")
             chatbot = TherapyChatbot()
 
@@ -641,58 +643,29 @@ class RAGPipeline:
                 response = chatbot.chat(query)
                 logger.info(f"Response: {response[:100]}...")
 
+                # Evaluate the response
+                eval_result = evaluate_rag_response(
+                    user_query=query,
+                    retrieved_chunks=[],
+                    assistant_response=response,
+                    conversation_id="pipeline-test",
+                    message_id=f"step7-{int(time.time())}",
+                    user_id="pipeline-test-user",
+                )
+                logger.info(
+                    "Eval scores — relevance: %.2f, groundedness: %.2f, completeness: %.2f, overall: %.2f",
+                    eval_result.get("relevance") or 0,
+                    eval_result.get("groundedness") or 0,
+                    eval_result.get("completeness") or 0,
+                    eval_result.get("overall_score") or 0,
+                )
+
             logger.info("✓ Chatbot testing completed successfully")
             return True
 
         except Exception as e:
             logger.error(f"Error testing chatbot: {e}")
             return False
-            def step_7_test_chatbot(self):
-    """Step 7: Test chatbot RAG pipeline"""
-    logger.info("\n" + "="*60)
-    logger.info("STEP 7: Testing chatbot RAG pipeline")
-    logger.info("="*60)
-
-    try:
-        from model.rag_evaluator import evaluate_rag_response  # add this import
-
-        logger.info("Initializing chatbot...")
-        chatbot = TherapyChatbot()
-
-        test_queries = [
-            "I'm worried about my credit card debt",
-            "How should I handle missed EMI payments?",
-            "What's the difference between a savings and checking account?"
-        ]
-
-        for query in test_queries:
-            logger.info(f"\nTesting query: '{query}'")
-            response = chatbot.chat(query)
-            logger.info(f"Response: {response[:100]}...")
-
-            # Evaluate the response
-            eval_result = evaluate_rag_response(
-                user_query=query,
-                retrieved_chunks=[],   # pipeline test has no chunk access, leave empty
-                assistant_response=response,
-                conversation_id="pipeline-test",
-                message_id=f"step7-{int(time.time())}",
-                user_id="pipeline-test-user",
-            )
-            logger.info(
-                "Eval scores — relevance: %.2f, groundedness: %.2f, completeness: %.2f, overall: %.2f",
-                eval_result.get("relevance") or 0,
-                eval_result.get("groundedness") or 0,
-                eval_result.get("completeness") or 0,
-                eval_result.get("overall_score") or 0,
-            )
-
-        logger.info("✓ Chatbot testing completed successfully")
-        return True
-
-    except Exception as e:
-        logger.error(f"Error testing chatbot: {e}")
-        return False
 
     def run_full_pipeline(self, skip_s3_upload=False, skip_s3_download=False, skip_chatbot_test=False):
         """
