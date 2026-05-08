@@ -102,6 +102,7 @@ class ChatResponse(BaseModel):
     timestamp: datetime
     mood: dict | None = Field(None, description="User's mood and emotion indicators")
     experiment: dict | None = Field(None, description="Experiment assignment metadata")
+    evaluation: dict | None = Field(None, description="Inline RAG evaluation scores when available")
 
 
 class MoodAnalysisRequest(BaseModel):
@@ -363,6 +364,17 @@ people you genuinely help - even if that means telling them NOT to take a loan.
 - Timeline expectations
 - Support available
 
+**# RESPONSE FORMAT**
+Return valid JSON only with this structure:
+{
+    "response": "Your final user-facing reply here",
+    "evaluation": {
+        "relevance": 0.0,
+        "groundedness": 0.0,
+        "completeness": 0.0
+    }
+}
+
 Remember: This is a conversation with a real person facing real stress. Treat them with
 the dignity, respect, and patience you'd want if you were in their shoes."""
 
@@ -391,6 +403,25 @@ def _is_quota_exhausted(error_message: str) -> bool:
 def _is_rate_limited(error_message: str) -> bool:
     lowered = error_message.lower()
     return "429" in lowered or "too many requests" in lowered or "rate limit" in lowered
+
+
+def _parse_structured_chat_output(text: str) -> tuple[str, dict | None]:
+    """Parse the chat model's JSON output into response text and evaluation scores."""
+    try:
+        data = json.loads(text)
+        response_text = str(data.get("response", ""))
+        evaluation = data.get("evaluation", {})
+        if not isinstance(evaluation, dict):
+            evaluation = {}
+        parsed_evaluation = {
+            "relevance": float(evaluation.get("relevance", 0.5)),
+            "groundedness": float(evaluation.get("groundedness", 0.5)),
+            "completeness": float(evaluation.get("completeness", 0.5)),
+            "parsed": True,
+        }
+        return response_text, parsed_evaluation
+    except Exception:
+        return text, None
 
 
 def _is_feature_enabled(env_var: str, default: str = "true") -> bool:
@@ -1051,12 +1082,15 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
         logger.info("Model generation completed in %.2fs", time.perf_counter() - generation_start)
 
-        # Ensure assistant response is a string before saving/persisting
+        # Parse structured output so we can save the assistant response and inline evaluation scores.
         assistant_text = None
+        evaluation = None
         try:
-            assistant_text = response.content if isinstance(response.content, str) else str(response.content)
+            raw_text = response.content if isinstance(response.content, str) else str(response.content)
+            assistant_text, evaluation = _parse_structured_chat_output(raw_text)
         except Exception:
             assistant_text = str(response)
+            evaluation = None
 
         # Save assistant message
         assistant_message_obj = save_message(
@@ -1081,29 +1115,6 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
             model_name="gemini-3-flash-preview",
         )
         logger.info("Mood snapshot persisted for conversation %s", conversation.id)
-
-        # ==================== RAG Evaluation (async, non-blocking) ====================
-        if knowledge_context:
-            try:
-                from src.model.rag_evaluator import evaluate_rag_response
-
-                chunks_text = [doc.get("content", "") for doc in knowledge_context]
-
-                def _run_eval():
-                    evaluate_rag_response(
-                        user_query=request.message,
-                        retrieved_chunks=chunks_text,
-                        assistant_response=assistant_text,
-                        conversation_id=conversation.id,
-                        message_id=assistant_message_obj.id,
-                        user_id=request.user_id,
-                    )
-
-                threading.Thread(target=_run_eval, daemon=True).start()
-                logger.info("RAG evaluation triggered async for message %s", assistant_message_obj.id)
-
-            except Exception as exc:
-                logger.warning("Failed to trigger RAG evaluation: %s", exc)
 
         # Update conversation metadata
         conversation.message_count += 2
@@ -1153,6 +1164,8 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
                 "stress_confidence": mood_analysis.get("stress_confidence"),
                 "overall_confidence": mood_analysis.get("overall_confidence"),
             }
+            ,
+            evaluation=evaluation,
         )
 
     except ValueError as e:
