@@ -43,15 +43,15 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Import pipeline components
-from knowledge.s3_storage import S3StorageManager
-from knowledge.data_processor import DataProcessor
-from knowledge.embedder import get_embeddings
-from knowledge.loader import KnowledgeLoader
+from src.knowledge.s3_storage import S3StorageManager
+from src.knowledge.data_processor import DataProcessor
+from src.knowledge.embedder import get_embeddings
+from src.knowledge.loader import KnowledgeLoader
 try:
     from src.inference.predictor import TherapyChatbot
 except ImportError:
     from inference.predictor import TherapyChatbot
-from model.model_train import ModelTrainer
+from src.model.model_train import ModelTrainer
 
 
 class DailyEmbeddingQuotaExceeded(RuntimeError):
