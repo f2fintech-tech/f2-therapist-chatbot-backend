@@ -157,7 +157,6 @@
 ├── 📖 Documentation (6 main guides)
 │   ├── INDEX.md                          ← START HERE
 │   ├── CONFIGURATION.md                  ← SETUP GUIDE
-│   ├── RAG_PIPELINE.md
 │   ├── RAG_PIPELINE_SUMMARY.md
 │   ├── TESTING_GUIDE.md
 │   ├── IMPLEMENTATION_CHECKLIST.md
@@ -179,25 +178,27 @@
 │   │   ├── inference/
 │   │   │   └── predictor.py              ⭐ ENHANCED (250+ lines)
 │   │   ├── knowledge/
-│   │   │   ├── s3_storage.py
-│   │   │   ├── data_processor.py
-│   │   │   ├── embedder.py
-│   │   │   ├── loader.py
-│   │   │   └── retriever.py
+│   │   │   ├── s3_storage.py             # S3 upload/download
+│   │   │   ├── data_processor.py         # Raw data processing
+│   │   │   ├── embedder.py               # Embedding generation (Gemini)
+│   │   │   ├── loader.py                 # Load to Pinecone
+│   │   │   └── retriever.py              # Retrieve from Pinecone
 │   │   ├── deployment/
 │   │   ├── routers/
 │   │   ├── middleware/
-│   │   ├── data/
-│   │   │   ├── raw/
-│   │   │   │   ├── conversations.json
-│   │   │   │   ├── FAQs_raw.json
-│   │   │   │   ├── scenarios_raw.json
-│   │   │   │   └── system_prompt_raw.md
-│   │   │   └── processed/
-│   │   │       ├── faqs.json
-│   │   │       ├── scenarios.json
-│   │   │       └── system_prompt.md
-│   │   └── ...
+│   │   ├── monitoring/
+│   │   ├── utils/
+│   │   
+│   │   └── data/
+│   │       ├── raw/
+│   │       │   ├── conversations.json
+│   │       │   ├── FAQs_raw.json
+│   │       │   ├── scenarios_raw.json
+│   │       │   └── system_prompt_raw.md
+│   │       └── processed/
+│   │           ├── faqs.json
+│   │           ├── scenarios.json
+│   │           └── system_prompt.md
 │   │
 │   └── Docker & Other Files
 │       ├── Dockerfile
@@ -286,7 +287,6 @@ git add RAG_PIPELINE_SUMMARY.md
 git add IMPLEMENTATION_CHECKLIST.md
 git add INDEX.md
 git add quickstart.sh
-git add COMPLETION_REPORT.sh
 
 # Modified files (should be updated)
 git add src/model/model_train.py
@@ -336,10 +336,6 @@ All files are complete and ready for:
 | Understanding architecture | RAG_PIPELINE.md |
 | Testing components | TESTING_GUIDE.md |
 | Implementation status | IMPLEMENTATION_CHECKLIST.md |
-| Quick overview | RAG_PIPELINE_SUMMARY.md |
-| Automated setup | quickstart.sh |
-| Running pipeline | rag_pipeline.py |
-| Testing chatbot | predictor.py |
 
 ---
 
