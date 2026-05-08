@@ -35,6 +35,10 @@ from src.utils.personalization_context import (
     build_personalization_fallback_guidance,
     resolve_personalization_context,
 )
+from src.utils.conversation_state import (
+    build_conversation_state_guidance,
+    infer_conversation_state,
+)
 from src.utils.experiments import (
     CHAT_AB_EXPERIMENT_NAME,
     assign_chat_variant,
@@ -103,6 +107,7 @@ class ChatResponse(BaseModel):
     mood: dict | None = Field(None, description="User's mood and emotion indicators")
     experiment: dict | None = Field(None, description="Experiment assignment metadata")
     evaluation: dict | None = Field(None, description="Inline RAG evaluation scores when available")
+    conversation_state: dict | None = Field(None, description="Conversation flow state and loop detection metadata")
 
 
 class MoodAnalysisRequest(BaseModel):
@@ -968,6 +973,20 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         # Exclude the current user message to avoid duplicate content in the same prompt.
         prior_context_messages = context_messages[:-1]
         conversation_context_text = format_conversation_context(prior_context_messages)
+        prior_turn_texts = [
+            f"{'User' if msg.role == MessageRole.USER else 'Assistant'}: {msg.content}"
+            for msg in prior_context_messages
+            if getattr(msg, "content", None)
+        ]
+        conversation_state = infer_conversation_state(request.message, prior_turn_texts)
+        conversation_state_guidance = build_conversation_state_guidance(conversation_state)
+        logger.info(
+            "Conversation state inferred for %s: stage=%s, topic=%s, loop=%s",
+            conversation.id,
+            conversation_state.stage,
+            conversation_state.current_topic,
+            conversation_state.loop_detected,
+        )
 
         # ==================== NEW: RAG Integration ====================
         # Retrieve relevant knowledge from Pinecone
@@ -1037,6 +1056,9 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
         if experiment_guidance_text:
             enhanced_message_parts.append(experiment_guidance_text)
+
+        if conversation_state_guidance:
+            enhanced_message_parts.append(conversation_state_guidance)
 
         enhanced_message_parts.append(f"**User's Question:**\n{request.message}")
         enhanced_message = "\n".join(enhanced_message_parts)
@@ -1166,6 +1188,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
             }
             ,
             evaluation=evaluation,
+            conversation_state=conversation_state.to_dict(),
         )
 
     except ValueError as e:
