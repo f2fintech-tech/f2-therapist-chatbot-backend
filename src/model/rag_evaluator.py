@@ -7,6 +7,7 @@ Logs scores to model_test_results.json alongside existing mood snapshots.
 import json
 import logging
 import os
+import re
 import time
 import threading
 from pathlib import Path
@@ -18,6 +19,72 @@ logger = logging.getLogger(__name__)
 
 EVALUATOR_RESULTS_PATH = Path(__file__).resolve().parent / "model_test_results.json"
 _eval_lock = threading.Lock()
+
+
+def _extract_json_payload(raw_text: str) -> str:
+    """Extract a JSON object payload from model output text."""
+    text = raw_text.strip()
+
+    # Strip markdown code fences if present.
+    if text.startswith("```"):
+        parts = text.split("```")
+        if len(parts) >= 2:
+            text = parts[1].strip()
+            if text.startswith("json"):
+                text = text[4:].strip()
+
+    # If the model adds prose, keep only the outermost JSON object.
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        return text[start:end + 1]
+
+    return text
+
+
+def _extract_float(text: str, key: str) -> float | None:
+    match = re.search(rf"\b{re.escape(key)}\b\s*[:=\-]?\s*([01](?:\.\d+)?)", text, re.IGNORECASE)
+    if not match:
+        return None
+    try:
+        value = float(match.group(1))
+    except ValueError:
+        return None
+    return max(0.0, min(1.0, value))
+
+
+def _extract_reason(text: str, key: str) -> str:
+    match = re.search(
+        rf"\b{re.escape(key)}_reason\b\s*[:=\-]?\s*(.+)",
+        text,
+        re.IGNORECASE,
+    )
+    if not match:
+        return ""
+    reason = match.group(1).strip()
+    reason = reason.strip('"\' ,')
+    return reason[:120]
+
+
+def _coerce_scores_from_text(raw_text: str) -> dict | None:
+    """Best-effort parser when model output is not valid JSON."""
+    relevance = _extract_float(raw_text, "relevance")
+    groundedness = _extract_float(raw_text, "groundedness")
+    completeness = _extract_float(raw_text, "completeness")
+
+    if relevance is None or groundedness is None or completeness is None:
+        return None
+
+    return {
+        "relevance": relevance,
+        "relevance_reason": _extract_reason(raw_text, "relevance"),
+        "groundedness": groundedness,
+        "groundedness_reason": _extract_reason(raw_text, "groundedness"),
+        "completeness": completeness,
+        "completeness_reason": _extract_reason(raw_text, "completeness"),
+        "failed": False,
+        "failure_reason": None,
+    }
 
 
 def _load_results(path: Path) -> dict:
@@ -143,19 +210,19 @@ def evaluate_rag_response(
             config=types.GenerateContentConfig(
                 temperature=0.1,
                 max_output_tokens=512,
+                response_mime_type="application/json",
             )
         )
 
         raw_text = gemini_response.text.strip()
-
-        # Strip markdown code fences if present
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("```")[1]
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:]
-            raw_text = raw_text.strip()
-
-        scores = json.loads(raw_text)
+        try:
+            scores = json.loads(_extract_json_payload(raw_text))
+        except json.JSONDecodeError:
+            coerced = _coerce_scores_from_text(raw_text)
+            if not coerced:
+                raise
+            scores = coerced
+            logger.warning("RAG evaluator returned malformed JSON; used fallback parser.")
 
         result["relevance"] = round(float(scores.get("relevance", 0)), 2)
         result["relevance_reason"] = scores.get("relevance_reason", "")
