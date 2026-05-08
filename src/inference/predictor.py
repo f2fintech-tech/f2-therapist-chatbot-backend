@@ -224,7 +224,7 @@ User says: {user_message}"""
         lowered = error_message.lower()
         return "429" in lowered or "too many requests" in lowered or "rate limit" in lowered
 
-    def chat(self, user_message, use_rag=True, conversation_history=None, verbose=True):
+    def chat(self, user_message, use_rag=True, conversation_history=None, verbose=True, return_metadata=False):
         """
         Chat with the financial therapist
 
@@ -233,9 +233,10 @@ User says: {user_message}"""
             use_rag: Whether to use RAG (Retrieval-Augmented Generation)
             conversation_history: Optional list of recent turns to preserve context
             verbose: Whether to log the user and therapist messages
+            return_metadata: Whether to return response plus retrieval metadata
 
         Returns:
-            The therapist's response
+            The therapist's response (or metadata dict when return_metadata=True)
         """
         if verbose:
             logger.info(f"User: {user_message[:80]}...")
@@ -291,16 +292,39 @@ User says: {user_message}"""
                     time.sleep(retry_delay)
 
             if response and response.text:
+                response_text = response.text
                 if verbose:
-                    logger.info(f"Therapist: {response.text[:100]}...")
-                return response.text
+                    logger.info(f"Therapist: {response_text[:100]}...")
+
+                if return_metadata:
+                    return {
+                        "response": response_text,
+                        "retrieved_chunks": [piece.get("content", "") for piece in context_pieces],
+                        "mood_analysis": mood_analysis,
+                    }
+
+                return response_text
             else:
                 logger.error("No response generated from model")
-                return "I appreciate you reaching out, but I'm having trouble processing that right now. Could you try again?"
+                fallback = "I appreciate you reaching out, but I'm having trouble processing that right now. Could you try again?"
+                if return_metadata:
+                    return {
+                        "response": fallback,
+                        "retrieved_chunks": [piece.get("content", "") for piece in context_pieces],
+                        "mood_analysis": mood_analysis,
+                    }
+                return fallback
 
         except Exception as e:
             logger.error(f"Error in chat: {e}")
-            return f"I'm sorry, I encountered an error while trying to help. Please try again in a moment."
+            fallback = "I'm sorry, I encountered an error while trying to help. Please try again in a moment."
+            if return_metadata:
+                return {
+                    "response": fallback,
+                    "retrieved_chunks": [],
+                    "mood_analysis": None,
+                }
+            return fallback
 
 
 def get_financial_therapy(user_message):
