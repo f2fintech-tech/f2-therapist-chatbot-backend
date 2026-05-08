@@ -83,6 +83,20 @@ STRESS_KEYWORDS = {
     ]
 }
 
+# Negation tokens to avoid false positives (e.g., "not suicidal")
+NEGATION_TERMS = [
+    "not", "never", "no", "don't", "doesn't", "didn't", "can't", "cannot", "won't", "wouldn't", "dont", "no longer"
+]
+
+# Explicit safety / self-harm indicators
+SAFETY_KEYWORDS = {
+    "self_harm": [
+        "suicidal", "kill myself", "kill myself", "end my life", "want to die",
+        "i'll kill myself", "i will kill myself", "hurt myself", "want to hurt myself",
+        "don't want to live", "not worth living", "no reason to live", "wish I was dead"
+    ]
+}
+
 
 EMOTIONAL_STATE_KEYWORDS = {
 
@@ -295,18 +309,22 @@ def _extract_keywords(text: str, keyword_dict: Dict[str, List[str]]) -> Tuple[st
     for category, keywords in keyword_dict.items():
         count = 0
         for keyword in keywords:
-            # Use word-boundary regex for multi-word phrases (e.g., "emis due" matches "emis are due")
-            # For single words, use precise word-boundary matching
+            # For each possible match, ensure it is not negated in nearby context
+            # Use finditer to locate multiple occurrences and check negation window
             if " " in keyword:
-                # For phrases: match words in order, allowing other words between them
                 words = re.split(r'\s+', keyword)
                 pattern = r'\s+'.join(re.escape(w) for w in words)
-                if re.search(pattern, text_lower):
-                    count += 1
+                for m in re.finditer(pattern, text_lower):
+                    start = max(0, m.start() - 60)
+                    prefix = text_lower[start:m.start()]
+                    if not any(re.search(r'\b' + re.escape(neg) + r'\b', prefix) for neg in NEGATION_TERMS):
+                        count += 1
             else:
-                # For single words: use strict word boundaries
-                if re.search(r'\b' + re.escape(keyword) + r'\b', text_lower):
-                    count += 1
+                for m in re.finditer(r'\b' + re.escape(keyword) + r'\b', text_lower):
+                    start = max(0, m.start() - 60)
+                    prefix = text_lower[start:m.start()]
+                    if not any(re.search(r'\b' + re.escape(neg) + r'\b', prefix) for neg in NEGATION_TERMS):
+                        count += 1
 
         if count > 0:
             matches[category] = count
@@ -351,6 +369,41 @@ def _analyze_sentence_structure(text: str) -> Dict[str, float]:
         "question_ratio": min(question_count / len(sentences), 1.0) if sentences else 0,
         "repetition_intensity": min(max_repetition / 5.0, 1.0)  # 5+ repeats = high
     }
+
+
+def _detect_safety_risk(text: str) -> Tuple[str, float]:
+    """Detect explicit self-harm / safety risk language.
+
+    Returns (level, confidence) where level is one of: 'none', 'concern', 'immediate'
+    """
+    text_lower = text.lower()
+
+    # Immediate indicators (explicit intent)
+    immediate_phrases = [
+        "i will kill myself", "i'll kill myself", "i want to die", "i'm going to kill myself",
+        "i want to end my life", "i'm going to end my life", "i'll end my life", "i will end my life"
+    ]
+    for p in immediate_phrases:
+        if p in text_lower:
+            return "immediate", 1.0
+
+    # Self-harm keywords (explicit but maybe less direct)
+    count = 0
+    for kw in SAFETY_KEYWORDS.get("self_harm", []):
+        if kw in text_lower:
+            # Check negation near match
+            idx = text_lower.find(kw)
+            start = max(0, idx - 60)
+            prefix = text_lower[start:idx]
+            if not any(re.search(r'\b' + re.escape(neg) + r'\b', prefix) for neg in NEGATION_TERMS):
+                count += 1
+
+    if count >= 1:
+        # Single explicit mention → concern
+        confidence = min(count / 3.0, 1.0)
+        return "concern", round(confidence, 2)
+
+    return "none", 0.0
 
 
 def _estimate_conversation_depth(message_count: int) -> str:
@@ -434,6 +487,19 @@ class EmotionAnalyzer:
                 "conversation_phase": conversation_phase,
                 "overall_confidence": round(overall_confidence, 2),
             }
+
+            # Safety / self-harm detection
+            safety_level, safety_conf = _detect_safety_risk(user_message)
+            result["safety_risk"] = {
+                "level": safety_level,
+                "confidence": round(safety_conf, 2),
+            }
+
+            # If immediate safety risk detected, promote stress level and flag indicators
+            if safety_level == "immediate":
+                result["stress_level"] = "high"
+                result["stress_confidence"] = max(result["stress_confidence"], 0.95)
+                result["indicators"]["emotional_state"] = result["indicators"].get("emotional_state") or "hopeless"
 
             detected_keywords = self._extract_detected_keywords(user_message, stress_level)
             if detected_keywords:

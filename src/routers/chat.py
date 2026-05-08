@@ -120,6 +120,7 @@ class MoodAnalysisResponse(BaseModel):
     conversation_phase: str
     overall_confidence: float
     detected_keywords: list | None = None
+    safety_risk: dict | None = None
 
 
 class ChatExperimentFeedbackRequest(BaseModel):
@@ -451,6 +452,19 @@ def _build_mood_adaptation_guidance(mood_analysis: dict | None) -> str:
         guidance.append("- Offer actionable options with pros/cons, while staying non-salesy.")
 
     return "\n".join(guidance)
+
+
+def _build_safety_response(mood_analysis: dict | None) -> str:
+    """Build a safe fallback response when immediate safety risk is detected."""
+    safety_risk = (mood_analysis or {}).get("safety_risk", {})
+    if safety_risk.get("level") != "immediate":
+        return ""
+
+    return (
+        "I’m really sorry you’re carrying this much right now. I can’t help with immediate self-harm or suicide situations here. "
+        "Please contact emergency services or a trusted person right now, and move to a safer place if you can. "
+        "If this is not an immediate safety issue and you want to talk about the financial side, I can help with that next."
+    )
 
 
 def _build_experiment_guidance(variant: str | None) -> str:
@@ -819,6 +833,53 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         conversation_depth = conversation.message_count // 2  # Each exchange = 2 messages
         mood_analysis = analyze_emotion(request.message, conversation_depth)
         logger.info(f"Mood analysis: stress={mood_analysis.get('stress_level')}, confidence={mood_analysis.get('stress_confidence')}")
+
+        safety_response = _build_safety_response(mood_analysis)
+        if safety_response:
+            logger.warning("Immediate safety risk detected for user %s in conversation %s", request.user_id, conversation.id)
+
+            assistant_message_obj = save_message(
+                db, conversation.id, MessageRole.ASSISTANT, safety_response
+            )
+
+            if not conversation.title:
+                conversation.title = _generate_conversation_title(request.message)
+
+            conversation.summary = _generate_conversation_summary(request.message, safety_response)
+
+            persist_mood_snapshot(
+                user_id=request.user_id,
+                conversation_id=conversation.id,
+                user_message_id=user_message_obj.id,
+                assistant_message_id=assistant_message_obj.id,
+                user_message=request.message,
+                assistant_response=safety_response,
+                mood_analysis=mood_analysis,
+                conversation_depth=conversation_depth,
+                model_name="gemini-3-flash-preview",
+            )
+
+            conversation.message_count += 2
+            conversation.updated_at = datetime.utcnow()
+            db.commit()
+
+            return ChatResponse(
+                response=safety_response,
+                user_id=request.user_id,
+                conversation_id=conversation.id,
+                message_id=assistant_message_obj.id,
+                timestamp=datetime.utcnow(),
+                mood={
+                    "stress_level": mood_analysis.get("stress_level"),
+                    "emotional_state": mood_analysis.get("indicators", {}).get("emotional_state"),
+                    "financial_urgency": mood_analysis.get("indicators", {}).get("financial_urgency"),
+                    "willingness_to_learn": mood_analysis.get("indicators", {}).get("willingness_to_learn"),
+                    "openness_to_solutions": mood_analysis.get("indicators", {}).get("openness_to_solutions"),
+                    "stress_confidence": mood_analysis.get("stress_confidence"),
+                    "overall_confidence": mood_analysis.get("overall_confidence"),
+                    "safety_risk": mood_analysis.get("safety_risk"),
+                },
+            )
 
         experiment_enabled = is_chat_ab_testing_enabled()
         experiment_assignment = None
@@ -1218,7 +1279,8 @@ async def analyze_user_mood(request: MoodAnalysisRequest):
             confidence_scores=analysis["confidence_scores"],
             conversation_phase=analysis["conversation_phase"],
             overall_confidence=analysis["overall_confidence"],
-            detected_keywords=analysis.get("detected_keywords")
+            detected_keywords=analysis.get("detected_keywords"),
+            safety_risk=analysis.get("safety_risk")
         )
 
         logger.info(f"Mood analysis complete: stress={response.stress_level}, confidence={response.overall_confidence}")

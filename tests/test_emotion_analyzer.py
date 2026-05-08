@@ -22,3 +22,20 @@ def test_analyze_emotion_willingness():
     msg = "Please explain, I want to learn how this works."
     result = analyze_emotion(msg, conversation_depth=2)
     assert result["indicators"]["willingness_to_learn"] in {"high", None}
+
+
+def test_analyze_emotion_ignores_negated_keywords():
+    msg = "I am not suicidal, I just need help with bills and rent."
+    result = analyze_emotion(msg, conversation_depth=0)
+
+    assert result["safety_risk"]["level"] == "none"
+    assert result["stress_level"] in {"high", "moderate"}
+
+
+def test_analyze_emotion_detects_immediate_safety_risk():
+    msg = "I want to end my life because of my debt."
+    result = analyze_emotion(msg, conversation_depth=0)
+
+    assert result["safety_risk"]["level"] == "immediate"
+    assert result["stress_level"] == "high"
+    assert result["stress_confidence"] >= 0.95
