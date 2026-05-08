@@ -155,7 +155,7 @@ Remember: The examples above are your style guide. Match their tone, depth, and 
                 logger.info("✓ Base system prompt loaded")
             else:
                 logger.warning("System prompt file not found, using minimal prompt")
-                base_prompt = "You are a compassionate financial therapist."
+                base_prompt = "You are a compassionate financial support specialist. You are not a licensed therapist."
 
             # Step 2: Load training examples
             logger.info("\n[STEP 2] Loading training examples...")
