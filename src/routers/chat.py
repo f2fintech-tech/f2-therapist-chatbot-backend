@@ -996,16 +996,9 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         knowledge_context = []
 
         try:
-            from src.knowledge.embedder import embed_text
-            from src.knowledge.retriever import KnowledgeRetriever
+            from src.knowledge.retriever import get_relevant_context
 
-            # Convert user message to embedding
-            query_vector = embed_text(request.message)
-            logger.debug("User message converted to embedding vector")
-
-            # Search Pinecone for relevant documents
-            retriever = KnowledgeRetriever()
-            knowledge_context = retriever.get_context(query_vector)
+            knowledge_context = get_relevant_context(request.message)
             logger.info(f"Retrieved {len(knowledge_context)} relevant knowledge documents")
 
             # Build context string from retrieved documents
