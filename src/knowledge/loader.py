@@ -78,18 +78,9 @@ class KnowledgeLoader:
                 record_hash = self._record_hash(source_name, record)
                 desired[(source_name, record_hash)] = self._desired_record_id(source_name, record, index)
 
-        # Include the system prompt markdown file as its own record so we can
-        # clean up older duplicate prompt vectors too.
-        prompt_path = processed_dir / "system_prompt.md"
-        if prompt_path.exists():
-            try:
-                with open(prompt_path, "r", encoding="utf-8") as f:
-                    prompt_text = f.read().strip()
-                if prompt_text:
-                    prompt_record = {"id": "system_prompt", "content": prompt_text}
-                    desired[("system_prompt", self._record_hash("system_prompt", prompt_record))] = "system_prompt"
-            except Exception:
-                logger.warning(f"Could not read system prompt from {prompt_path}; skipping duplicate check")
+        # NOTE: System prompt is no longer indexed in Pinecone as a retrievable document.
+        # It is loaded separately in the chatbot for system-level instruction and is not
+        # part of the user-facing retrieval pool.
 
         return desired
 
@@ -309,7 +300,7 @@ class KnowledgeLoader:
 
         total_loaded = 0
         for collection_path in sorted(processed_dir.glob("*.json")):
-            if collection_path.name in {"embedding_state.json", "pinecone_sync_state.json"}:
+            if collection_path.name in {"embedding_state.json", "pinecone_sync_state.json", "system_prompt.json"}:
                 continue
             total_loaded += self._load_json_collection(collection_path)
 
