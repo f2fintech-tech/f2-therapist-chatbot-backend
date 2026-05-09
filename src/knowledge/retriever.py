@@ -5,7 +5,7 @@ Retrieves relevant documents from Pinecone vector DB
 from pinecone import Pinecone
 import os
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -134,3 +134,34 @@ class KnowledgeRetriever:
         except Exception as e:
             logger.error(f"Error getting index stats: {str(e)}")
             raise
+
+
+def get_relevant_context(
+    user_message: str,
+    top_k: int = 5,
+    embedder: Optional[Callable[[str], List[float]]] = None,
+) -> List[Dict[str, Any]]:
+    """Embed a user message and retrieve the most relevant Pinecone context.
+
+    This centralizes the query-to-context path so callers do not duplicate
+    embedding and retrieval behavior.
+    """
+    if not user_message or not str(user_message).strip():
+        logger.warning("Empty user message provided for retrieval")
+        return []
+
+    if embedder is None:
+        from src.knowledge.embedder import embed_text as default_embed_text
+
+        embedder = default_embed_text
+
+    try:
+        query_vector = embedder(user_message)
+        retriever = KnowledgeRetriever()
+        try:
+            return retriever.get_context(query_vector, top_k=top_k)
+        except TypeError:
+            return retriever.get_context(query_vector)
+    except Exception as e:
+        logger.error(f"Error retrieving context for text query: {str(e)}")
+        return []
