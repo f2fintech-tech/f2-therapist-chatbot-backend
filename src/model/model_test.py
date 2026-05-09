@@ -397,6 +397,11 @@ def main():
         action="store_true",
         help="Use RAG context in chat mode (adds an embedding API call per message)",
     )
+    parser.add_argument(
+        "--chat-eval",
+        action="store_true",
+        help="Request inline response evaluation metadata in chat mode (same generation call)",
+    )
     args = parser.parse_args()
 
     if args.chat:
@@ -406,10 +411,15 @@ def main():
         logger.info("\n" + "=" * 80)
         logger.info("FINANCIAL THERAPIST CHAT MODE")
         logger.info("Type 'exit', 'quit', or 'q' to stop.")
+        chat_eval_enabled = args.chat_eval or args.chat_rag
         if args.chat_rag:
             logger.info("RAG is enabled in chat mode, so each message uses 2 API calls.")
         else:
             logger.info("RAG is disabled in chat mode to keep each message to 1 API call.")
+        if chat_eval_enabled:
+            logger.info("Inline response evaluation is enabled in chat mode.")
+        else:
+            logger.info("Inline response evaluation is disabled in chat mode.")
         logger.info("=" * 80)
 
         chatbot = TherapyChatbot()
@@ -418,7 +428,7 @@ def main():
         chat_started_at = time.time()
         session_conversation_id = f"terminal-chat-{int(chat_started_at)}"
 
-        if args.chat_rag:
+        if chat_eval_enabled:
             logger.info("RAG evaluation is now included inline in the single chatbot API call.")
 
         while True:
@@ -454,10 +464,10 @@ def main():
                     use_rag=args.chat_rag,
                     conversation_history=conversation_history,
                     verbose=False,
-                    return_metadata=args.chat_rag,
+                    return_metadata=chat_eval_enabled,
                 )
 
-                if args.chat_rag and isinstance(chat_result, dict):
+                if chat_eval_enabled and isinstance(chat_result, dict):
                     response = str(chat_result.get("response", ""))
                     retrieved_chunks = cast(List[str], chat_result.get("retrieved_chunks", []))
                     evaluation = cast(Dict[str, Any], chat_result.get("evaluation", {}))
@@ -471,6 +481,14 @@ def main():
                 evaluation = {}
 
             print(f"Bot: {response}\n")
+            if chat_eval_enabled and evaluation:
+                print(
+                    "  📈 [Eval] "
+                    f"relevance={evaluation.get('relevance', 0):.2f}, "
+                    f"groundedness={evaluation.get('groundedness', 0):.2f}, "
+                    f"completeness={evaluation.get('completeness', 0):.2f}, "
+                    f"parsed={evaluation.get('parsed', False)}\n"
+                )
             conversation_history.append({"role": "assistant", "content": response})
             chat_transcript.append({
                 "user": user_message,
@@ -479,7 +497,7 @@ def main():
                 "chunks_retrieved": len(retrieved_chunks),
                 "timestamp": time.time(),
                 "mood_analysis": mood_analysis,
-                "evaluation": evaluation if args.chat_rag else None,
+                "evaluation": evaluation if chat_eval_enabled else None,
             })
 
         if chat_transcript:
