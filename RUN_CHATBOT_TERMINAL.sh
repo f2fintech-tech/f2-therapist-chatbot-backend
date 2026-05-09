@@ -11,8 +11,9 @@ set -euo pipefail
 # 3. Starts the chatbot REPL
 #
 # Chat mode defaults to one generation call per message to keep API usage low.
-# To enable RAG context in chat mode, pass:
-#   python -m src.model.model_test --chat --chat-rag
+# This launcher enables inline evaluation metadata in the same generation call.
+# To enable RAG context in chat mode as well, pass:
+#   python -m src.model.model_test --chat --chat-eval --chat-rag
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
@@ -37,4 +38,4 @@ echo "Starting interactive chatbot..."
 echo "Type 'exit' to quit."
 echo ""
 
-python -m src.model.model_test --chat
+python -m src.model.model_test --chat --chat-eval
