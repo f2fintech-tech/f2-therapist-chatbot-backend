@@ -31,11 +31,22 @@ class KnowledgeRetriever:
             logger.error(f"Failed to initialize Pinecone: {str(e)}")
             raise
 
-    def retrieve(self, query_vector: List[float], top_k: int = 5):
-        """Retrieve top-k most relevant documents from vector DB."""
+    def retrieve(self, query_vector: List[float], top_k: int = 5, score_threshold: float = None):
+        """Retrieve top-k most relevant documents from vector DB.
+
+        Args:
+            query_vector: Embedding vector for the query
+            top_k: Maximum number of results to retrieve
+            score_threshold: Minimum cosine similarity score (0.0-1.0). Defaults to env var
+                RETRIEVER_SCORE_THRESHOLD or 0.70. Results below threshold are filtered out.
+        """
         if not query_vector:
             logger.warning("Empty query vector provided")
             return []
+
+        # Use provided threshold or fall back to env var or default
+        if score_threshold is None:
+            score_threshold = float(os.getenv("RETRIEVER_SCORE_THRESHOLD", "0.70"))
 
         try:
             results = self.index.query(
@@ -51,16 +62,31 @@ class KnowledgeRetriever:
                 logger.warning(f"No matches found in result: {type(results)}")
                 return []
 
-            return matches
+            # Filter matches by similarity score threshold
+            filtered_matches = []
+            for match in matches:
+                score = getattr(match, "score", 0.0)
+                if score >= score_threshold:
+                    filtered_matches.append(match)
+                else:
+                    logger.debug(f"Filtered out low-confidence match (score={score:.2f} < threshold={score_threshold:.2f})")
+
+            return filtered_matches
 
         except Exception as e:
             logger.error(f"Error querying Pinecone: {str(e)}")
             raise
 
-    def get_context(self, query_vector: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
-        """Get relevant context for the query."""
+    def get_context(self, query_vector: List[float], top_k: int = 5, score_threshold: float = None) -> List[Dict[str, Any]]:
+        """Get relevant context for the query.
+
+        Args:
+            query_vector: Embedding vector for the query
+            top_k: Maximum number of results to retrieve
+            score_threshold: Minimum cosine similarity score (0.0-1.0). Defaults to env var RETRIEVER_SCORE_THRESHOLD.
+        """
         try:
-            matches = self.retrieve(query_vector, top_k=top_k)
+            matches = self.retrieve(query_vector, top_k=top_k, score_threshold=score_threshold)
 
             if not matches:
                 return []
@@ -68,11 +94,16 @@ class KnowledgeRetriever:
             context = []
             for match in matches:
                 metadata = getattr(match, "metadata", {}) or {}
+                
+                # Filter out system prompt records (not user-facing knowledge base)
+                doc_type = metadata.get("type", "")
+                if doc_type == "system_prompt":
+                    continue
 
                 context.append({
                     "id": getattr(match, "id", ""),
                     "content": metadata.get("content", ""),
-                    "type": metadata.get("type", ""),
+                    "type": doc_type,
                     "score": getattr(match, "score", 0.0),
                 })
 
@@ -140,11 +171,18 @@ def get_relevant_context(
     user_message: str,
     top_k: int = 5,
     embedder: Optional[Callable[[str], List[float]]] = None,
+    score_threshold: float = None,
 ) -> List[Dict[str, Any]]:
     """Embed a user message and retrieve the most relevant Pinecone context.
 
     This centralizes the query-to-context path so callers do not duplicate
     embedding and retrieval behavior.
+
+    Args:
+        user_message: The user's text query
+        top_k: Maximum number of results to retrieve
+        embedder: Optional custom embedding function. Defaults to Gemini embedder.
+        score_threshold: Minimum cosine similarity score. Defaults to env var RETRIEVER_SCORE_THRESHOLD.
     """
     if not user_message or not str(user_message).strip():
         logger.warning("Empty user message provided for retrieval")
@@ -159,7 +197,7 @@ def get_relevant_context(
         query_vector = embedder(user_message)
         retriever = KnowledgeRetriever()
         try:
-            return retriever.get_context(query_vector, top_k=top_k)
+            return retriever.get_context(query_vector, top_k=top_k, score_threshold=score_threshold)
         except TypeError:
             return retriever.get_context(query_vector)
     except Exception as e:
