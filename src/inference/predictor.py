@@ -14,6 +14,7 @@ from pinecone import Pinecone
 from dotenv import load_dotenv
 from src.utils.emotion_analyzer import analyze_emotion
 from src.utils.conversation_state import build_conversation_state_guidance, infer_conversation_state
+from src.knowledge.retriever import get_relevant_context
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -115,43 +116,9 @@ Guidelines:
 
     def _get_relevant_context(self, user_message, top_k=3):
         """Retrieve relevant knowledge base documents using RAG"""
-        try:
-            # Convert user message to embedding
-            embed_result = self.client.models.embed_content(
-                model="gemini-embedding-2",
-                contents=user_message,
-            )
-            user_vector = embed_result.embeddings[0].values
-
-            # Search Pinecone for relevant documents
-            search_results = self.index.query(
-                vector=user_vector,
-                top_k=top_k,
-                include_metadata=True
-            )
-
-            # Extract context from search results
-            context_pieces = []
-            if search_results.get('matches'):
-                for match in search_results['matches']:
-                    metadata = match.get('metadata', {})
-                    content = metadata.get('content', '')
-                    doc_type = metadata.get('type', 'unknown')
-                    score = match.get('score', 0)
-
-                    if content:
-                        context_pieces.append({
-                            'content': content,
-                            'type': doc_type,
-                            'relevance_score': score
-                        })
-
-            logger.info(f"Retrieved {len(context_pieces)} relevant documents from knowledge base")
-            return context_pieces
-
-        except Exception as e:
-            logger.error(f"Error retrieving context: {e}")
-            return []
+        context_pieces = get_relevant_context(user_message, top_k=top_k)
+        logger.info(f"Retrieved {len(context_pieces)} relevant documents from knowledge base")
+        return context_pieces
 
     def _build_rag_prompt(self, user_message, context_pieces):
         """Build a prompt with RAG context for the model"""
