@@ -127,8 +127,16 @@ app.add_middleware(SecurityLoggingMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 
 # CORS middleware (added last, processed first)
-# Get allowed origins from environment variable
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
+# Get allowed origins from environment variable.
+# Local development defaults include common frontend ports.
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000",
+).split(",")
+
+# Codespaces frontend URLs are dynamic (https://<name>-5173.app.github.dev).
+# Keep this permissive pattern for non-production only unless explicitly configured.
+ALLOW_ORIGIN_REGEX = r"https://.*\.app\.github\.dev" if ENVIRONMENT != "production" else None
 
 # For production, default to no origins (explicitly set required)
 if ENVIRONMENT == "production":
@@ -146,6 +154,7 @@ logger.info(f"CSRF protection enabled: {CSRF_PROTECTION_ENABLED}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Authorization"],
