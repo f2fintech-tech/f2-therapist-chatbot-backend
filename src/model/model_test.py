@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 import time
 from src.utils.emotion_analyzer import analyze_emotion
 from src.utils.results_store import append_test_result
+from src.model.rag_evaluator import evaluate_chat_session
 
 try:
     from pinecone import Pinecone
@@ -400,7 +401,7 @@ def main():
     parser.add_argument(
         "--chat-eval",
         action="store_true",
-        help="Request inline response evaluation metadata in chat mode (same generation call)",
+        help="Persist response evaluation metadata to model_test_results.json in chat mode",
     )
     args = parser.parse_args()
 
@@ -411,15 +412,18 @@ def main():
         logger.info("\n" + "=" * 80)
         logger.info("FINANCIAL THERAPIST CHAT MODE")
         logger.info("Type 'exit', 'quit', or 'q' to stop.")
-        chat_eval_enabled = args.chat_eval or args.chat_rag
+        chat_eval_enabled = args.chat_eval
+        if chat_eval_enabled:
+            logger.info("Evaluation scores will be saved to model_test_results.json.")
+        else:
+            logger.info("Evaluation scores are disabled in chat mode.")
         if args.chat_rag:
-            logger.info("RAG is enabled in chat mode, so each message uses 2 API calls.")
+            if chat_eval_enabled:
+                logger.info("RAG is enabled in chat mode, and each message will also be evaluated and saved.")
+            else:
+                logger.info("RAG is enabled in chat mode, so each message uses 2 API calls.")
         else:
             logger.info("RAG is disabled in chat mode to keep each message to 1 API call.")
-        if chat_eval_enabled:
-            logger.info("Inline response evaluation is enabled in chat mode.")
-        else:
-            logger.info("Inline response evaluation is disabled in chat mode.")
         logger.info("=" * 80)
 
         chatbot = TherapyChatbot()
@@ -429,7 +433,7 @@ def main():
         session_conversation_id = f"terminal-chat-{int(chat_started_at)}"
 
         if chat_eval_enabled:
-            logger.info("RAG evaluation is now included inline in the single chatbot API call.")
+            logger.info("Evaluation scores will be generated once after the chat session ends and saved to model_test_results.json.")
 
         while True:
             try:
@@ -459,36 +463,25 @@ def main():
                 print()
 
             try:
-                chat_result = chatbot.chat(
-                    user_message,
-                    use_rag=args.chat_rag,
-                    conversation_history=conversation_history,
-                    verbose=False,
-                    return_metadata=chat_eval_enabled,
+                response = cast(
+                    str,
+                    chatbot.chat(
+                        user_message,
+                        use_rag=args.chat_rag,
+                        conversation_history=conversation_history,
+                        verbose=False,
+                        return_metadata=False,
+                    ),
                 )
 
-                if chat_eval_enabled and isinstance(chat_result, dict):
-                    response = str(chat_result.get("response", ""))
-                    retrieved_chunks = cast(List[str], chat_result.get("retrieved_chunks", []))
-                    evaluation = cast(Dict[str, Any], chat_result.get("evaluation", {}))
-                else:
-                    response = cast(str, chat_result)
-                    retrieved_chunks = []
-                    evaluation = {}
+                retrieved_chunks: List[str] = []
+                evaluation: Dict[str, Any] = {}
             except Exception as exc:
                 response = f"I'm sorry, I ran into an error: {exc}"
                 retrieved_chunks = []
                 evaluation = {}
 
             print(f"Bot: {response}\n")
-            if chat_eval_enabled and evaluation:
-                print(
-                    "  📈 [Eval] "
-                    f"relevance={evaluation.get('relevance', 0):.2f}, "
-                    f"groundedness={evaluation.get('groundedness', 0):.2f}, "
-                    f"completeness={evaluation.get('completeness', 0):.2f}, "
-                    f"parsed={evaluation.get('parsed', False)}\n"
-                )
             conversation_history.append({"role": "assistant", "content": response})
             chat_transcript.append({
                 "user": user_message,
@@ -500,6 +493,22 @@ def main():
                 "evaluation": evaluation if chat_eval_enabled else None,
             })
 
+        session_evaluation = None
+        if chat_eval_enabled and chat_transcript:
+            logger.info("Running one post-session evaluation for the full conversation...")
+            session_evaluation = evaluate_chat_session(
+                chat_session=chat_transcript,
+                conversation_id=session_conversation_id,
+                user_id="terminal-chat-user",
+            )
+            logger.info(
+                "✓ Session evaluation complete: relevance=%.2f groundedness=%.2f completeness=%.2f overall=%.2f",
+                session_evaluation.get("relevance", 0) or 0,
+                session_evaluation.get("groundedness", 0) or 0,
+                session_evaluation.get("completeness", 0) or 0,
+                session_evaluation.get("overall_score", 0) or 0,
+            )
+
         if chat_transcript:
             output_path = Path("src/model/model_test_results.json")
             results_summary = {
@@ -509,6 +518,7 @@ def main():
                 "prompt_type": "fine-tuned",
                 "chat_rag": args.chat_rag,
                 "chat_session": chat_transcript,
+                "session_evaluation": session_evaluation,
                 "turn_count": len(chat_transcript),
             }
 
