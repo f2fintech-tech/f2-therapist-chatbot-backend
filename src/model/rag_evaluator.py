@@ -251,6 +251,40 @@ Return ONLY this JSON:
   "failure_reason": null
 }}"""
 
+def _build_session_judge_prompt(
+    chat_session: list[dict],
+    conversation_id: str,
+) -> str:
+    turns_text = []
+    for index, turn in enumerate(chat_session, 1):
+        user_text = str(turn.get("user", "")).strip()[:500]
+        assistant_text = str(turn.get("assistant", "")).strip()[:500]
+        rag_used = bool(turn.get("rag_used", False))
+        turns_text.append(
+            f"[Turn {index}]\nUser: {user_text}\nAssistant: {assistant_text}\nRAG used: {rag_used}"
+        )
+
+    transcript_text = "\n\n".join(turns_text) if turns_text else "No turns recorded."
+
+    return f"""You are an expert evaluator for a financial therapy chatbot interactive session.
+
+Score the overall session on 3 dimensions. Return EXACTLY one line in this format and nothing else:
+relevance=<float>; groundedness=<float>; completeness=<float>
+
+CONVERSATION ID:
+{conversation_id}
+
+CHAT TRANSCRIPT:
+{transcript_text}
+
+Score each dimension from 0.0 to 1.0:
+
+1. relevance - Did the assistant respond appropriately to the user's concerns across the session?
+2. groundedness - If RAG was used, were the responses grounded in the available knowledge context?
+3. completeness - Did the overall conversation help the user make progress or understand the issue?
+
+Do not return JSON. Do not add prose. Use only the exact key=value line."""
+
 
 def evaluate_rag_response(
     *,
@@ -361,6 +395,93 @@ def evaluate_rag_response(
 
     # Always log to file even on failure
     _persist_eval_result(result, file_path or EVALUATOR_RESULTS_PATH)
+    return result
+
+def evaluate_chat_session(
+    *,
+    chat_session: list[dict],
+    conversation_id: str,
+    user_id: str,
+) -> dict:
+    """Evaluate a full chat session in one Gemini call.
+
+    This is intended for interactive chat mode where we want a single post-session
+    evaluation instead of per-turn eval calls.
+    """
+    result = {
+        "timestamp": time.time(),
+        "user_id": user_id,
+        "conversation_id": conversation_id,
+        "turn_count": len(chat_session),
+        "relevance": None,
+        "groundedness": None,
+        "completeness": None,
+        "overall_score": None,
+        "failed": False,
+        "failure_reason": None,
+        "mode": "interactive_chat_session",
+    }
+
+    try:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            result["failed"] = True
+            result["failure_reason"] = "GEMINI_API_KEY not set"
+            return result
+
+        client = genai.Client(api_key=api_key)
+        prompt = _build_session_judge_prompt(chat_session, conversation_id)
+
+        gemini_response = client.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.1,
+                max_output_tokens=120,
+            )
+        )
+
+        raw_text = (gemini_response.text or "").strip()
+        scores = _coerce_scores_from_text(raw_text)
+        parse_mode = "regex" if scores else "unparsed"
+        if scores is None:
+            scores, parse_mode = _parse_scores(raw_text)
+        if scores is None:
+            scores = _default_scores("Session evaluator output unparseable")
+            result["evaluator_raw_excerpt"] = raw_text[:240]
+        else:
+            scores["failed"] = False
+            scores["failure_reason"] = None
+
+        if parse_mode != "json":
+            logger.debug("Session evaluator used %s fallback parser.", parse_mode)
+
+        result["relevance"] = round(float(scores.get("relevance", 0)), 2)
+        result["relevance_reason"] = scores.get("relevance_reason", "")
+        result["groundedness"] = round(float(scores.get("groundedness", 0)), 2)
+        result["groundedness_reason"] = scores.get("groundedness_reason", "")
+        result["completeness"] = round(float(scores.get("completeness", 0)), 2)
+        result["completeness_reason"] = scores.get("completeness_reason", "")
+        result["overall_score"] = round(
+            (result["relevance"] + result["groundedness"] + result["completeness"]) / 3, 2
+        )
+        result["failed"] = bool(scores.get("failed", False))
+        result["failure_reason"] = scores.get("failure_reason")
+
+        logger.info(
+            "Session eval: relevance=%.2f groundedness=%.2f completeness=%.2f overall=%.2f [conv=%s]",
+            result["relevance"],
+            result["groundedness"],
+            result["completeness"],
+            result["overall_score"],
+            conversation_id,
+        )
+
+    except Exception as exc:
+        logger.warning("Session evaluator failed: %s", exc)
+        result["failed"] = True
+        result["failure_reason"] = str(exc)
+
     return result
 
 
