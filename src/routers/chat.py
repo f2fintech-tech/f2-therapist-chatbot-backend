@@ -20,6 +20,7 @@ import threading
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import SystemMessage, HumanMessage
 from src.models import (
     get_db, Conversation, ConversationMessage, MessageRole, get_or_create_user
 )
@@ -211,7 +212,11 @@ def get_llm():
     )
 
 def get_financial_therapy_prompt():
-    """Create and return the financial therapy system prompt."""
+    """Create and return the financial therapy system prompt.
+    
+    Returns just the system message string (not a template).
+    The user message will be appended directly without template variable substitution.
+    """
     system_message = """**# WHO YOU ARE**
 You are a compassionate Financial Support Specialist working at F2 Fintech. You are NOT a licensed therapist, counselor, or salesperson.
 You are a trusted advisor who genuinely cares about people's financial and emotional wellbeing.
@@ -383,10 +388,7 @@ Return valid JSON only with this structure:
 Remember: This is a conversation with a real person facing real stress. Treat them with
 the dignity, respect, and patience you'd want if you were in their shoes."""
 
-    return ChatPromptTemplate.from_messages([
-        ("system", system_message),
-        ("human", "{user_message}")
-    ])
+    return system_message
 
 
 def _retry_delay_from_error(error_message: str, default_delay: float = 5.0) -> float:
@@ -1058,18 +1060,21 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
         logger.info(f"Enhanced message length: {len(enhanced_message)} characters")
 
-        # Initialize LLM and prompt
+        # Initialize LLM
         llm = get_llm()
-        prompt = get_financial_therapy_prompt()
+        system_prompt = get_financial_therapy_prompt()
 
-        # Create the chain and get response (with knowledge context)
-        chain = prompt | llm
+        # Create messages directly (avoiding template variable substitution issues with braces in user message)
         generation_start = time.perf_counter()
         max_retries = 2
         response = None
         for attempt in range(1, max_retries + 1):
             try:
-                response = chain.invoke({"user_message": enhanced_message})
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=enhanced_message)
+                ]
+                response = llm.invoke(messages)
                 break
             except Exception as exc:
                 error_message = str(exc)
@@ -1101,10 +1106,44 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         assistant_text = None
         evaluation = None
         try:
-            raw_text = response.content if isinstance(response.content, str) else str(response.content)
+            # Handle AIMessage objects from LangChain - content can be list (multimodal) or string
+            if hasattr(response, 'content'):
+                content = response.content
+                
+                # If content is a list (multimodal response), extract text from each item
+                if isinstance(content, list):
+                    text_parts = []
+                    for item in content:
+                        if isinstance(item, dict) and 'text' in item:
+                            text_parts.append(item['text'])
+                        elif isinstance(item, str):
+                            text_parts.append(item)
+                    raw_text = ''.join(text_parts)
+                else:
+                    raw_text = str(content) if not isinstance(content, str) else content
+            else:
+                raw_text = str(response)
+            
+            logger.info(f"raw_text (first 200): {raw_text[:200]}")
             assistant_text, evaluation = _parse_structured_chat_output(raw_text)
-        except Exception:
-            assistant_text = str(response)
+            logger.info(f"Successfully parsed assistant_text (first 200): {assistant_text[:200] if assistant_text else 'None'}")
+        except Exception as e:
+            logger.warning(f"Failed to parse structured output: {e}", exc_info=True)
+            # Fallback: try to get content as string
+            if hasattr(response, 'content'):
+                content = response.content
+                if isinstance(content, list):
+                    text_parts = []
+                    for item in content:
+                        if isinstance(item, dict) and 'text' in item:
+                            text_parts.append(item['text'])
+                        elif isinstance(item, str):
+                            text_parts.append(item)
+                    assistant_text = ''.join(text_parts)
+                else:
+                    assistant_text = str(content) if not isinstance(content, str) else content
+            else:
+                assistant_text = str(response)
             evaluation = None
 
         # Save assistant message
