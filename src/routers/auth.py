@@ -1,13 +1,12 @@
-cat > workspaces/f2-therapist-chatbot-backend/src/routers/auth.py << 'EOF'
 """
 Authentication router — signup, login, token refresh, hearts management.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
-from jose import JWTError, jwt
+from jose import jwt
 from src.models import get_db, User, Conversation
 from src.utils.api_security import require_api_key
 import os
@@ -18,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Auth"], dependencies=[Depends(require_api_key)])
 
-# ==================== Config ====================
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "fallback-secret-change-in-prod")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "10080"))
@@ -27,16 +25,18 @@ HEARTS_PER_MESSAGE = 10
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# ==================== Schemas ====================
+
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=6)
     name: str = Field(..., min_length=1, max_length=100)
     guest_user_id: str | None = None
 
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
 
 class AuthResponse(BaseModel):
     token: str
@@ -46,23 +46,28 @@ class AuthResponse(BaseModel):
     hearts: int
     is_guest: bool
 
+
 class HeartsResponse(BaseModel):
     user_id: str
     hearts: int
     can_chat: bool
 
+
 class DeductHeartsRequest(BaseModel):
     user_id: str
+
 
 class GuestInitRequest(BaseModel):
     user_id: str
 
-# ==================== Helpers ====================
+
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
+
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
+
 
 def create_token(user_id: str, email: str) -> str:
     expire = datetime.utcnow() + timedelta(minutes=EXPIRE_MINUTES)
@@ -72,10 +77,9 @@ def create_token(user_id: str, email: str) -> str:
         algorithm=ALGORITHM,
     )
 
-# ==================== Routes ====================
+
 @router.post("/guest", response_model=HeartsResponse)
 def init_guest(payload: GuestInitRequest, db: Session = Depends(get_db)):
-    """Initialize a guest user with 50 hearts if they don't exist yet."""
     user = db.query(User).filter(User.id == payload.user_id).first()
     if not user:
         user = User(
@@ -100,7 +104,6 @@ def init_guest(payload: GuestInitRequest, db: Session = Depends(get_db)):
 
 @router.post("/signup", response_model=AuthResponse)
 def signup(payload: SignupRequest, db: Session = Depends(get_db)):
-    """Register a new user. Merges guest conversations if guest_user_id provided."""
     existing = db.query(User).filter(User.email == payload.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -129,8 +132,6 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
 
     db.refresh(user)
     token = create_token(user.id, user.email)
-    logger.info("New user signed up: %s", user.email)
-
     return AuthResponse(
         token=token,
         user_id=user.id,
@@ -143,7 +144,6 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=AuthResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    """Login with email and password."""
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not user.hashed_password:
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -153,7 +153,6 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
     token = create_token(user.id, user.email)
     logger.info("User logged in: %s", user.email)
-
     return AuthResponse(
         token=token,
         user_id=user.id,
@@ -166,11 +165,9 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 @router.get("/hearts/{user_id}", response_model=HeartsResponse)
 def get_hearts(user_id: str, db: Session = Depends(get_db)):
-    """Get current hearts balance for a user."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
     return HeartsResponse(
         user_id=user.id,
         hearts=user.hearts,
@@ -180,21 +177,16 @@ def get_hearts(user_id: str, db: Session = Depends(get_db)):
 
 @router.post("/hearts/deduct", response_model=HeartsResponse)
 def deduct_hearts(payload: DeductHeartsRequest, db: Session = Depends(get_db)):
-    """Deduct 10 hearts after each message."""
     user = db.query(User).filter(User.id == payload.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
     if user.hearts < HEARTS_PER_MESSAGE:
         raise HTTPException(status_code=402, detail="Not enough hearts")
-
     user.hearts = max(0, user.hearts - HEARTS_PER_MESSAGE)
     db.commit()
     db.refresh(user)
-
     return HeartsResponse(
         user_id=user.id,
         hearts=user.hearts,
         can_chat=user.hearts >= HEARTS_PER_MESSAGE,
     )
-EOF
