@@ -47,6 +47,9 @@ class User(Base):
     id = Column(String(36), primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=True)
     name = Column(String(255), nullable=True)
+    hashed_password = Column(String(255), nullable=True)
+    hearts = Column(Integer, default=50, nullable=False)
+    is_guest = Column(String(5), default="true")
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

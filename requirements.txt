@@ -27,3 +27,5 @@ google-genai
 python-dotenv
 pydantic
 pre-commit
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.5.0
