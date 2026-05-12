@@ -105,6 +105,7 @@ class ChatResponse(BaseModel):
     conversation_id: str
     message_id: str
     timestamp: datetime
+    title: str | None = Field(None, description="Conversation title")
     mood: dict | None = Field(None, description="User's mood and emotion indicators")
     experiment: dict | None = Field(None, description="Experiment assignment metadata")
     evaluation: dict | None = Field(None, description="Inline RAG evaluation scores when available")
@@ -784,8 +785,8 @@ def get_or_create_conversation(db: Session, user_id: str, conversation_id: str |
         logger.info(f"New conversation created: {conversation.id} for user: {user_id}")
         return conversation
 
-def save_message(db: Session, conversation_id: str, role: MessageRole, content: str):
-    """Save a message to the database."""
+def save_message(db: Session, conversation_id: str, role: MessageRole, content: str, mood: dict | None = None):
+    """Save a message to the database with optional mood data."""
     # Validate and sanitize content
     try:
         validated_content = sanitize_message(content)
@@ -800,7 +801,8 @@ def save_message(db: Session, conversation_id: str, role: MessageRole, content: 
         id=str(uuid.uuid4()),
         conversation_id=conversation_id,
         role=role,
-        content=validated_content
+        content=validated_content,
+        mood=mood
     )
     db.add(message)
     db.commit()
@@ -826,6 +828,20 @@ def _generate_conversation_summary(user_message: str, assistant_message: str) ->
     user_preview = _truncate_preview(user_message, limit=72)
     assistant_preview = _truncate_preview(assistant_message, limit=72)
     return f"You: {user_preview} | Assistant: {assistant_preview}"
+
+
+def _build_mood_dimensions(mood_analysis: dict) -> dict[str, float]:
+    """Translate analyzer output into 0-100 dimensions for the insights panel."""
+    confidence_scores = mood_analysis.get("confidence_scores", {})
+    stress_confidence = mood_analysis.get("stress_confidence", 0.0)
+
+    return {
+        "stress": round(float(stress_confidence) * 100, 2),
+        "urgency": round(float(confidence_scores.get("financial_urgency", 0.0)) * 100, 2),
+        "openness": round(float(confidence_scores.get("openness_to_solutions", 0.0)) * 100, 2),
+        "willingness": round(float(confidence_scores.get("willingness_to_learn", 0.0)) * 100, 2),
+        "emotion": round(float(confidence_scores.get("emotional_state", 0.0)) * 100, 2),
+    }
 
 def get_conversation_context(db: Session, conversation_id: str, limit: int = 10):
     """Get recent conversation messages for context (last N messages)."""
@@ -901,12 +917,26 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         if safety_response:
             logger.warning("Immediate safety risk detected for user %s in conversation %s", request.user_id, conversation.id)
 
+            # Build mood data to store with message
+            mood_to_store = {
+                "stress_level": mood_analysis.get("stress_level"),
+                "emotional_state": mood_analysis.get("indicators", {}).get("emotional_state"),
+                "financial_urgency": mood_analysis.get("indicators", {}).get("financial_urgency"),
+                "willingness_to_learn": mood_analysis.get("indicators", {}).get("willingness_to_learn"),
+                "openness_to_solutions": mood_analysis.get("indicators", {}).get("openness_to_solutions"),
+                "stress_confidence": mood_analysis.get("stress_confidence"),
+                "overall_confidence": mood_analysis.get("overall_confidence"),
+                "dimensions": _build_mood_dimensions(mood_analysis),
+                "safety_risk": mood_analysis.get("safety_risk"),
+            }
+
             assistant_message_obj = save_message(
-                db, conversation.id, MessageRole.ASSISTANT, safety_response
+                db, conversation.id, MessageRole.ASSISTANT, safety_response, mood=mood_to_store
             )
 
+            conversation_title = conversation.title or _generate_conversation_title(request.message)
             if not conversation.title:
-                conversation.title = _generate_conversation_title(request.message)
+                conversation.title = conversation_title
 
             conversation.summary = _generate_conversation_summary(request.message, safety_response)
 
@@ -932,6 +962,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
                 conversation_id=conversation.id,
                 message_id=assistant_message_obj.id,
                 timestamp=datetime.utcnow(),
+                title=conversation_title,
                 mood={
                     "stress_level": mood_analysis.get("stress_level"),
                     "emotional_state": mood_analysis.get("indicators", {}).get("emotional_state"),
@@ -940,6 +971,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
                     "openness_to_solutions": mood_analysis.get("indicators", {}).get("openness_to_solutions"),
                     "stress_confidence": mood_analysis.get("stress_confidence"),
                     "overall_confidence": mood_analysis.get("overall_confidence"),
+                    "dimensions": _build_mood_dimensions(mood_analysis),
                     "safety_risk": mood_analysis.get("safety_risk"),
                 },
             )
@@ -1171,14 +1203,27 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
                 assistant_text = str(response)
             evaluation = None
 
-        # Save assistant message
+        # Build mood data to store with message
+        mood_to_store = {
+            "stress_level": mood_analysis.get("stress_level"),
+            "emotional_state": mood_analysis.get("indicators", {}).get("emotional_state"),
+            "financial_urgency": mood_analysis.get("indicators", {}).get("financial_urgency"),
+            "willingness_to_learn": mood_analysis.get("indicators", {}).get("willingness_to_learn"),
+            "openness_to_solutions": mood_analysis.get("indicators", {}).get("openness_to_solutions"),
+            "stress_confidence": mood_analysis.get("stress_confidence"),
+            "overall_confidence": mood_analysis.get("overall_confidence"),
+            "dimensions": _build_mood_dimensions(mood_analysis),
+        }
+
+        # Save assistant message with mood data
         assistant_message_obj = save_message(
-            db, conversation.id, MessageRole.ASSISTANT, assistant_text
+            db, conversation.id, MessageRole.ASSISTANT, assistant_text, mood=mood_to_store
         )
         logger.info(f"Assistant message saved: {assistant_message_obj.id}")
 
         if not conversation.title:
             conversation.title = _generate_conversation_title(request.message)
+        conversation_title = conversation.title
 
         conversation.summary = _generate_conversation_summary(request.message, assistant_text)
 
@@ -1233,6 +1278,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
             conversation_id=conversation.id,
             message_id=assistant_message_obj.id,
             timestamp=datetime.utcnow(),
+            title=conversation_title,
             experiment=experiment_response,
             mood={
                 "stress_level": mood_analysis.get("stress_level"),
@@ -1242,6 +1288,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
                 "openness_to_solutions": mood_analysis.get("indicators", {}).get("openness_to_solutions"),
                 "stress_confidence": mood_analysis.get("stress_confidence"),
                 "overall_confidence": mood_analysis.get("overall_confidence"),
+                "dimensions": _build_mood_dimensions(mood_analysis),
             }
             ,
             evaluation=evaluation,
@@ -1411,3 +1458,6 @@ async def analyze_user_mood(request: MoodAnalysisRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error analyzing mood. Please try again."
         )
+
+
+# ==================== Generate Conversation Title Endpoint ====================

@@ -3,7 +3,7 @@ Database models and configuration for Financial Therapist Chatbot.
 Uses SQLAlchemy ORM with PostgreSQL backend.
 """
 
-from sqlalchemy import create_engine, Column, String, DateTime, Integer, ForeignKey, Text, Enum as SQLEnum
+from sqlalchemy import create_engine, Column, String, DateTime, Integer, ForeignKey, Text, Enum as SQLEnum, JSON, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
@@ -87,6 +87,7 @@ class ConversationMessage(Base):
     role = Column(SQLEnum(MessageRole), nullable=False)
     content = Column(Text, nullable=False)
     token_count = Column(Integer, nullable=True)  # For tracking token usage
+    mood = Column(JSON, nullable=True)  # Store mood analysis data as JSON
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     # Relationships
@@ -100,10 +101,26 @@ def init_db():
     """Initialize the database by creating all tables."""
     try:
         Base.metadata.create_all(bind=engine)
+        _ensure_conversation_message_mood_column()
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
         raise
+
+
+def _ensure_conversation_message_mood_column():
+    """Add the mood column to existing databases if it is missing."""
+    inspector = inspect(engine)
+    if "conversation_messages" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("conversation_messages")}
+    if "mood" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE conversation_messages ADD COLUMN mood JSON"))
+        logger.info("Added missing mood column to conversation_messages")
 
 def get_db():
     """Dependency for getting database session in FastAPI."""

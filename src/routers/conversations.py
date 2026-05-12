@@ -109,6 +109,7 @@ class MessageDetail(BaseModel):
     role: str
     content: str
     created_at: datetime
+    mood: dict | None = None  # Mood analysis data
 
     class Config:
         from_attributes = True
