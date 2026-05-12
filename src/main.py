@@ -95,11 +95,16 @@ app = FastAPI(
 
 # Trusted host middleware prevents host header attacks in production.
 # `testserver` is included so the TestClient can exercise the app without failing host checks.
-DEFAULT_ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "testserver"]
+DEFAULT_ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "testserver", "*.app.github.dev"]
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS")
 
 if ALLOWED_HOSTS:
     ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS.split(",") if host.strip()]
+    if ENVIRONMENT != "production":
+        # Keep local and Codespaces hosts usable in development even when ALLOWED_HOSTS is customized.
+        for host in DEFAULT_ALLOWED_HOSTS:
+            if host not in ALLOWED_HOSTS:
+                ALLOWED_HOSTS.append(host)
 else:
     ALLOWED_HOSTS = DEFAULT_ALLOWED_HOSTS if ENVIRONMENT != "production" else _parse_hosts_from_origins(
         os.getenv("ALLOWED_ORIGINS", "").split(",")

@@ -211,6 +211,31 @@ def get_llm():
         google_api_key=api_key
     )
 
+@lru_cache(maxsize=1)
+def get_finetuned_system_prompt():
+    """Load and return the token-optimized finetuned system prompt from file.
+    
+    This prompt includes explicit response length strategy by conversation stage
+    to optimize token usage while maintaining response quality.
+    Falls back to generic prompt if file not found.
+    """
+    finetuned_path = Path(__file__).resolve().parents[2] / "src" / "model" / "finetuned_system_prompt.txt"
+    
+    try:
+        if finetuned_path.exists():
+            with open(finetuned_path, 'r', encoding='utf-8') as f:
+                prompt = f.read().strip()
+                if prompt:
+                    logger.info("Loaded finetuned system prompt from %s", finetuned_path)
+                    return prompt
+        else:
+            logger.warning("Finetuned system prompt file not found at %s. Using generic prompt.", finetuned_path)
+    except Exception as e:
+        logger.warning("Failed to load finetuned system prompt: %s. Using generic prompt.", str(e))
+    
+    # Fallback to generic prompt
+    return get_financial_therapy_prompt()
+
 def get_financial_therapy_prompt():
     """Create and return the financial therapy system prompt.
     
@@ -1062,7 +1087,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
         # Initialize LLM
         llm = get_llm()
-        system_prompt = get_financial_therapy_prompt()
+        system_prompt = get_finetuned_system_prompt()
 
         # Create messages directly (avoiding template variable substitution issues with braces in user message)
         generation_start = time.perf_counter()
