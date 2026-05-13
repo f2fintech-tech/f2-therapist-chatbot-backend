@@ -22,7 +22,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.models import (
-    get_db, Conversation, ConversationMessage, MessageRole, get_or_create_user
+    get_db, Conversation, ConversationMessage, MessageRole, User, get_or_create_user
 )
 from src.utils.validators import (
     sanitize_message, sanitize_string, validate_and_sanitize,
