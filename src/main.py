@@ -4,6 +4,7 @@ FastAPI application with Google Gemini 3 flash preview API integration
 """
 
 from fastapi import FastAPI, Request, HTTPException as FastAPIHTTPException
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -264,7 +265,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=422,
         content=_error_payload(
             error="Validation failed",
-            detail=exc.errors(),
+            detail=jsonable_encoder(exc.errors()),
             path=request.url.path,
         ),
     )

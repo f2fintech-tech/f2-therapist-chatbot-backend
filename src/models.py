@@ -101,11 +101,48 @@ def init_db():
     """Initialize the database by creating all tables."""
     try:
         Base.metadata.create_all(bind=engine)
+        _ensure_users_columns()
         _ensure_conversation_message_mood_column()
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
         raise
+
+
+def _ensure_users_columns():
+    """Add missing users-table columns for backward compatibility in existing DBs."""
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("users")}
+    alter_statements: list[str] = []
+
+    if "hashed_password" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN hashed_password VARCHAR(255)")
+    if "hearts" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN hearts INTEGER NOT NULL DEFAULT 50")
+    if "is_guest" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN is_guest VARCHAR(5) DEFAULT 'true'")
+    if "created_at" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN created_at DATETIME")
+    if "updated_at" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN updated_at DATETIME")
+
+    if not alter_statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in alter_statements:
+            connection.execute(text(statement))
+
+        # Backfill non-null/default expectations for legacy rows.
+        connection.execute(text("UPDATE users SET hearts = 50 WHERE hearts IS NULL"))
+        connection.execute(text("UPDATE users SET is_guest = 'true' WHERE is_guest IS NULL"))
+        connection.execute(text("UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"))
+        connection.execute(text("UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL"))
+
+    logger.info("Ensured users schema compatibility columns are present")
 
 
 def _ensure_conversation_message_mood_column():
