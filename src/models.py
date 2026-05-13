@@ -132,11 +132,19 @@ def get_db():
 
 # ==================== Helper Functions ====================
 def get_or_create_user(db, user_id: str, email: str = None, name: str = None):
-    """Get existing user or create a new one."""
+    """Get existing user or create a new one. New guests get 50 hearts on creation."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        user = User(id=user_id, email=email, name=name)
+        user = User(
+            id=user_id,
+            email=email,
+            name=name or "Guest",
+            hashed_password=None,
+            hearts=50,
+            is_guest="true",
+        )
         db.add(user)
         db.commit()
         db.refresh(user)
+        logger.info("Auto-created guest user %s with 50 hearts", user_id)
     return user
