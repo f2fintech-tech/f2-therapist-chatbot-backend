@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime, timedelta
-from passlib.context import CryptContext
+import bcrypt as _bcrypt
 from jose import jwt
 from src.models import get_db, User, Conversation
 from src.utils.api_security import require_api_key
@@ -23,7 +23,6 @@ EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "10080"))
 INITIAL_HEARTS = 50
 HEARTS_PER_MESSAGE = 10
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class SignupRequest(BaseModel):
@@ -62,11 +61,11 @@ class GuestInitRequest(BaseModel):
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return _bcrypt.hashpw(password.encode(), _bcrypt.gensalt()).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return _bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
 def create_token(user_id: str, email: str) -> str:
