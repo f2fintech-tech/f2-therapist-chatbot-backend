@@ -897,6 +897,19 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         user = get_or_create_user(db, request.user_id)
         logger.info(f"User authenticated: {request.user_id}")
 
+        # Hearts check — 10 hearts consumed per message
+        HEARTS_PER_MESSAGE = 10
+        if user.hearts < HEARTS_PER_MESSAGE:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="Not enough hearts to send a message. Please sign up or purchase more hearts."
+            )
+
+        # Deduct hearts before processing
+        user.hearts = max(0, user.hearts - HEARTS_PER_MESSAGE)
+        db.commit()
+        logger.info(f"Hearts deducted for user {request.user_id}: {user.hearts} remaining")
+
         # Get or create conversation
         conversation = get_or_create_conversation(
             db, request.user_id, request.conversation_id
