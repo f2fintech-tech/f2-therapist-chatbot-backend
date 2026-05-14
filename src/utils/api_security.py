@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 import secrets
 
-from fastapi import Header, HTTPException, status
+from fastapi import Header, HTTPException, status 
 
 
 def _expected_api_key() -> str | None:
