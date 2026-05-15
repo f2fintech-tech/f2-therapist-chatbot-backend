@@ -3,7 +3,7 @@ Chat router with message handling and conversation persistence.
 Integrates with Google Gemini 3 flash preview via LangChain and Knowledge Base (RAG).
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -871,7 +871,7 @@ def format_conversation_context(messages: list[ConversationMessage]) -> str:
 
 # ==================== Routes ====================
 @router.post("/", response_model=ChatResponse, status_code=status.HTTP_200_OK)
-async def chat(request: ChatRequest, db: Session = Depends(get_db)):
+async def chat(request: ChatRequest, http_request: Request, db: Session = Depends(get_db)):
     """
     Main chat endpoint for the financial therapy chatbot.
 
@@ -987,6 +987,12 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
                     "dimensions": _build_mood_dimensions(mood_analysis),
                     "safety_risk": mood_analysis.get("safety_risk"),
                 },
+            )
+
+        if await http_request.is_disconnected():
+            raise HTTPException(
+                status_code=499,
+                detail="Request cancelled by client.",
             )
 
         experiment_enabled = is_chat_ab_testing_enabled()
@@ -1138,13 +1144,52 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         generation_start = time.perf_counter()
         max_retries = 2
         response = None
+
+        def _extract_stream_text(chunk) -> str:
+            if hasattr(chunk, "content"):
+                content = chunk.content
+            else:
+                content = str(chunk)
+
+            if isinstance(content, list):
+                text_parts = []
+                for item in content:
+                    if isinstance(item, dict) and "text" in item:
+                        text_parts.append(item["text"])
+                    elif isinstance(item, str):
+                        text_parts.append(item)
+                return "".join(text_parts)
+
+            return content if isinstance(content, str) else str(content)
+
         for attempt in range(1, max_retries + 1):
             try:
                 messages = [
                     SystemMessage(content=system_prompt),
                     HumanMessage(content=enhanced_message)
                 ]
-                response = llm.invoke(messages)
+                response_stream = llm.stream(messages)
+                streamed_parts = []
+
+                for chunk in response_stream:
+                    if await http_request.is_disconnected():
+                        logger.info(
+                            "Client disconnected during Gemini streaming for user %s in conversation %s",
+                            request.user_id,
+                            conversation.id,
+                        )
+                        if hasattr(response_stream, "close"):
+                            response_stream.close()
+                        raise HTTPException(
+                            status_code=499,
+                            detail="Request cancelled by client.",
+                        )
+
+                    chunk_text = _extract_stream_text(chunk)
+                    if chunk_text:
+                        streamed_parts.append(chunk_text)
+
+                response = "".join(streamed_parts).strip()
                 break
             except Exception as exc:
                 error_message = str(exc)
