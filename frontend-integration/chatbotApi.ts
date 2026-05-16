@@ -13,6 +13,8 @@ export interface ChatMessage {
   message: string;
   role?: 'user' | 'assistant';
   timestamp?: string;
+  user_tier?: string;
+  user_tier_score?: number;
 }
 
 export interface ChatResponse {
@@ -67,17 +69,31 @@ class ChatbotApiClient {
     conversationId?: string
   ): Promise<ChatResponse> {
     try {
+      const requestBody: Record<string, unknown> = {
+        message,
+        user_id: userId,
+        conversation_id: conversationId,
+      };
+
+      if (typeof window !== 'undefined') {
+        const tierName = window.localStorage.getItem('finheal_user_tier');
+        const tierScore = window.localStorage.getItem('finheal_quiz_score');
+
+        if (tierName) {
+          requestBody.user_tier = tierName;
+          if (tierScore !== null && tierScore !== '') {
+            requestBody.user_tier_score = Number(tierScore);
+          }
+        }
+      }
+
       const response = await fetch(`${this.baseUrl}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`,
         },
-        body: JSON.stringify({
-          message,
-          user_id: userId,
-          conversation_id: conversationId,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {

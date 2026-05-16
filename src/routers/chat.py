@@ -73,6 +73,8 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=MIN_MESSAGE_LENGTH, max_length=MAX_MESSAGE_LENGTH, description="User message")
     user_id: str = Field(..., min_length=1, max_length=36, description="Unique user identifier")
     conversation_id: str | None = Field(None, min_length=36, max_length=36, description="Optional conversation ID")
+    user_tier: str | None = Field(None, min_length=1, max_length=20, description="Optional quiz tier for model guidance")
+    user_tier_score: int | None = Field(None, ge=0, le=5, description="Optional quiz score for model guidance")
 
     @validator('user_id')
     def validate_user_id(cls, v):
@@ -80,6 +82,15 @@ class ChatRequest(BaseModel):
         if not UUID_PATTERN.match(v):
             raise ValueError("Invalid user_id format. Must be a valid UUID.")
         return v.lower()
+
+    @validator('user_tier', pre=True, always=True)
+    def validate_user_tier(cls, v):
+        if v is None:
+            return None
+        normalized = str(v).strip().title()
+        if normalized not in {"Seedling", "Grower", "Investor"}:
+            raise ValueError("Invalid user_tier. Allowed values are Seedling, Grower, Investor.")
+        return normalized
 
     @validator('message')
     def validate_message(cls, v):
@@ -1139,6 +1150,19 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
         # Initialize LLM
         llm = get_llm()
         system_prompt = get_finetuned_system_prompt()
+
+        if request.user_tier:
+            tier_guidance_map = {
+                "Seedling": "Use simple, reassuring language, avoid jargon, and keep examples very clear.",
+                "Grower": "Use real calculations, compare options, and keep explanations grounded in practical tradeoffs.",
+                "Investor": "Use more technical terms, trade-offs, and portfolio-style framing.",
+            }
+            tier_score = request.user_tier_score if request.user_tier_score is not None else 0
+            system_prompt = (
+                f"{system_prompt}\n\nUser quiz tier: {request.user_tier} ({tier_score}/5). "
+                f"{tier_guidance_map.get(request.user_tier, '')}"
+            )
+            logger.info("Applied quiz tier guidance to system prompt: %s", request.user_tier)
 
         # Create messages directly (avoiding template variable substitution issues with braces in user message)
         generation_start = time.perf_counter()

@@ -6,13 +6,32 @@
 import { useState, useEffect, useRef } from 'react';
 import { useChatbot } from './useChatbot';
 import { v4 as uuidv4 } from 'uuid';
+import QuizPopup from './components/QuizPopup/QuizPopup';
 
 export default function ChatInterface() {
   const [userId] = useState(() => uuidv4());
   const [inputValue, setInputValue] = useState('');
+  const [showQuizPopup, setShowQuizPopup] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [state, actions] = useChatbot(userId);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      if (!window.localStorage.getItem('finheal_quiz_completed')) {
+        setShowQuizPopup(true);
+      }
+    }, 1200);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  const handleQuizComplete = (tierName: string, score: number) => {
+    window.localStorage.setItem('finheal_quiz_completed', 'true');
+    window.localStorage.setItem('finheal_user_tier', tierName);
+    window.localStorage.setItem('finheal_quiz_score', String(score));
+    setShowQuizPopup(false);
+  };
 
   // Check backend health on mount
   useEffect(() => {
@@ -43,8 +62,14 @@ export default function ChatInterface() {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
+    <>
+      <QuizPopup
+        visible={showQuizPopup}
+        onDismiss={() => setShowQuizPopup(false)}
+        onComplete={handleQuizComplete}
+      />
+      <div style={styles.container}>
+        <div style={styles.header}>
         <h1>Financial Therapist Chatbot</h1>
         <div style={styles.status}>
           <span style={styles.healthBadge(state.isHealthy)}>
