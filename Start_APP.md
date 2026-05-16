@@ -2,6 +2,7 @@
 
 Backend:
 cd D:\FinHeal-Friend\f2-therapist-chatbot-backend
+python -m pip install -r requirements.txt
 python -m uvicorn src.main:app --reload
 
 Frontend:
@@ -14,6 +15,7 @@ $env:PORT="5173"; $env:BASE_PATH="/"; corepack pnpm --filter @workspace/f2-finhe
 
 Backend:
 cd ~/FinHeal-Friend/f2-therapist-chatbot-backend
+python3 -m pip install -r requirements.txt
 python3 -m uvicorn src.main:app --reload
 
 Frontend:
