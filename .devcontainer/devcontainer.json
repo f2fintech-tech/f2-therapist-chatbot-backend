@@ -16,10 +16,11 @@
     "vscode": {
       "settings": {
         "python.terminal.executeInFileDir": true,
-        "python.terminal.useEnvFile": true
+        "python.terminal.useEnvFile": true,
+        "python.terminal.activateEnvironment": true,
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/venv/bin/python"
       }
     }
   },
-  "postCreateCommand": "pip install -q -r requirements.txt 2>/dev/null || true",
   "postStartCommand": "bash .devcontainer/post-start.sh"
 }

@@ -29,11 +29,15 @@ echo "✓ .env created"
 
 # Install dependencies (only if not already installed)
 if [[ ! -d "venv" ]]; then
-  echo "📦 Installing Python dependencies..."
+  echo "📦 Creating virtual environment and installing Python dependencies..."
+  python -m venv venv
+  # shellcheck disable=SC1091
+  source venv/bin/activate
+  pip install --upgrade pip setuptools wheel
   pip install -q -r requirements.txt
-  echo "✓ Dependencies installed"
+  echo "✓ venv created and dependencies installed"
 else
-  echo "✓ Dependencies already installed"
+  echo "✓ venv already exists"
 fi
 
 # Configure AWS
