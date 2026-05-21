@@ -55,6 +55,7 @@ class User(Base):
 
     # Relationships
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
+    test_results = relationship("TestResult", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email})>"
@@ -95,6 +96,26 @@ class ConversationMessage(Base):
 
     def __repr__(self):
         return f"<ConversationMessage(id={self.id}, role={self.role}, conversation_id={self.conversation_id})>"
+
+class TestResult(Base):
+    """TestResult model for storing user test results."""
+    __tablename__ = "test_results"
+
+    id = Column(String(36), primary_key=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    test_type = Column(String(100), nullable=False)
+    score = Column(Integer, nullable=True)
+    percentage_score = Column(Integer, nullable=True)
+    risk_level = Column(String(100), nullable=True)
+    category = Column(String(200), nullable=True)
+    result_data = Column(JSON, nullable=True)
+    completed_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="test_results")
+
+    def __repr__(self):
+        return f"<TestResult(id={self.id}, user_id={self.user_id}, test_type={self.test_type})>"
 
 # ==================== Database Initialization ====================
 def init_db():
