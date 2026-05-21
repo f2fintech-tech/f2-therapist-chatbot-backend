@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from src.models import TestResult, get_db
-from src.utils.wellness_scoring import determine_wellness_tier
+from src.utils.wellness_scoring import determine_wellness_tier, test_type_to_pillar, PILLAR_WEIGHTS
 from src.utils.wellness_service import get_wellness_snapshot, record_test_result, update_live_mood
 
 
@@ -140,15 +140,24 @@ def get_legacy_wellness_score(user_id: str, db: Session = Depends(get_db)):
     momentum_score = int(snapshot.get("momentumScore", 50))
 
     latest_two_results = test_results[:2]
+    # Compute a normalized (weighted) change in overall wellness rather than showing
+    # the raw difference between two test scores. This prevents confusing large raw
+    # test deltas from being displayed as large overall score swings.
     if len(latest_two_results) >= 2:
         latest_score: Any = latest_two_results[0].normalized_score
         previous_score: Any = latest_two_results[1].normalized_score
         latest_score = float(latest_score)
         previous_score = float(previous_score)
-        change_pts = int(round(latest_score - previous_score))
+        # Map the latest test to its pillar weight and scale the raw delta by that weight.
+        pillar = test_type_to_pillar(latest_two_results[0].test_type)
+        weight = PILLAR_WEIGHTS.get(pillar, 0.1)
+        change_pts = int(round((latest_score - previous_score) * weight))
     elif len(latest_two_results) == 1:
         latest_score: Any = latest_two_results[0].normalized_score
-        change_pts = int(round(float(latest_score) - 50.0))
+        latest_score = float(latest_score)
+        pillar = test_type_to_pillar(latest_two_results[0].test_type)
+        weight = PILLAR_WEIGHTS.get(pillar, 0.1)
+        change_pts = int(round((latest_score - 50.0) * weight))
     else:
         change_pts = 0
 
