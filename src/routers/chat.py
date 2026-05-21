@@ -50,6 +50,7 @@ from src.utils.experiments import (
     log_chat_experiment_feedback,
 )
 from src.utils.user_preferences import get_user_preferences
+from src.utils.wellness_service import update_live_mood
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +122,7 @@ class ChatResponse(BaseModel):
     experiment: dict | None = Field(None, description="Experiment assignment metadata")
     evaluation: dict | None = Field(None, description="Inline RAG evaluation scores when available")
     conversation_state: dict | None = Field(None, description="Conversation flow state and loop detection metadata")
+    wellness: dict | None = Field(None, description="Current wellness snapshot after this chat turn")
 
 
 class MoodAnalysisRequest(BaseModel):
@@ -1285,6 +1287,12 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
                 assistant_text = str(response)
             evaluation = None
 
+        if not isinstance(assistant_text, str) or not assistant_text.strip():
+            logger.warning("Assistant response was empty after parsing; applying safe fallback text")
+            assistant_text = (
+                "I’m here with you. Let’s take this one step at a time and focus on the next helpful move."
+            )
+
         # Build mood data to store with message
         mood_to_store = {
             "stress_level": mood_analysis.get("stress_level"),
@@ -1321,6 +1329,14 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
             model_name="gemini-3-flash-preview",
         )
         logger.info("Mood snapshot persisted for conversation %s", conversation.id)
+
+        wellness_snapshot = None
+        try:
+            wellness_snapshot = update_live_mood(db, user_id=request.user_id, mood_analysis=mood_analysis)
+            db.commit()
+        except Exception as exc:
+            db.rollback()
+            logger.warning("Wellness update failed for user %s: %s", request.user_id, str(exc), exc_info=True)
 
         # Update conversation metadata
         conversation.message_count += 2
@@ -1374,6 +1390,7 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
             }
             ,
             evaluation=evaluation,
+            wellness=wellness_snapshot,
             conversation_state=conversation_state.to_dict(),
         )
 

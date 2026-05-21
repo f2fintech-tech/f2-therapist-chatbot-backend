@@ -22,6 +22,12 @@ export interface ChatResponse {
   response: string;
   emotion_detected: string;
   mood_score: number;
+  wellness?: {
+    wellnessScore: number;
+    wellnessTier: string;
+    momentumScore: number;
+    insights?: string[];
+  };
   references?: {
     source: string;
     content: string;
