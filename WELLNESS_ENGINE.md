@@ -290,32 +290,25 @@ Trend Contribution ranges from -1 (declining) to +1 (improving)
 
 ### What Does "-27 pts this week" Mean?
 
-The dashboard displays **two types of change**:
+The dashboard previously surfaced the raw difference between two recent test scores, which could be confusing because a large raw delta does not translate directly to an equally large change in your overall wellness. The system now reports a **normalized (weighted) change** that reflects the estimated impact on the composite wellness score.
 
-1. **Test-Level Change** (`change_pts` in legacy endpoint):
-   ```
-   change_pts = Latest Test Score - Previous Test Score
-   ```
-   Example: Loan Fit 73 - Previous Test 100 = **-27 pts**
+How the new `change_pts` is computed:
 
-2. **Overall Wellness Change**:
-   ```
-   wellness_change = Latest Overall Score - Initial Score (or 50 if no history)
-   ```
-   Example: Current 47 - Previous 50 = **-3 points**
+1. Identify the pillar the latest test affects (e.g., `loan_fit` → `loan_comfort`).
+2. Compute the raw delta: `latest_test_normalized - previous_test_normalized`.
+3. Scale that delta by the pillar weight (for example `loan_comfort` weight = 0.10).
 
-### Why Are They Different?
+```
+change_pts = round((latest_test - previous_test) * pillar_weight)
+```
 
-**Your scenario:**
-- Loan Fit score dropped 27 points → "-27 pts this week" ✓
-- But Loan Comfort is only 10% of overall score → 27 × 0.10 ≈ 2–3 point impact
-- Other pillars unchanged → Overall drops just 3 points to 47
+Example (your scenario):
+- Latest loan fit: 73, Previous loan fit: 100 → raw delta = -27
+- Loan Comfort weight = 0.10 → impact = -27 × 0.10 ≈ -2.7 → **-3 pts** shown
 
-This is **intentional**. It shows:
-- **Raw performance** (the test itself was harder)
-- **Weighted impact** (one pillar doesn't dominate your wellness)
+This value represents the *expected contribution* of the latest test change to your overall wellness score. The dashboard still shows your overall wellness (`47/100`) separately — that is the current composite score after applying all pillars and smoothing rules.
 
-### Trend Labels
+### Trend Labels (unchanged)
 
 | Change Pts | Trend | Meaning |
 |-----------|-------|---------|
