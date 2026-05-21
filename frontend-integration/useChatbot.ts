@@ -13,6 +13,9 @@ export interface ChatMessage {
   timestamp: string;
   emotion?: string;
   moodScore?: number;
+  wellnessScore?: number;
+  wellnessTier?: string;
+  momentumScore?: number;
 }
 
 export interface UseChatbotState {
@@ -84,6 +87,9 @@ export function useChatbot(userId: string): [UseChatbotState, UseChatbotActions]
           timestamp: new Date().toISOString(),
           emotion: response.emotion_detected,
           moodScore: response.mood_score,
+          wellnessScore: response.wellness?.wellnessScore,
+          wellnessTier: response.wellness?.wellnessTier,
+          momentumScore: response.wellness?.momentumScore,
         };
         setMessages((prev) => [...prev, assistantMessage]);
       } catch (err) {
