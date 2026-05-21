@@ -94,6 +94,11 @@ export default function ChatInterface() {
                   Detected emotion: {msg.emotion} {msg.moodScore && `(${(msg.moodScore * 100).toFixed(0)}%)`}
                 </small>
               )}
+              {(msg.wellnessTier || typeof msg.wellnessScore === 'number') && (
+                <small style={styles.metadata}>
+                  Wellness: {msg.wellnessTier || 'Building'} {typeof msg.wellnessScore === 'number' ? `(${msg.wellnessScore}/100)` : ''}
+                </small>
+              )}
               <small style={styles.timestamp}>
                 {new Date(msg.timestamp).toLocaleTimeString()}
               </small>
