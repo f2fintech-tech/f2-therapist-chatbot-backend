@@ -17,7 +17,7 @@ import logging
 from urllib.parse import urlparse
 
 # Import routers
-from src.routers import health, chat, conversations, auth, test_results
+from src.routers import health, chat, conversations, auth, test_results, wellness
 from src.routers import personalization
 from src.models import init_db
 
@@ -175,6 +175,10 @@ app.include_router(health.router)
 
 # Chat routes (v1 API) with rate limiting
 app.include_router(chat.router, prefix="/api/v1")
+
+# Wellness scoring endpoints (v1 API)
+app.include_router(wellness.router, prefix="/api/v1")
+app.include_router(wellness.legacy_router, prefix="/api/v1")
 
 # Conversation management routes (v1 API) with rate limiting
 app.include_router(conversations.router, prefix="/api/v1")

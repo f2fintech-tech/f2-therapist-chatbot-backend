@@ -3,7 +3,7 @@ Database models and configuration for Financial Therapist Chatbot.
 Uses SQLAlchemy ORM with PostgreSQL backend.
 """
 
-from sqlalchemy import create_engine, Column, String, DateTime, Integer, ForeignKey, Text, Enum as SQLEnum, JSON, inspect, text
+from sqlalchemy import create_engine, Column, String, DateTime, Integer, Float, ForeignKey, Text, Enum as SQLEnum, JSON, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
@@ -50,12 +50,14 @@ class User(Base):
     hashed_password = Column(String(255), nullable=True)
     hearts = Column(Integer, default=50, nullable=False)
     is_guest = Column(String(5), default="true")
+    wellness_score = Column(Integer, default=50, nullable=False)
+    wellness_tier = Column(String(32), default="Building", nullable=False)
+    momentum_score = Column(Integer, default=50, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
-    test_results = relationship("TestResult", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email})>"
@@ -97,25 +99,68 @@ class ConversationMessage(Base):
     def __repr__(self):
         return f"<ConversationMessage(id={self.id}, role={self.role}, conversation_id={self.conversation_id})>"
 
+
 class TestResult(Base):
-    """TestResult model for storing user test results."""
+    """Stored result for a completed financial wellness test."""
+
     __tablename__ = "test_results"
 
     id = Column(String(36), primary_key=True, index=True)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
-    test_type = Column(String(100), nullable=False)
-    score = Column(Integer, nullable=True)
-    percentage_score = Column(Integer, nullable=True)
-    risk_level = Column(String(100), nullable=True)
-    category = Column(String(200), nullable=True)
-    result_data = Column(JSON, nullable=True)
+    test_type = Column(String(64), nullable=False, index=True)
+    raw_score = Column(Float, nullable=False)
+    normalized_score = Column(Float, nullable=False)
     completed_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    insights = Column(JSON, nullable=True)
+    category_breakdown = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    user = relationship("User", back_populates="test_results")
 
-    def __repr__(self):
-        return f"<TestResult(id={self.id}, user_id={self.user_id}, test_type={self.test_type})>"
+class MoodLiveState(Base):
+    """Latest live mood sample captured from chat."""
+
+    __tablename__ = "mood_live_state"
+
+    user_id = Column(String(36), ForeignKey("users.id"), primary_key=True, index=True)
+    stress = Column(Integer, default=50, nullable=False)
+    urgency = Column(Integer, default=50, nullable=False)
+    openness = Column(Integer, default=50, nullable=False)
+    willingness = Column(Integer, default=50, nullable=False)
+    emotion = Column(Integer, default=50, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class MoodTrendState(Base):
+    """Smoothed emotional trend state used by the wellness engine."""
+
+    __tablename__ = "mood_trend_state"
+
+    user_id = Column(String(36), ForeignKey("users.id"), primary_key=True, index=True)
+    stress_trend = Column(Integer, default=50, nullable=False)
+    urgency_trend = Column(Integer, default=50, nullable=False)
+    openness_trend = Column(Integer, default=50, nullable=False)
+    willingness_trend = Column(Integer, default=50, nullable=False)
+    emotion_trend = Column(Integer, default=50, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class WellnessBreakdown(Base):
+    """Current calculated wellness breakdown for a user."""
+
+    __tablename__ = "wellness_breakdown"
+
+    user_id = Column(String(36), ForeignKey("users.id"), primary_key=True, index=True)
+    money_iq = Column(Integer, default=50, nullable=False)
+    debt_health = Column(Integer, default=50, nullable=False)
+    financial_safety = Column(Integer, default=50, nullable=False)
+    credit_health = Column(Integer, default=50, nullable=False)
+    loan_comfort = Column(Integer, default=50, nullable=False)
+    mood_health = Column(Integer, default=50, nullable=False)
+    overall_score = Column(Integer, default=50, nullable=False)
+    wellness_tier = Column(String(32), default="Building", nullable=False)
+    momentum_score = Column(Integer, default=50, nullable=False)
+    insights = Column(JSON, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 # ==================== Database Initialization ====================
 def init_db():
@@ -124,6 +169,7 @@ def init_db():
         Base.metadata.create_all(bind=engine)
         _ensure_users_columns()
         _ensure_conversation_message_mood_column()
+        _ensure_user_wellness_columns()
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
@@ -180,6 +226,36 @@ def _ensure_conversation_message_mood_column():
         connection.execute(text("ALTER TABLE conversation_messages ADD COLUMN mood JSON"))
         logger.info("Added missing mood column to conversation_messages")
 
+
+def _ensure_user_wellness_columns():
+    """Add missing wellness columns to existing users tables."""
+
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("users")}
+    alter_statements: list[str] = []
+
+    if "wellness_score" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN wellness_score INTEGER NOT NULL DEFAULT 50")
+    if "wellness_tier" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN wellness_tier VARCHAR(32) NOT NULL DEFAULT 'Building'")
+    if "momentum_score" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN momentum_score INTEGER NOT NULL DEFAULT 50")
+
+    if not alter_statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in alter_statements:
+            connection.execute(text(statement))
+        connection.execute(text("UPDATE users SET wellness_score = 50 WHERE wellness_score IS NULL"))
+        connection.execute(text("UPDATE users SET wellness_tier = 'Building' WHERE wellness_tier IS NULL"))
+        connection.execute(text("UPDATE users SET momentum_score = 50 WHERE momentum_score IS NULL"))
+
+    logger.info("Ensured user wellness columns are present")
+
 def get_db():
     """Dependency for getting database session in FastAPI."""
     db = SessionLocal()
@@ -200,6 +276,9 @@ def get_or_create_user(db, user_id: str, email: str = None, name: str = None):
             hashed_password=None,
             hearts=50,
             is_guest="true",
+            wellness_score=50,
+            wellness_tier="Building",
+            momentum_score=50,
         )
         db.add(user)
         db.commit()
