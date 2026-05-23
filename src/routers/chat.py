@@ -234,7 +234,7 @@ def get_finetuned_system_prompt():
     Falls back to generic prompt if file not found.
     """
     finetuned_path = Path(__file__).resolve().parents[2] / "src" / "model" / "finetuned_system_prompt.txt"
-    
+
     try:
         if finetuned_path.exists():
             with open(finetuned_path, 'r', encoding='utf-8') as f:
