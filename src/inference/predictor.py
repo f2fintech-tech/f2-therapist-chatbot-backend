@@ -135,14 +135,14 @@ Guidelines:
         # Build the complete prompt
         rag_prompt = f"""{self.system_prompt}
 
-=== RELEVANT KNOWLEDGE BASE ===
-{context_str if context_str else "No specific knowledge base articles found. Use your general knowledge."}
+    === RELEVANT KNOWLEDGE BASE ===
+    {context_str if context_str else "No specific knowledge base articles found. Use your general knowledge."}
 
-=== USER MESSAGE ===
-{user_message}
+    === USER MESSAGE ===
+    {user_message}
 
-=== YOUR RESPONSE ===
-"""
+    === YOUR RESPONSE ===
+    """
 
         return rag_prompt
 
@@ -172,10 +172,10 @@ Guidelines:
 
         return f"""{self.system_prompt}
 
-{state_guidance_text or ""}
+    {state_guidance_text or ""}
 
-{history_block}
-User says: {user_message}"""
+    {history_block}
+    User says: {user_message}"""
     def _build_structured_prompt(self, user_message, conversation_history=None, context_pieces=None, state_guidance_text=None):
         """Build prompt requesting JSON response."""
         base = self._build_chat_prompt(
