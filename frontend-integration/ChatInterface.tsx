@@ -4,6 +4,8 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useChatbot } from './useChatbot';
 import { v4 as uuidv4 } from 'uuid';
 import QuizPopup from './components/QuizPopup/QuizPopup';
@@ -88,7 +90,9 @@ export default function ChatInterface() {
         {state.messages.map((msg) => (
           <div key={msg.id} style={styles.messageWrapper(msg.role)}>
             <div style={styles.message(msg.role)}>
-              <p style={styles.messageContent}>{msg.content}</p>
+              <div style={styles.messageContent}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content || ''}</ReactMarkdown>
+              </div>
               {msg.emotion && (
                 <small style={styles.metadata}>
                   Detected emotion: {msg.emotion} {msg.moodScore && `(${(msg.moodScore * 100).toFixed(0)}%)`}
@@ -207,6 +211,8 @@ const styles: Record<string, any> = {
   messageContent: {
     margin: '0 0 8px 0',
     lineHeight: '1.4',
+    whiteSpace: 'pre-wrap' as const,
+    wordBreak: 'break-word' as const,
   },
   metadata: {
     opacity: 0.7,
@@ -284,3 +290,9 @@ const styles: Record<string, any> = {
     marginTop: '8px',
   },
 };
+
+// Minimal, safe renderer for simple Markdown-like content used by the chatbot.
+// - Escapes HTML to avoid XSS
+// - Converts **bold** to <strong>
+// - Preserves newlines as <br />
+// We use `react-markdown` + `remark-gfm` above to render safe Markdown (bold, lists, line breaks).
