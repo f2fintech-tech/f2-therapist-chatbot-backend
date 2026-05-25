@@ -47,6 +47,10 @@ class User(Base):
     id = Column(String(36), primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=True)
     name = Column(String(255), nullable=True)
+    phone = Column(String(32), nullable=True)
+    location = Column(String(255), nullable=True)
+    occupation = Column(String(255), nullable=True)
+    bio = Column(Text, nullable=True)
     hashed_password = Column(String(255), nullable=True)
     hearts = Column(Integer, default=50, nullable=False)
     is_guest = Column(String(5), default="true")
@@ -187,6 +191,14 @@ def _ensure_users_columns():
 
     if "hashed_password" not in columns:
         alter_statements.append("ALTER TABLE users ADD COLUMN hashed_password VARCHAR(255)")
+    if "phone" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN phone VARCHAR(32)")
+    if "location" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN location VARCHAR(255)")
+    if "occupation" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN occupation VARCHAR(255)")
+    if "bio" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN bio TEXT")
     if "hearts" not in columns:
         alter_statements.append("ALTER TABLE users ADD COLUMN hearts INTEGER NOT NULL DEFAULT 50")
     if "is_guest" not in columns:
