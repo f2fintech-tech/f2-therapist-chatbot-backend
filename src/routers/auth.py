@@ -46,6 +46,27 @@ class AuthResponse(BaseModel):
     is_guest: bool
 
 
+class UserProfileResponse(BaseModel):
+    user_id: str
+    email: str | None = None
+    name: str
+    phone: str | None = None
+    location: str | None = None
+    occupation: str | None = None
+    bio: str | None = None
+    hearts: int
+    is_guest: bool
+
+
+class UpdateUserProfileRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    email: EmailStr | None = None
+    phone: str | None = Field(default=None, max_length=32)
+    location: str | None = Field(default=None, max_length=255)
+    occupation: str | None = Field(default=None, max_length=255)
+    bio: str | None = Field(default=None, max_length=2000)
+
+
 class HeartsResponse(BaseModel):
     user_id: str
     hearts: int
@@ -188,4 +209,57 @@ def deduct_hearts(payload: DeductHeartsRequest, db: Session = Depends(get_db)):
         user_id=user.id,
         hearts=user.hearts,
         can_chat=user.hearts >= HEARTS_PER_MESSAGE,
+    )
+
+
+@router.get("/profile/{user_id}", response_model=UserProfileResponse)
+def get_profile(user_id: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return UserProfileResponse(
+        user_id=user.id,
+        email=user.email,
+        name=user.name or "Guest",
+        phone=user.phone,
+        location=user.location,
+        occupation=user.occupation,
+        bio=user.bio,
+        hearts=user.hearts,
+        is_guest=user.is_guest == "true",
+    )
+
+
+@router.put("/profile/{user_id}", response_model=UserProfileResponse)
+def update_profile(user_id: str, payload: UpdateUserProfileRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    new_email = payload.email.strip() if payload.email else None
+    if new_email and new_email != user.email:
+        existing_email = db.query(User).filter(User.email == new_email, User.id != user_id).first()
+        if existing_email:
+            raise HTTPException(status_code=409, detail="Email already registered")
+        user.email = new_email
+
+    user.name = payload.name.strip()
+    user.phone = payload.phone.strip() if payload.phone else None
+    user.location = payload.location.strip() if payload.location else None
+    user.occupation = payload.occupation.strip() if payload.occupation else None
+    user.bio = payload.bio.strip() if payload.bio else None
+    db.commit()
+    db.refresh(user)
+
+    return UserProfileResponse(
+        user_id=user.id,
+        email=user.email,
+        name=user.name or "Guest",
+        phone=user.phone,
+        location=user.location,
+        occupation=user.occupation,
+        bio=user.bio,
+        hearts=user.hearts,
+        is_guest=user.is_guest == "true",
     )
