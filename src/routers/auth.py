@@ -263,3 +263,18 @@ def update_profile(user_id: str, payload: UpdateUserProfileRequest, db: Session 
         hearts=user.hearts,
         is_guest=user.is_guest == "true",
     )
+
+
+@router.get("/admin/stats")
+def get_admin_stats(db: Session = Depends(get_db)):
+    total_users = db.query(User).count()
+    registered_users = db.query(User).filter(User.is_guest == "false").count()
+    guest_users = db.query(User).filter(User.is_guest == "true").count()
+    total_conversations = db.query(Conversation).count()
+    
+    return {
+        "total_users": total_users,
+        "registered_users": registered_users,
+        "guest_users": guest_users,
+        "total_conversations": total_conversations
+    }
