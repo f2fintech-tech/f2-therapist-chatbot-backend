@@ -9,7 +9,7 @@ python -m uvicorn src.main:app --reload
 Frontend:
 cd D:\FinHeal-Friend\f2-therapist-chatbot-frontend
 corepack pnpm install
-$env:PORT="5173"; $env:BASE_PATH="/"; corepack pnpm --filter @workspace/f2-finheal dev
+corepack pnpm dev
 -->
 
 <!-- Local startup on macOS
@@ -22,7 +22,6 @@ python3 -m uvicorn src.main:app --reload
 Frontend:
 cd f2-therapist-chatbot-frontend
 corepack pnpm install
-export PORT=5173 BASE_PATH=/
-corepack pnpm --filter @workspace/f2-finheal dev
+corepack pnpm dev
 -->
 
