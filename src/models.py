@@ -57,6 +57,11 @@ class User(Base):
     wellness_score = Column(Integer, default=50, nullable=False)
     wellness_tier = Column(String(32), default="Building", nullable=False)
     momentum_score = Column(Integer, default=50, nullable=False)
+    financial_goal = Column(String(255), nullable=True)
+    financial_stress = Column(String(255), nullable=True)
+    risk_tolerance = Column(String(255), nullable=True)
+    monthly_income = Column(String(255), nullable=True)
+    therapy_style = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -203,6 +208,16 @@ def _ensure_users_columns():
         alter_statements.append("ALTER TABLE users ADD COLUMN hearts INTEGER NOT NULL DEFAULT 50")
     if "is_guest" not in columns:
         alter_statements.append("ALTER TABLE users ADD COLUMN is_guest VARCHAR(5) DEFAULT 'true'")
+    if "financial_goal" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN financial_goal VARCHAR(255)")
+    if "financial_stress" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN financial_stress VARCHAR(255)")
+    if "risk_tolerance" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN risk_tolerance VARCHAR(255)")
+    if "monthly_income" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN monthly_income VARCHAR(255)")
+    if "therapy_style" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN therapy_style VARCHAR(255)")
     if "created_at" not in columns:
         alter_statements.append("ALTER TABLE users ADD COLUMN created_at DATETIME")
     if "updated_at" not in columns:
