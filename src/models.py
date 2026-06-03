@@ -16,6 +16,17 @@ logger = logging.getLogger(__name__)
 # ==================== Database Configuration ====================
 def get_database_url():
     """Get database URL with fallback for development."""
+    # Check individual PostgreSQL connection parameters first
+    db_host = os.getenv("DB_HOST")
+    db_port = os.getenv("DB_PORT", "5432")
+    db_user = os.getenv("DB_USERNAME")
+    db_pass = os.getenv("DB_PASSWORD")
+    db_name = os.getenv("DB_DATABASE")
+
+    if db_host and db_user and db_pass and db_name:
+        # Construct postgresql connection URL
+        return f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+
     url = os.getenv("DATABASE_URL")
 
     if not url:
