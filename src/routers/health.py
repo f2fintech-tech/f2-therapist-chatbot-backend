@@ -37,7 +37,7 @@ async def health_check():
         status="healthy",
         version="0.1.0",
         service="Financial Therapist Chatbot Backend",
-        database_configured=bool(os.getenv("DATABASE_URL")),
+        database_configured=bool(os.getenv("DATABASE_URL") or (os.getenv("DB_HOST") and os.getenv("DB_USERNAME") and os.getenv("DB_PASSWORD") and os.getenv("DB_DATABASE"))),
         gemini_api_configured=bool(os.getenv("GEMINI_API_KEY")),
         pinecone_configured=bool(os.getenv("PINECONE_API_KEY")),
         aws_configured=bool(os.getenv("AWS_ACCESS_KEY_ID"))

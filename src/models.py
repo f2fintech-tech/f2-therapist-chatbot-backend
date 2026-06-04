@@ -78,6 +78,7 @@ class User(Base):
 
     # Relationships
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
+    consolidated_profile = relationship("UserConsolidatedProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email})>"
@@ -181,6 +182,22 @@ class WellnessBreakdown(Base):
     momentum_score = Column(Integer, default=50, nullable=False)
     insights = Column(JSON, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class UserConsolidatedProfile(Base):
+    """Consolidated profile containing user settings, page activities, calculator history, and chatbot interactions in JSON format."""
+    __tablename__ = "user_consolidated_profiles"
+
+    user_id = Column(String(36), ForeignKey("users.id"), primary_key=True, index=True)
+    data = Column(JSON, nullable=False, default=dict)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relationships
+    user = relationship("User", back_populates="consolidated_profile")
+
+    def __repr__(self):
+        return f"<UserConsolidatedProfile(user_id={self.user_id})>"
+
 
 # ==================== Database Initialization ====================
 def init_db():

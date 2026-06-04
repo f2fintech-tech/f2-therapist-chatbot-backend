@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Diagnostic script to test backend connectivity and configuration
+Diagnostic script to test backend connectivity and configuration (Unicode safe version)
 """
 import os
 import sys
@@ -34,7 +34,7 @@ env_vars = {
 }
 
 for key, value in env_vars.items():
-    status = "✓" if value else "✗"
+    status = "[OK]" if value else "[MISSING/NOT SET]"
     print(f"{status} {key}: {value}")
 
 # 2. Test backend connectivity
@@ -43,14 +43,14 @@ print("-" * 80)
 
 try:
     response = requests.get(f"{BACKEND_URL}/", timeout=5)
-    print(f"✓ Backend is responding (Status: {response.status_code})")
+    print(f"[OK] Backend is responding (Status: {response.status_code})")
     print(f"  Response: {response.json()}")
 except requests.exceptions.ConnectionError:
-    print(f"✗ Cannot connect to backend at {BACKEND_URL}")
+    print(f"[ERR] Cannot connect to backend at {BACKEND_URL}")
     print("  Make sure backend is running: python -m uvicorn src.main:app --reload")
     sys.exit(1)
 except Exception as e:
-    print(f"✗ Error connecting to backend: {e}")
+    print(f"[ERR] Error connecting to backend: {e}")
     sys.exit(1)
 
 # 3. Test CORS headers
@@ -71,11 +71,11 @@ try:
     
     print("CORS Headers received:")
     for header, value in cors_headers.items():
-        status = "✓" if "NOT SET" not in value else "✗"
+        status = "[OK]" if "NOT SET" not in value else "[ERR]"
         print(f"  {status} {header}: {value}")
         
 except Exception as e:
-    print(f"✗ Error testing CORS: {e}")
+    print(f"[ERR] Error testing CORS: {e}")
 
 # 4. Test health endpoint
 print("\n4. HEALTH ENDPOINT TEST:")
@@ -83,10 +83,10 @@ print("-" * 80)
 
 try:
     response = requests.get(f"{BACKEND_URL}/health", timeout=5)
-    print(f"✓ Health endpoint is working (Status: {response.status_code})")
+    print(f"[OK] Health endpoint is working (Status: {response.status_code})")
     print(f"  Response: {response.json()}")
 except Exception as e:
-    print(f"✗ Health endpoint failed: {e}")
+    print(f"[ERR] Health endpoint failed: {e}")
 
 # 5. Test chat endpoint without auth
 print("\n5. CHAT ENDPOINT TEST (No Auth):")
@@ -109,20 +109,20 @@ try:
     print(f"Status Code: {response.status_code}")
     
     if response.status_code == 200:
-        print("✓ Chat endpoint is working")
+        print("[OK] Chat endpoint is working")
         data = response.json()
         print(f"  Response keys: {list(data.keys())}")
     elif response.status_code == 401:
-        print("✗ API requires authentication (401 Unauthorized)")
+        print("[ERR] API requires authentication (401 Unauthorized)")
         print(f"  Response: {response.json()}")
     else:
-        print(f"✗ Unexpected status code: {response.status_code}")
+        print(f"[ERR] Unexpected status code: {response.status_code}")
         print(f"  Response: {response.text}")
         
 except requests.exceptions.ConnectionError:
-    print("✗ Cannot connect to backend")
+    print("[ERR] Cannot connect to backend")
 except Exception as e:
-    print(f"✗ Error testing chat endpoint: {e}")
+    print(f"[ERR] Error testing chat endpoint: {e}")
 
 # 6. Test with API key if configured
 api_key = os.getenv("API_ACCESS_TOKEN", "")
@@ -143,17 +143,17 @@ if api_key:
         print(f"Status Code: {response.status_code}")
         
         if response.status_code == 200:
-            print("✓ Chat endpoint works with API key")
+            print("[OK] Chat endpoint works with API key")
         else:
-            print(f"✗ Status code: {response.status_code}")
+            print(f"[ERR] Status code: {response.status_code}")
             print(f"  Response: {response.text}")
             
     except Exception as e:
-        print(f"✗ Error: {e}")
+        print(f"[ERR] Error: {e}")
 else:
     print("\n6. CHAT ENDPOINT TEST (With API Key):")
     print("-" * 80)
-    print("⚠ No API_ACCESS_TOKEN configured - skipping auth test")
+    print("WARNING: No API_ACCESS_TOKEN configured - skipping auth test")
 
 print("\n" + "=" * 80)
 print("DIAGNOSTIC TEST COMPLETE")
