@@ -11,7 +11,12 @@ import os
 import enum
 import logging
 
+from dotenv import load_dotenv
+
 logger = logging.getLogger(__name__)
+
+# Load environment variables from .env
+load_dotenv()
 
 # ==================== Database Configuration ====================
 def get_database_url():

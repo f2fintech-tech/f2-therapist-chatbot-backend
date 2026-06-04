@@ -187,6 +187,7 @@ app.include_router(conversations.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(test_results.router, prefix="/api/v1")
 app.include_router(user_profile.router, prefix="/api/v1")
+app.include_router(personalization.router, prefix="/api/v1")
 
 # Lenders catalog endpoints
 app.include_router(lenders.router, prefix="/api/v1")

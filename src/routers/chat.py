@@ -22,7 +22,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.models import (
-    get_db, Conversation, ConversationMessage, MessageRole, User, get_or_create_user
+    get_db, Conversation, ConversationMessage, MessageRole, User, get_or_create_user,
+    TestResult, UserConsolidatedProfile
 )
 from src.utils.validators import (
     sanitize_message, sanitize_string, validate_and_sanitize,
@@ -50,7 +51,7 @@ from src.utils.experiments import (
     log_chat_experiment_feedback,
 )
 from src.utils.user_preferences import get_user_preferences
-from src.utils.wellness_service import update_live_mood
+from src.utils.wellness_service import update_live_mood, get_wellness_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -623,6 +624,109 @@ def _build_user_preference_guidance(user_preferences) -> str:
     return "\n".join(lines)
 
 
+def _build_user_telemetry_guidance(
+    user: User,
+    test_results: list[TestResult],
+    profile: UserConsolidatedProfile | None,
+    wellness_snapshot: dict | None,
+    current_mood_analysis: dict
+) -> str:
+    """Build a comprehensive context block containing user profile, test results, education logs, wellness score, and stress level."""
+    lines = ["**# USER CONTEXT (PROFILE & TELEMETRY)**"]
+    
+    # 1. User Profile Details
+    lines.append("## User Profile:")
+    lines.append(f"- Name: {user.name or 'N/A'}")
+    lines.append(f"- Email: {user.email or 'N/A'}")
+    lines.append(f"- Phone: {user.phone or 'N/A'}")
+    lines.append(f"- Location: {user.location or 'N/A'}")
+    lines.append(f"- Occupation: {user.occupation or 'N/A'}")
+    lines.append(f"- Bio: {user.bio or 'N/A'}")
+    lines.append(f"- Monthly Income: {user.monthly_income or 'N/A'}")
+    lines.append(f"- Risk Tolerance: {user.risk_tolerance or 'N/A'}")
+    lines.append(f"- Therapy Style: {user.therapy_style or 'N/A'}")
+    
+    # 2. Goal & Stress Level (Self-Reported)
+    lines.append(f"- Financial Goal: {user.financial_goal or 'N/A'}")
+    lines.append(f"- Financial Stress Level (Self-Reported): {user.financial_stress or 'N/A'}")
+    
+    # 3. Wellness Scores
+    lines.append("\n## Wellness Score & Metrics:")
+    if wellness_snapshot:
+        lines.append(f"- Overall Wellness Score: {wellness_snapshot.get('wellnessScore', 50)}/100")
+        lines.append(f"- Wellness Tier: {wellness_snapshot.get('wellnessTier', 'Building')}")
+        lines.append(f"- Momentum Score: {wellness_snapshot.get('momentumScore', 50)}/100")
+        pillars = wellness_snapshot.get("pillars", {})
+        if pillars:
+            lines.append("  Pillar Scores:")
+            lines.append(f"  - Money IQ: {pillars.get('moneyIQ', 50)}/100")
+            lines.append(f"  - Debt Health: {pillars.get('debtHealth', 50)}/100")
+            lines.append(f"  - Financial Safety: {pillars.get('financialSafety', 50)}/100")
+            lines.append(f"  - Credit Health: {pillars.get('creditHealth', 50)}/100")
+            lines.append(f"  - Loan Comfort: {pillars.get('loanComfort', 50)}/100")
+            lines.append(f"  - Mood Health: {pillars.get('moodHealth', 50)}/100")
+    else:
+        lines.append(f"- Overall Wellness Score: {user.wellness_score}/100")
+        lines.append(f"- Wellness Tier: {user.wellness_tier}")
+        lines.append(f"- Momentum Score: {user.momentum_score}/100")
+
+    # 4. Stress Level (Current & Historical)
+    lines.append("\n## Emotional & Stress State:")
+    current_stress = current_mood_analysis.get("stress_level", "unknown")
+    lines.append(f"- Current Message Stress Level: {current_stress}")
+    if wellness_snapshot:
+        trend = wellness_snapshot.get("trendState", {})
+        if trend:
+            lines.append(f"- Stress Trend Score (Historical): {trend.get('stress_trend', 50)}/100")
+            lines.append(f"- Mood Trend Scores: Urgency={trend.get('urgency_trend', 50)}, Openness={trend.get('openness_trend', 50)}, Willingness={trend.get('willingness_trend', 50)}, Emotion={trend.get('emotion_trend', 50)}")
+            
+    # 5. Tests Attempted and Results
+    lines.append("\n## Financial Tests Attempted:")
+    if test_results:
+        for idx, tr in enumerate(test_results, 1):
+            comp_time = tr.completed_at.strftime("%Y-%m-%d %H:%M:%S") if tr.completed_at else "N/A"
+            lines.append(f"{idx}. Test: {tr.test_type}")
+            lines.append(f"   - Raw Score: {tr.raw_score}")
+            lines.append(f"   - Normalized Score: {tr.normalized_score}")
+            lines.append(f"   - Completed At: {comp_time}")
+            if tr.insights:
+                lines.append(f"   - Insights: {tr.insights}")
+    else:
+        lines.append("- No financial tests have been completed yet.")
+
+    # 6. Education Material Watched/Read
+    lines.append("\n## Educational Materials Consumed:")
+    videos = []
+    articles = []
+    if profile and profile.data:
+        edu = profile.data.get("financial_education", {})
+        videos = edu.get("videos_seen", [])
+        articles = edu.get("articles_seen", [])
+
+    if videos:
+        lines.append("  Watched Videos:")
+        for idx, vid in enumerate(videos, 1):
+            title = vid.get("title", "Unknown")
+            vid_id = vid.get("video_id", "Unknown")
+            watched_at = vid.get("watched_at", "N/A")
+            lines.append(f"  {idx}. {title} (ID: {vid_id}) watched at {watched_at}")
+    else:
+        lines.append("  - No educational videos watched yet.")
+
+    if articles:
+        lines.append("  Read Articles:")
+        for idx, art in enumerate(articles, 1):
+            title = art.get("title", "Unknown")
+            art_id = art.get("article_id", "Unknown")
+            read_at = art.get("read_at", "N/A")
+            lines.append(f"  {idx}. {title} (ID: {art_id}) read at {read_at}")
+    else:
+        lines.append("  - No educational articles read yet.")
+
+    lines.append("\nUse the above information to personalize your guidance, reference their specific goal/test results/videos watched when relevant, and tailor your tone to their stress level.")
+    return "\n".join(lines)
+
+
 def _stress_level_to_score(stress_level: str | None) -> int | None:
     """Map categorical stress to numeric score for trend analysis."""
     mapping = {
@@ -1116,9 +1220,29 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
             context_text = ""
             knowledge_context = []
 
+        # Fetch user telemetry details for context injection
+        test_results = db.query(TestResult).filter(TestResult.user_id == request.user_id).order_by(TestResult.completed_at.desc()).all()
+        consolidated_profile = db.query(UserConsolidatedProfile).filter(UserConsolidatedProfile.user_id == request.user_id).first()
+        try:
+            wellness_snapshot = get_wellness_snapshot(db, request.user_id)
+        except Exception as e:
+            logger.warning(f"Failed to fetch wellness snapshot: {e}")
+            wellness_snapshot = None
+
+        user_telemetry_guidance = _build_user_telemetry_guidance(
+            user=user,
+            test_results=test_results,
+            profile=consolidated_profile,
+            wellness_snapshot=wellness_snapshot,
+            current_mood_analysis=mood_analysis
+        )
+
         # ==================== Build Enhanced Message ====================
         # Combine prior conversation, knowledge context, and current user message.
         enhanced_message_parts = []
+        if user_telemetry_guidance:
+            enhanced_message_parts.append(user_telemetry_guidance)
+            
         if conversation_context_text:
             enhanced_message_parts.append(
                 "Recent Conversation Context:\n"

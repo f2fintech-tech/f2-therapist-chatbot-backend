@@ -1,43 +1,44 @@
-import sqlite3
 import os
+from sqlalchemy import inspect, text
+from src.models import engine
 
-def inspect():
-    # Connect to SQLite database relative to the script's directory
-    db_path = os.path.join(os.path.dirname(__file__), 'test.db')
-    conn = sqlite3.connect(db_path)
-    cur = conn.cursor()
+def inspect_db():
+    inspector = inspect(engine)
+    try:
+        tables = inspector.get_table_names()
+    except Exception as e:
+        print(f"[ERROR] Failed to connect to database: {e}")
+        return
 
-    # Get list of all tables
-    cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = [row[0] for row in cur.fetchall()]
-    print("=== Tables in test.db ===")
+    print("=== Tables in Database ===")
     for idx, name in enumerate(tables, 1):
         print(f"{idx}. {name}")
     print("\n" + "="*50 + "\n")
 
     # Dump rows of each table
-    for table_name in tables:
-        print(f"=== Table: {table_name} (First 10 rows) ===")
-        try:
-            cur.execute(f"PRAGMA table_info({table_name})")
-            cols = [col[1] for col in cur.fetchall()]
-            cur.execute(f"SELECT * FROM {table_name} LIMIT 10;")
-            rows = cur.fetchall()
-            if not rows:
-                print("[Table is empty]")
-            else:
-                print(" | ".join(cols))
-                print("-" * (len(" | ".join(cols))))
-                for row in rows:
-                    try:
-                        print(" | ".join(str(val) for val in row))
-                    except UnicodeEncodeError:
-                        print(" | ".join(str(val).encode('ascii', errors='replace').decode('ascii') for val in row))
-        except Exception as e:
-            print(f"Error reading table {table_name}: {e}")
-        print("\n" + "="*50 + "\n")
-
-    conn.close()
+    with engine.connect() as conn:
+        for table_name in tables:
+            print(f"=== Table: {table_name} (First 10 rows) ===")
+            try:
+                columns = [col["name"] for col in inspector.get_columns(table_name)]
+                result = conn.execute(text(f"SELECT * FROM {table_name} LIMIT 10;"))
+                rows = result.fetchall()
+                if not rows:
+                    print("[Table is empty]")
+                else:
+                    print(" | ".join(columns))
+                    print("-" * (len(" | ".join(columns))))
+                    for row in rows:
+                        try:
+                            # Convert values to strings safely
+                            row_vals = [str(val) if val is not None else "NULL" for val in row]
+                            print(" | ".join(row_vals))
+                        except UnicodeEncodeError:
+                            row_vals = [str(val).encode('ascii', errors='replace').decode('ascii') if val is not None else "NULL" for val in row]
+                            print(" | ".join(row_vals))
+            except Exception as e:
+                print(f"Error reading table {table_name}: {e}")
+            print("\n" + "="*50 + "\n")
 
 if __name__ == "__main__":
-    inspect()
+    inspect_db()
