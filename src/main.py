@@ -17,7 +17,7 @@ import logging
 from urllib.parse import urlparse
 
 # Import routers
-from src.routers import health, chat, conversations, auth, test_results, wellness, lenders, user_profile
+from src.routers import health, chat, conversations, auth, test_results, wellness, lenders, user_profile, cibil
 from src.routers import personalization
 from src.models import init_db
 
@@ -187,6 +187,7 @@ app.include_router(conversations.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(test_results.router, prefix="/api/v1")
 app.include_router(user_profile.router, prefix="/api/v1")
+app.include_router(cibil.router, prefix="/api/v1")
 app.include_router(personalization.router, prefix="/api/v1")
 
 # Lenders catalog endpoints
