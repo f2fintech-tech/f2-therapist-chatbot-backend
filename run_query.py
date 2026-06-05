@@ -85,7 +85,11 @@ if __name__ == "__main__":
                     print("-" * len(header_line))
                     for row in rows:
                         row_line = " | ".join(f"{str(val):<{col_widths[key]}}" for key, val in zip(keys, row))
-                        print(row_line)
+                        try:
+                            print(row_line)
+                        except UnicodeEncodeError:
+                            # Fallback if the terminal doesn't support the characters (like emojis)
+                            print(row_line.encode(sys.stdout.encoding or 'utf-8', errors='replace').decode(sys.stdout.encoding or 'utf-8'))
                     print("-" * len(header_line))
                     print(f"Total rows returned: {len(rows)}")
             else:
