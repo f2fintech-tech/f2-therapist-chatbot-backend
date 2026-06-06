@@ -204,6 +204,23 @@ class UserConsolidatedProfile(Base):
         return f"<UserConsolidatedProfile(user_id={self.user_id})>"
 
 
+class UserCreditReport(Base):
+    """Stores fetched credit score reports (JSON + PDF link) mapped to users."""
+    __tablename__ = "user_credit_reports"
+
+    id = Column(String(36), primary_key=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    bureau = Column(String(32), nullable=False) # "cibil" or "experian"
+    score = Column(Integer, nullable=False)
+    report_data = Column(JSON, nullable=False)  # The normalized JSON report (cached result)
+    raw_bureau_json = Column(JSON, nullable=True)  # The raw API response from the bureau — used to re-parse on demand
+    pdf_url = Column(Text, nullable=True)       # The download link/URL for the PDF report
+    fetched_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<UserCreditReport(id={self.id}, user_id={self.user_id}, bureau={self.bureau}, score={self.score})>"
+
+
 # ==================== Database Initialization ====================
 def init_db():
     """Initialize the database by creating all tables."""
@@ -212,6 +229,7 @@ def init_db():
         _ensure_users_columns()
         _ensure_conversation_message_mood_column()
         _ensure_user_wellness_columns()
+        _ensure_credit_report_columns()
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
@@ -315,6 +333,21 @@ def _ensure_user_wellness_columns():
         connection.execute(text("UPDATE users SET momentum_score = 50 WHERE momentum_score IS NULL"))
 
     logger.info("Ensured user wellness columns are present")
+
+
+def _ensure_credit_report_columns():
+    """Add raw_bureau_json column to user_credit_reports if it is missing (backward compatibility)."""
+    inspector = inspect(engine)
+    if "user_credit_reports" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("user_credit_reports")}
+    if "raw_bureau_json" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE user_credit_reports ADD COLUMN raw_bureau_json JSON"))
+        logger.info("Added raw_bureau_json column to user_credit_reports")
 
 def get_db():
     """Dependency for getting database session in FastAPI."""
