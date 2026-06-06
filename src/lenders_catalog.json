@@ -5,8 +5,8 @@
     "lenderType": "PSU",
     "productType": "Home Loan",
     "category": "home",
-    "minRate": 7.50,
-    "maxRate": 7.50,
+    "minRate": 7.5,
+    "maxRate": 7.5,
     "minTenureYears": 10,
     "maxTenureYears": 36,
     "minMonthlyIncome": 25000,
@@ -15,8 +15,13 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["PSU pricing", "Wide footprint"],
-    "cons": ["Longer TAT vs NBFC"],
+    "pros": [
+      "PSU pricing",
+      "Wide footprint"
+    ],
+    "cons": [
+      "Longer TAT vs NBFC"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -43,8 +48,12 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["Competitive rate"],
-    "cons": ["Documentation heavy"],
+    "pros": [
+      "Competitive rate"
+    ],
+    "cons": [
+      "Documentation heavy"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -61,8 +70,8 @@
     "lenderType": "PSU",
     "productType": "Home Loan",
     "category": "home",
-    "minRate": 7.50,
-    "maxRate": 7.50,
+    "minRate": 7.5,
+    "maxRate": 7.5,
     "minTenureYears": 10,
     "maxTenureYears": 36,
     "minMonthlyIncome": 25000,
@@ -71,8 +80,12 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["PSU stability"],
-    "cons": ["Branch-driven"],
+    "pros": [
+      "PSU stability"
+    ],
+    "cons": [
+      "Branch-driven"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -89,8 +102,8 @@
     "lenderType": "Private Bank",
     "productType": "Home Loan",
     "category": "home",
-    "minRate": 7.60,
-    "maxRate": 7.60,
+    "minRate": 7.6,
+    "maxRate": 7.6,
     "minTenureYears": 10,
     "maxTenureYears": 36,
     "minMonthlyIncome": 30000,
@@ -99,8 +112,12 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["Strong service"],
-    "cons": ["Slightly higher rate vs PSU"],
+    "pros": [
+      "Strong service"
+    ],
+    "cons": [
+      "Slightly higher rate vs PSU"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -117,8 +134,8 @@
     "lenderType": "Private Bank",
     "productType": "Home Loan",
     "category": "home",
-    "minRate": 7.90,
-    "maxRate": 7.90,
+    "minRate": 7.9,
+    "maxRate": 7.9,
     "minTenureYears": 10,
     "maxTenureYears": 36,
     "minMonthlyIncome": 30000,
@@ -127,8 +144,12 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["Digital journey"],
-    "cons": ["Rate band higher than PSU"],
+    "pros": [
+      "Digital journey"
+    ],
+    "cons": [
+      "Rate band higher than PSU"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -145,8 +166,8 @@
     "lenderType": "Private Bank",
     "productType": "Home Loan",
     "category": "home",
-    "minRate": 8.40,
-    "maxRate": 8.40,
+    "minRate": 8.4,
+    "maxRate": 8.4,
     "minTenureYears": 10,
     "maxTenureYears": 36,
     "minMonthlyIncome": 30000,
@@ -155,8 +176,12 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["Private bank servicing"],
-    "cons": ["Higher ROI vs PSU"],
+    "pros": [
+      "Private bank servicing"
+    ],
+    "cons": [
+      "Higher ROI vs PSU"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -173,8 +198,8 @@
     "lenderType": "Private Bank",
     "productType": "Home Loan",
     "category": "home",
-    "minRate": 7.90,
-    "maxRate": 7.90,
+    "minRate": 7.9,
+    "maxRate": 7.9,
     "minTenureYears": 10,
     "maxTenureYears": 36,
     "minMonthlyIncome": 25000,
@@ -183,8 +208,12 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["Competitive pricing"],
-    "cons": ["Regional footprint"],
+    "pros": [
+      "Competitive pricing"
+    ],
+    "cons": [
+      "Regional footprint"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -211,8 +240,12 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["Fast approvals"],
-    "cons": ["Offer-linked charges"],
+    "pros": [
+      "Fast approvals"
+    ],
+    "cons": [
+      "Offer-linked charges"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -239,8 +272,12 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["Wide programs"],
-    "cons": ["ROI higher vs PSU"],
+    "pros": [
+      "Wide programs"
+    ],
+    "cons": [
+      "ROI higher vs PSU"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -257,8 +294,8 @@
     "lenderType": "NBFC",
     "productType": "Home Loan",
     "category": "home",
-    "minRate": 8.60,
-    "maxRate": 8.60,
+    "minRate": 8.6,
+    "maxRate": 8.6,
     "minTenureYears": 10,
     "maxTenureYears": 36,
     "minMonthlyIncome": 30000,
@@ -267,8 +304,12 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["Brand trust"],
-    "cons": ["Higher ROI band"],
+    "pros": [
+      "Brand trust"
+    ],
+    "cons": [
+      "Higher ROI band"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -285,8 +326,8 @@
     "lenderType": "NBFC",
     "productType": "Home Loan",
     "category": "home",
-    "minRate": 8.50,
-    "maxRate": 8.50,
+    "minRate": 8.5,
+    "maxRate": 8.5,
     "minTenureYears": 10,
     "maxTenureYears": 36,
     "minMonthlyIncome": 30000,
@@ -295,8 +336,12 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["Strong NBFC process"],
-    "cons": ["ROI > PSU"],
+    "pros": [
+      "Strong NBFC process"
+    ],
+    "cons": [
+      "ROI > PSU"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -323,8 +368,12 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["Public sector pricing"],
-    "cons": ["TAT 10-15 days"],
+    "pros": [
+      "Public sector pricing"
+    ],
+    "cons": [
+      "TAT 10-15 days"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -351,8 +400,12 @@
     "minAmount": 500000,
     "maxAmount": 100000000,
     "disbursalTime": "10-15 working days",
-    "pros": ["Aggressive pricing"],
-    "cons": ["Offer-linked charges"],
+    "pros": [
+      "Aggressive pricing"
+    ],
+    "cons": [
+      "Offer-linked charges"
+    ],
     "docsRequired": [
       "PAN & Aadhaar (Applicant & Co-applicant)",
       "Form 16 A & B (last 2 years)",
@@ -369,8 +422,8 @@
     "lenderType": "Private Bank",
     "productType": "Personal Loan - Salaried",
     "category": "personal",
-    "minRate": 10.50,
-    "maxRate": 12.00,
+    "minRate": 10.5,
+    "maxRate": 12,
     "minTenureYears": 1,
     "maxTenureYears": 5,
     "minMonthlyIncome": 25000,
@@ -379,8 +432,15 @@
     "minAmount": 100000,
     "maxAmount": 10000000,
     "disbursalTime": "2-5 days",
-    "pros": ["Lowest interest rate band", "Wide employer coverage", "Digital process"],
-    "cons": ["Standard foreclosure charges 3.75%", "CIBIL <700 not accepted"],
+    "pros": [
+      "Lowest interest rate band",
+      "Wide employer coverage",
+      "Digital process"
+    ],
+    "cons": [
+      "Standard foreclosure charges 3.75%",
+      "CIBIL <700 not accepted"
+    ],
     "docsRequired": [
       "PAN Card",
       "Aadhaar Card",
@@ -401,8 +461,8 @@
     "lenderType": "NBFC",
     "productType": "Personal Loan - Salaried (OD facility available)",
     "category": "personal",
-    "minRate": 12.00,
-    "maxRate": 14.00,
+    "minRate": 12,
+    "maxRate": 14,
     "minTenureYears": 1,
     "maxTenureYears": 8,
     "minMonthlyIncome": 35000,
@@ -411,8 +471,14 @@
     "minAmount": 100000,
     "maxAmount": 5000000,
     "disbursalTime": "2-3 days",
-    "pros": ["Overdraft facility", "Fast digital journey"],
-    "cons": ["Higher PF vs banks", "CIBIL <685 rejected"],
+    "pros": [
+      "Overdraft facility",
+      "Fast digital journey"
+    ],
+    "cons": [
+      "Higher PF vs banks",
+      "CIBIL <685 rejected"
+    ],
     "docsRequired": [
       "PAN Card",
       "Aadhaar Card",
@@ -434,7 +500,7 @@
     "productType": "Personal Loan - Salaried",
     "category": "personal",
     "minRate": 10.75,
-    "maxRate": 14.00,
+    "maxRate": 14,
     "minTenureYears": 1,
     "maxTenureYears": 6,
     "minMonthlyIncome": 25000,
@@ -443,8 +509,14 @@
     "minAmount": 100000,
     "maxAmount": 7500000,
     "disbursalTime": "2-5 days",
-    "pros": ["High loan approval rate", "Digital KYC"],
-    "cons": ["EMI per lakh (table) higher vs peers", "Foreclosure 4.75%"],
+    "pros": [
+      "High loan approval rate",
+      "Digital KYC"
+    ],
+    "cons": [
+      "EMI per lakh (table) higher vs peers",
+      "Foreclosure 4.75%"
+    ],
     "docsRequired": [
       "PAN Card",
       "Aadhaar Card",
@@ -465,8 +537,8 @@
     "lenderType": "Private Bank",
     "productType": "Personal Loan - Salaried",
     "category": "personal",
-    "minRate": 11.00,
-    "maxRate": 13.00,
+    "minRate": 11,
+    "maxRate": 13,
     "minTenureYears": 1,
     "maxTenureYears": 5,
     "minMonthlyIncome": 25000,
@@ -475,8 +547,14 @@
     "minAmount": 100000,
     "maxAmount": 10000000,
     "disbursalTime": "2-5 days",
-    "pros": ["Lowest interest rate feature", "Strong branch network"],
-    "cons": ["Standard PF & charges", "CIBIL <700 rejected"],
+    "pros": [
+      "Lowest interest rate feature",
+      "Strong branch network"
+    ],
+    "cons": [
+      "Standard PF & charges",
+      "CIBIL <700 rejected"
+    ],
     "docsRequired": [
       "PAN Card",
       "Aadhaar Card",
@@ -497,8 +575,8 @@
     "lenderType": "NBFC",
     "productType": "Personal Loan - Salaried (OD facility)",
     "category": "personal",
-    "minRate": 13.50,
-    "maxRate": 18.00,
+    "minRate": 13.5,
+    "maxRate": 18,
     "minTenureYears": 1,
     "maxTenureYears": 4,
     "minMonthlyIncome": 35000,
@@ -507,8 +585,14 @@
     "minAmount": 100000,
     "maxAmount": 1000000,
     "disbursalTime": "2-5 days",
-    "pros": ["OD facility", "Good for Tier-2/3 cities"],
-    "cons": ["Higher pricing vs banks", "Lower ticket size"],
+    "pros": [
+      "OD facility",
+      "Good for Tier-2/3 cities"
+    ],
+    "cons": [
+      "Higher pricing vs banks",
+      "Lower ticket size"
+    ],
     "docsRequired": [
       "PAN Card",
       "Aadhaar Card",
@@ -529,8 +613,8 @@
     "lenderType": "NBFC",
     "productType": "Personal Loan - Salaried (OD facility)",
     "category": "personal",
-    "minRate": 12.00,
-    "maxRate": 14.00,
+    "minRate": 12,
+    "maxRate": 14,
     "minTenureYears": 1,
     "maxTenureYears": 5,
     "minMonthlyIncome": 35000,
@@ -539,8 +623,14 @@
     "minAmount": 100000,
     "maxAmount": 4000000,
     "disbursalTime": "2-5 days",
-    "pros": ["Overdraft/flexi option", "Good mid-ROI band"],
-    "cons": ["PF up to 2.5% vs banks' ₹10k cap", "Min salary ₹35k"],
+    "pros": [
+      "Overdraft/flexi option",
+      "Good mid-ROI band"
+    ],
+    "cons": [
+      "PF up to 2.5% vs banks' ₹10k cap",
+      "Min salary ₹35k"
+    ],
     "docsRequired": [
       "PAN Card",
       "Aadhaar Card",
@@ -561,8 +651,8 @@
     "lenderType": "Private Bank",
     "productType": "Personal Loan - Salaried",
     "category": "personal",
-    "minRate": 11.00,
-    "maxRate": 13.00,
+    "minRate": 11,
+    "maxRate": 13,
     "minTenureYears": 1,
     "maxTenureYears": 5,
     "minMonthlyIncome": 25000,
@@ -571,8 +661,14 @@
     "minAmount": 100000,
     "maxAmount": 7500000,
     "disbursalTime": "2-5 days",
-    "pros": ["Customer-friendly process", "Balanced ROI"],
-    "cons": ["Foreclosure 4.75%", "Standard bank documentation"],
+    "pros": [
+      "Customer-friendly process",
+      "Balanced ROI"
+    ],
+    "cons": [
+      "Foreclosure 4.75%",
+      "Standard bank documentation"
+    ],
     "docsRequired": [
       "PAN Card",
       "Aadhaar Card",
@@ -593,8 +689,8 @@
     "lenderType": "NBFC",
     "productType": "Personal Loan - Salaried (Preapproved)",
     "category": "personal",
-    "minRate": 10.50,
-    "maxRate": 12.00,
+    "minRate": 10.5,
+    "maxRate": 12,
     "minTenureYears": 1,
     "maxTenureYears": 5,
     "minMonthlyIncome": 25000,
@@ -603,8 +699,15 @@
     "minAmount": 100000,
     "maxAmount": 10000000,
     "disbursalTime": "2-5 days",
-    "pros": ["Lowest ROI band in grid", "OD-type flexibility available", "Tenure up to 60 months"],
-    "cons": ["Standard foreclosure 4.75%", "KYC + income checks mandatory"],
+    "pros": [
+      "Lowest ROI band in grid",
+      "OD-type flexibility available",
+      "Tenure up to 60 months"
+    ],
+    "cons": [
+      "Standard foreclosure 4.75%",
+      "KYC + income checks mandatory"
+    ],
     "docsRequired": [
       "PAN & Aadhaar",
       "3 months salary slips",
@@ -621,8 +724,8 @@
     "lenderType": "NBFC",
     "productType": "Personal Loan - Salaried (Preapproved)",
     "category": "personal",
-    "minRate": 12.00,
-    "maxRate": 14.00,
+    "minRate": 12,
+    "maxRate": 14,
     "minTenureYears": 1,
     "maxTenureYears": 5,
     "minMonthlyIncome": 35000,
@@ -631,8 +734,15 @@
     "minAmount": 100000,
     "maxAmount": 5000000,
     "disbursalTime": "2-3 days",
-    "pros": ["Quick TAT", "Transparent pricing", "Strong corporate coverage"],
-    "cons": ["Min salary ₹35k", "Foreclosure 4.75%"],
+    "pros": [
+      "Quick TAT",
+      "Transparent pricing",
+      "Strong corporate coverage"
+    ],
+    "cons": [
+      "Min salary ₹35k",
+      "Foreclosure 4.75%"
+    ],
     "docsRequired": [
       "PAN/Aadhaar",
       "3 months salary slips",
@@ -651,7 +761,7 @@
     "productType": "Doctor/CA Overdraft (OD) & Term Loan",
     "category": "professional",
     "minRate": 11.99,
-    "maxRate": 15.50,
+    "maxRate": 15.5,
     "minTenureYears": 1,
     "maxTenureYears": 5,
     "minMonthlyIncome": 35000,
@@ -689,8 +799,8 @@
     "lenderType": "NBFC",
     "productType": "Hybrid Dropline Overdraft (DLOD)",
     "category": "professional",
-    "minRate": 12.00,
-    "maxRate": 15.00,
+    "minRate": 12,
+    "maxRate": 15,
     "minTenureYears": 1,
     "maxTenureYears": 5,
     "minMonthlyIncome": 35000,
@@ -727,8 +837,8 @@
     "lenderType": "NBFC",
     "productType": "Doctor/CA OD & Term Loan",
     "category": "professional",
-    "minRate": 12.50,
-    "maxRate": 14.50,
+    "minRate": 12.5,
+    "maxRate": 14.5,
     "minTenureYears": 1,
     "maxTenureYears": 5,
     "minMonthlyIncome": 35000,
@@ -765,8 +875,8 @@
     "lenderType": "NBFC",
     "productType": "Doctor/CA OD & Term Loan",
     "category": "professional",
-    "minRate": 12.00,
-    "maxRate": 15.50,
+    "minRate": 12,
+    "maxRate": 15.5,
     "minTenureYears": 1,
     "maxTenureYears": 5,
     "minMonthlyIncome": 35000,
@@ -803,8 +913,8 @@
     "lenderType": "NBFC",
     "productType": "Doctor/CA OD & Term Loan",
     "category": "professional",
-    "minRate": 11.50,
-    "maxRate": 14.50,
+    "minRate": 11.5,
+    "maxRate": 14.5,
     "minTenureYears": 1,
     "maxTenureYears": 5,
     "minMonthlyIncome": 35000,
@@ -845,8 +955,8 @@
     "lenderType": "NBFC",
     "productType": "Doctor Professional OD / TL",
     "category": "professional",
-    "minRate": 16.50,
-    "maxRate": 17.50,
+    "minRate": 16.5,
+    "maxRate": 17.5,
     "minTenureYears": 1,
     "maxTenureYears": 5,
     "minMonthlyIncome": 35000,
