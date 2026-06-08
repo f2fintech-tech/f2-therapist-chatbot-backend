@@ -3,7 +3,7 @@ import hashlib
 import httpx
 import logging
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -784,7 +784,6 @@ def _parse_date(date_str: str) -> Optional[datetime]:
             continue
     return None
 
-from typing import Optional
 
 def _safe_int(val) -> int:
     """Safely convert a value to int."""
