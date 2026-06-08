@@ -1,34 +1,34 @@
 {
   "billable": "True",
   "input": {
-    "mobile": "9490159120",
-    "name": "JAKKA TEJASWINI",
-    "pan": "BHIPJ8167M"
+    "mobile": "9711300828",
+    "name": "praveen kumar",
+    "pan": "CWRPK7449C"
   },
-  "request_timestamp": "2026-06-08 05:07:46.087000+0000",
+  "request_timestamp": "2026-06-08 08:38:55.092000+0000",
   "response_code": 101,
   "response_message": "Success",
-  "response_timestamp": "2026-06-08 05:07:51.859000+0000",
+  "response_timestamp": "2026-06-08 08:39:00.466000+0000",
   "result": {
     "cibilData": {
       "GetCustomerAssetsResponse": {
         "GetCustomerAssetsSuccess": {
           "Asset": {
-            "AssetId": "28645485613",
-            "CreationDate": "2026-06-08T10:37:49.942+05:30",
-            "ExpirationDate": "2028-06-07T10:37:49.941+05:30",
+            "AssetId": "28650973215",
+            "CreationDate": "2026-06-08T14:08:58.110+05:30",
+            "ExpirationDate": "2028-06-07T14:08:58.109+05:30",
             "SafetyCheckFailure": false,
             "Status": "Active",
             "TrueLinkCreditReport": {
               "Borrower": {
                 "Birth": {
                   "BirthDate": {
-                    "day": "24",
-                    "month": "3",
-                    "year": "1992"
+                    "day": "10",
+                    "month": "5",
+                    "year": "1989"
                   },
                   "Source": {
-                    "BorrowerKey": "1102902509",
+                    "BorrowerKey": "729249714",
                     "Bureau": {
                       "abbreviation": "",
                       "description": "",
@@ -37,10 +37,10 @@
                     },
                     "InquiryDate": "2026-06-08+05:30",
                     "Locale": "en_IN",
-                    "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                    "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                   },
                   "age": "0",
-                  "date": "1992-03-24+05:30",
+                  "date": "1989-05-10+05:30",
                   "partitionSet": "0"
                 },
                 "BorrowerAddress": {
@@ -48,22 +48,22 @@
                     "CreditAddress": {
                       "AddressType": "",
                       "City": "",
-                      "PostalCode": "501203",
-                      "Region": "36",
-                      "SerialNumber": "5525357177",
-                      "StreetAddress": "VILLA NO 8 SUBISHI WINDSOR MEDAK MEDAK"
+                      "PostalCode": "110055",
+                      "Region": "07",
+                      "SerialNumber": "1477904485",
+                      "StreetAddress": "302 B 4B HIG FLATS  MOTIA KHAN"
                     },
                     "Dwelling": {
                       "abbreviation": "",
                       "description": "",
                       "rank": "100000",
-                      "symbol": "04"
+                      "symbol": "03"
                     },
                     "Origin": {
                       "abbreviation": "",
                       "description": "",
                       "rank": "100000",
-                      "symbol": "TCL"
+                      "symbol": "AXIS BANK"
                     },
                     "Ownership": {
                       "abbreviation": "",
@@ -72,7 +72,7 @@
                       "symbol": ""
                     },
                     "Source": {
-                      "BorrowerKey": "1102902509",
+                      "BorrowerKey": "729249714",
                       "Bureau": {
                         "abbreviation": "",
                         "description": "",
@@ -81,10 +81,10 @@
                       },
                       "InquiryDate": "2026-06-08+05:30",
                       "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                      "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                     },
                     "addressOrder": "0",
-                    "dateReported": "2026-03-31+05:30",
+                    "dateReported": "2021-10-31+05:30",
                     "enrichMode": "R",
                     "partitionSet": "0"
                   },
@@ -92,10 +92,10 @@
                     "CreditAddress": {
                       "AddressType": "",
                       "City": "",
-                      "PostalCode": "505001",
-                      "Region": "28",
-                      "SerialNumber": "992024366",
-                      "StreetAddress": "HNO1-256/1R AMNAGARKARI MNAGAR-505001 KARIMNAGAR"
+                      "PostalCode": "110055",
+                      "Region": "07",
+                      "SerialNumber": "1467188416",
+                      "StreetAddress": "87H FLOOR 804A A4 DDA HIG FLAT MOTIA KHAN PAHAR GANJ NORTH DELHI"
                     },
                     "Dwelling": {
                       "abbreviation": "",
@@ -107,16 +107,16 @@
                       "abbreviation": "",
                       "description": "",
                       "rank": "100000",
-                      "symbol": "BAJAJ FIN LTD"
+                      "symbol": "AXIS BANK"
                     },
                     "Ownership": {
                       "abbreviation": "",
                       "description": "",
                       "rank": "100000",
-                      "symbol": ""
+                      "symbol": "02"
                     },
                     "Source": {
-                      "BorrowerKey": "1102902509",
+                      "BorrowerKey": "729249714",
                       "Bureau": {
                         "abbreviation": "",
                         "description": "",
@@ -125,21 +125,65 @@
                       },
                       "InquiryDate": "2026-06-08+05:30",
                       "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                      "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                     },
                     "addressOrder": "1",
-                    "dateReported": "2018-07-21+05:30",
-                    "enrichMode": "R",
+                    "dateReported": "2021-10-26+05:30",
+                    "enrichMode": "E",
                     "partitionSet": "1"
                   },
                   "3": {
                     "CreditAddress": {
                       "AddressType": "",
                       "City": "",
-                      "PostalCode": "524002",
-                      "Region": "28",
-                      "SerialNumber": "441363542",
-                      "StreetAddress": "DO J VEERASWAMY HNO 4 5 105 R K NAGAR NAWABPET NELLORE NELLORE NELLORE ANDHRA PRADESH"
+                      "PostalCode": "110006",
+                      "Region": "07",
+                      "SerialNumber": "615896917",
+                      "StreetAddress": "AHLAWAT FINANCEMOTIATHAN PAHARGANJ NEW D ELHI402 D HIV FLAT GOLD NERA APPARTMENT NEW DELHI DELHI"
+                    },
+                    "Dwelling": {
+                      "abbreviation": "",
+                      "description": "",
+                      "rank": "100000",
+                      "symbol": "01"
+                    },
+                    "Origin": {
+                      "abbreviation": "",
+                      "description": "",
+                      "rank": "100000",
+                      "symbol": "ICICI BANK"
+                    },
+                    "Ownership": {
+                      "abbreviation": "",
+                      "description": "",
+                      "rank": "100000",
+                      "symbol": ""
+                    },
+                    "Source": {
+                      "BorrowerKey": "729249714",
+                      "Bureau": {
+                        "abbreviation": "",
+                        "description": "",
+                        "rank": "100000",
+                        "symbol": "CIBIL"
+                      },
+                      "InquiryDate": "2026-06-08+05:30",
+                      "Locale": "en_IN",
+                      "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
+                    },
+                    "addressOrder": "2",
+                    "dateReported": "2015-06-17+05:30",
+                    "enrichMode": "R",
+                    "partitionSet": "2"
+                  },
+                  "4": {
+                    "CreditAddress": {
+                      "AddressType": "",
+                      "City": "",
+                      "PostalCode": "124103",
+                      "Region": "06",
+                      "SerialNumber": "547241111",
+                      "StreetAddress": "AGGRICULTURISTVPO DIGHAL JHAJJARROHTAK R OADHARRYANA JHAJJAR JHAJJAR"
                     },
                     "Dwelling": {
                       "abbreviation": "",
@@ -151,7 +195,7 @@
                       "abbreviation": "",
                       "description": "",
                       "rank": "100000",
-                      "symbol": "ANDHRA BANK"
+                      "symbol": "ICICI BANK"
                     },
                     "Ownership": {
                       "abbreviation": "",
@@ -160,7 +204,7 @@
                       "symbol": ""
                     },
                     "Source": {
-                      "BorrowerKey": "1102902509",
+                      "BorrowerKey": "729249714",
                       "Bureau": {
                         "abbreviation": "",
                         "description": "",
@@ -169,17 +213,17 @@
                       },
                       "InquiryDate": "2026-06-08+05:30",
                       "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                      "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                     },
-                    "addressOrder": "2",
-                    "dateReported": "2012-09-30+05:30",
-                    "enrichMode": "R",
-                    "partitionSet": "2"
+                    "addressOrder": "3",
+                    "dateReported": "2014-09-13+05:30",
+                    "enrichMode": "U",
+                    "partitionSet": "3"
                   }
                 },
                 "BorrowerName": {
                   "Name": {
-                    "Forename": "JAKKA TEJASWINI"
+                    "Forename": "PRAVEEN KUMAR PRAVEEN KUMAR"
                   },
                   "NameType": {
                     "abbreviation": "",
@@ -188,7 +232,7 @@
                     "symbol": ""
                   },
                   "Source": {
-                    "BorrowerKey": "1102902509",
+                    "BorrowerKey": "729249714",
                     "Bureau": {
                       "abbreviation": "",
                       "description": "",
@@ -197,15 +241,41 @@
                     },
                     "InquiryDate": "2026-06-08+05:30",
                     "Locale": "en_IN",
-                    "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                    "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                   },
                   "partitionSet": "0"
                 },
                 "BorrowerTelephone": {
                   "1": {
                     "PhoneNumber": {
-                      "Number": "9490159120",
-                      "SerialNumber": "392428229"
+                      "Number": "9711300828",
+                      "SerialNumber": "1354037111"
+                    },
+                    "PhoneType": {
+                      "abbreviation": "",
+                      "description": "",
+                      "rank": "100000",
+                      "symbol": "03"
+                    },
+                    "Source": {
+                      "BorrowerKey": "729249714",
+                      "Bureau": {
+                        "abbreviation": "",
+                        "description": "",
+                        "rank": "100000",
+                        "symbol": "CIBIL"
+                      },
+                      "InquiryDate": "2026-06-08+05:30",
+                      "Locale": "en_IN",
+                      "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
+                    },
+                    "enrichMode": "E",
+                    "partitionSet": "0"
+                  },
+                  "2": {
+                    "PhoneNumber": {
+                      "Number": "919711300828",
+                      "SerialNumber": "1353678470"
                     },
                     "PhoneType": {
                       "abbreviation": "",
@@ -214,7 +284,7 @@
                       "symbol": "01"
                     },
                     "Source": {
-                      "BorrowerKey": "1102902509",
+                      "BorrowerKey": "729249714",
                       "Bureau": {
                         "abbreviation": "",
                         "description": "",
@@ -223,50 +293,24 @@
                       },
                       "InquiryDate": "2026-06-08+05:30",
                       "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "enrichMode": "R",
-                    "partitionSet": "0"
-                  },
-                  "2": {
-                    "PhoneNumber": {
-                      "Number": "24006205",
-                      "SerialNumber": "1317649573"
-                    },
-                    "PhoneType": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": "02"
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                      "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                     },
                     "enrichMode": "R",
                     "partitionSet": "1"
                   },
                   "3": {
                     "PhoneNumber": {
-                      "Number": "32502135",
-                      "SerialNumber": "1309874504"
+                      "Number": "9654012770",
+                      "SerialNumber": "631228530"
                     },
                     "PhoneType": {
                       "abbreviation": "",
                       "description": "",
                       "rank": "100000",
-                      "symbol": "02"
+                      "symbol": "00"
                     },
                     "Source": {
-                      "BorrowerKey": "1102902509",
+                      "BorrowerKey": "729249714",
                       "Bureau": {
                         "abbreviation": "",
                         "description": "",
@@ -275,15 +319,15 @@
                       },
                       "InquiryDate": "2026-06-08+05:30",
                       "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                      "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                     },
-                    "enrichMode": "R",
+                    "enrichMode": "U",
                     "partitionSet": "2"
                   },
                   "4": {
                     "PhoneNumber": {
-                      "Number": "9985149898",
-                      "SerialNumber": "941606737"
+                      "Number": "9717363695",
+                      "SerialNumber": "364072756"
                     },
                     "PhoneType": {
                       "abbreviation": "",
@@ -292,7 +336,7 @@
                       "symbol": "01"
                     },
                     "Source": {
-                      "BorrowerKey": "1102902509",
+                      "BorrowerKey": "729249714",
                       "Bureau": {
                         "abbreviation": "",
                         "description": "",
@@ -301,9 +345,9 @@
                       },
                       "InquiryDate": "2026-06-08+05:30",
                       "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                      "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                     },
-                    "enrichMode": "E",
+                    "enrichMode": "U",
                     "partitionSet": "3"
                   }
                 },
@@ -314,39 +358,39 @@
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": "25"
+                        "symbol": "00"
                       },
                       "FactorText": {
-                        "1": "explain: One of the factors your CIBIL Score depends on is the number of active loan/credit card accounts reported in the last 36 months that carry a current balance. A high balance on such active accounts will impact your CIBIL Score. Paying off the balances on the loan and credit card accounts as well as not having too many open lines of credit with current balances will help maintain your CIBIL Score.",
-                        "2": "factor: One of the factors your CIBIL Score depends on is the number of active loan/credit card accounts reported in the last 36 months that carry a current balance. A high balance on such active accounts will impact your CIBIL Score. Paying off the balances on the loan and credit card accounts as well as not having too many open lines of credit with current balances will help maintain your CIBIL Score."
+                        "1": "No Valid Factors",
+                        "2": "We're sorry, but the adverse factors affecting your Credit Score are currently unavailable. Factors that may affect your score include: payment history, outstanding debt, credit account history, recent inquiries, types of credit and other features such as bankruptcies and collection accounts."
                       },
-                      "bureauCode": "25"
+                      "bureauCode": "00"
                     },
                     "2": {
                       "Factor": {
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": "39"
+                        "symbol": "00"
                       },
                       "FactorText": {
-                        "1": "explain: Your CIBIL Score is not only dependent on your timely payments towards loans/credit cards that have been availed but also the amount that has been paid. E.g. If you have a high credit utilization on a credit card and are making monthly minimum payments by the due date, this will not affect your payment history. However, this will impact your CIBIL Score as the minimum payments made is low in comparison to the actual amount payable. You can maintain your CIBIL Score by making timely payments every time, as well as ensuring you are paying off the balances on the loans/credit cards. Paying more than the minimum due will help bring down the total outstanding on the accounts.",
-                        "2": "factor: Your CIBIL Score is not only dependent on your timely payments towards loans/credit cards that have been availed but also the amount that has been paid. E.g. If you have a high credit utilization on a credit card and are making monthly minimum payments by the due date, this will not affect your payment history. However, this will impact your CIBIL Score as the minimum payments made is low in comparison to the actual amount payable. You can maintain your CIBIL Score by making timely payments every time, as well as ensuring you are paying off the balances on the loans/credit cards. Paying more than the minimum due will help bring down the total outstanding on the accounts."
+                        "1": "No Valid Factors",
+                        "2": "We're sorry, but the adverse factors affecting your Credit Score are currently unavailable. Factors that may affect your score include: payment history, outstanding debt, credit account history, recent inquiries, types of credit and other features such as bankruptcies and collection accounts."
                       },
-                      "bureauCode": "39"
+                      "bureauCode": "00"
                     },
                     "3": {
                       "Factor": {
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": "36"
+                        "symbol": "00"
                       },
                       "FactorText": {
-                        "1": "explain: One of the factors your CIBIL Score depends on is the number of active loan/credit card accounts reported in the last 36 months that carry a current balance. A high balance on such active accounts will impact your CIBIL Score. Paying off the balances on the loan and credit card accounts as well as not having too many open lines of credit with current balances will help maintain your CIBIL Score.",
-                        "2": "factor: One of the factors your CIBIL Score depends on is the number of active loan/credit card accounts reported in the last 36 months that carry a current balance. A high balance on such active accounts will impact your CIBIL Score. Paying off the balances on the loan and credit card accounts as well as not having too many open lines of credit with current balances will help maintain your CIBIL Score."
+                        "1": "No Valid Factors",
+                        "2": "We're sorry, but the adverse factors affecting your Credit Score are currently unavailable. Factors that may affect your score include: payment history, outstanding debt, credit account history, recent inquiries, types of credit and other features such as bankruptcies and collection accounts."
                       },
-                      "bureauCode": "36"
+                      "bureauCode": "00"
                     },
                     "4": {
                       "Factor": {
@@ -388,7 +432,7 @@
                     "symbol": ""
                   },
                   "Source": {
-                    "BorrowerKey": "1102902509",
+                    "BorrowerKey": "729249714",
                     "Bureau": {
                       "abbreviation": "",
                       "description": "",
@@ -397,15 +441,14 @@
                     },
                     "InquiryDate": "2026-06-08+05:30",
                     "Locale": "en_IN",
-                    "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                    "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                   },
-                  "populationRank": "25",
-                  "riskScore": "759",
+                  "riskScore": "1",
                   "scoreName": "CIBILTransUnionScore3"
                 },
                 "CreditStatement": {
                   "Source": {
-                    "BorrowerKey": "1102902509",
+                    "BorrowerKey": "729249714",
                     "Bureau": {
                       "abbreviation": "",
                       "description": "",
@@ -414,7 +457,7 @@
                     },
                     "InquiryDate": "2026-06-08+05:30",
                     "Locale": "en_IN",
-                    "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                    "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                   },
                   "StatementType": {
                     "abbreviation": "",
@@ -426,33 +469,87 @@
                   "statement": ""
                 },
                 "EmailAddress": {
-                  "1": {
-                    "Email": "DR.TEJASWINIJAKKA@GMAIL.COM",
-                    "serialNumber": "538907773"
-                  },
-                  "2": {
-                    "Email": "DOCTOR.TEJASWANIJAKKA@GMAIL.COM",
-                    "serialNumber": "164294153"
+                  "Email": "PRAVEENKUMAR85@GMAIL.COM",
+                  "serialNumber": "37234733"
+                },
+                "Gender": "Male",
+                "IdentifierPartition": {
+                  "Identifier": {
+                    "1": {
+                      "ID": {
+                        "Id": "729249714",
+                        "IdentifierName": "SocialId"
+                      },
+                      "Source": {
+                        "BorrowerKey": "729249714",
+                        "Bureau": {
+                          "abbreviation": "",
+                          "description": "",
+                          "rank": "100000",
+                          "symbol": "CIBIL"
+                        },
+                        "InquiryDate": "2026-06-08+05:30",
+                        "Locale": "en_IN",
+                        "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
+                      }
+                    },
+                    "2": {
+                      "ID": {
+                        "Id": "CWRPK7449C",
+                        "IdentifierName": "TaxId",
+                        "SerialNumber": "149748314"
+                      },
+                      "Source": {
+                        "BorrowerKey": "729249714",
+                        "Bureau": {
+                          "abbreviation": "",
+                          "description": "",
+                          "rank": "100000",
+                          "symbol": "CIBIL"
+                        },
+                        "InquiryDate": "2026-06-08+05:30",
+                        "Locale": "en_IN",
+                        "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
+                      },
+                      "enrichMode": "R"
+                    },
+                    "3": {
+                      "ID": {
+                        "Id": "UQI0004218",
+                        "IdentifierName": "VoterId",
+                        "SerialNumber": "194556762"
+                      },
+                      "Source": {
+                        "BorrowerKey": "729249714",
+                        "Bureau": {
+                          "abbreviation": "",
+                          "description": "",
+                          "rank": "100000",
+                          "symbol": "CIBIL"
+                        },
+                        "InquiryDate": "2026-06-08+05:30",
+                        "Locale": "en_IN",
+                        "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
+                      },
+                      "enrichMode": "R"
+                    }
                   }
                 },
-                "Employer": {
-                  "CreditAddress": {
-                    "AddressType": "",
-                    "City": "",
-                    "PostalCode": "",
-                    "Region": "",
-                    "StreetAddress": ""
-                  },
-                  "IncomeFreqIndicator": "",
-                  "NetGrossIndicator": "",
-                  "OccupationCode": {
+                "borrowerKey": "729249714"
+              },
+              "DeceasedIndicator": false,
+              "FraudIndicator": false,
+              "Frozen": "",
+              "InquiryPartition": {
+                "Inquiry": {
+                  "IndustryCode": {
                     "abbreviation": "",
-                    "description": "Self Employed Professional",
+                    "description": "",
                     "rank": "100000",
-                    "symbol": "02"
+                    "symbol": ""
                   },
                   "Source": {
-                    "BorrowerKey": "1102902509",
+                    "BorrowerKey": "729249714",
                     "Bureau": {
                       "abbreviation": "",
                       "description": "",
@@ -461,472 +558,16 @@
                     },
                     "InquiryDate": "2026-06-08+05:30",
                     "Locale": "en_IN",
-                    "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                    "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                   },
-                  "account": "09",
-                  "dateReported": "2026-04-30+05:30",
-                  "name": "",
-                  "partitionSet": "0",
-                  "serialNumber": "4127325407"
-                },
-                "Gender": "Male",
-                "IdentifierPartition": {
-                  "Identifier": {
-                    "1": {
-                      "ID": {
-                        "Id": "1102902509",
-                        "IdentifierName": "SocialId"
-                      },
-                      "Source": {
-                        "BorrowerKey": "1102902509",
-                        "Bureau": {
-                          "abbreviation": "",
-                          "description": "",
-                          "rank": "100000",
-                          "symbol": "CIBIL"
-                        },
-                        "InquiryDate": "2026-06-08+05:30",
-                        "Locale": "en_IN",
-                        "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                      }
-                    },
-                    "2": {
-                      "ID": {
-                        "Id": "BHIPJ8167M",
-                        "IdentifierName": "TaxId",
-                        "SerialNumber": "468426240"
-                      },
-                      "Source": {
-                        "BorrowerKey": "1102902509",
-                        "Bureau": {
-                          "abbreviation": "",
-                          "description": "",
-                          "rank": "100000",
-                          "symbol": "CIBIL"
-                        },
-                        "InquiryDate": "2026-06-08+05:30",
-                        "Locale": "en_IN",
-                        "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                      },
-                      "enrichMode": "R"
-                    },
-                    "3": {
-                      "ID": {
-                        "Id": "60075765593737",
-                        "IdentifierName": "CkycId",
-                        "SerialNumber": "1518857332"
-                      },
-                      "Source": {
-                        "BorrowerKey": "1102902509",
-                        "Bureau": {
-                          "abbreviation": "",
-                          "description": "",
-                          "rank": "100000",
-                          "symbol": "CIBIL"
-                        },
-                        "InquiryDate": "2026-06-08+05:30",
-                        "Locale": "en_IN",
-                        "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                      },
-                      "enrichMode": "R"
-                    }
-                  }
-                },
-                "borrowerKey": "1102902509"
-              },
-              "DeceasedIndicator": false,
-              "FraudIndicator": false,
-              "Frozen": "",
-              "InquiryPartition": {
-                "1": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "4000000",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "10996052173",
-                    "inquiryDate": "2026-05-16+05:30",
-                    "inquiryType": "61",
-                    "subscriberName": "LNTFIN",
-                    "subscriberNumber": ""
-                  }
-                },
-                "10": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "600000",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "9795168999",
-                    "inquiryDate": "2025-10-20+05:30",
-                    "inquiryType": "00",
-                    "subscriberName": "UNION BANK",
-                    "subscriberNumber": ""
-                  }
-                },
-                "11": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "600000",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "9251459477",
-                    "inquiryDate": "2025-06-25+05:30",
-                    "inquiryType": "09",
-                    "subscriberName": "HDFC BANK",
-                    "subscriberNumber": ""
-                  }
-                },
-                "12": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "25000000",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "8556335845",
-                    "inquiryDate": "2025-01-02+05:30",
-                    "inquiryType": "50",
-                    "subscriberName": "SBI",
-                    "subscriberNumber": ""
-                  }
-                },
-                "13": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "400000",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "8556335662",
-                    "inquiryDate": "2025-01-02+05:30",
-                    "inquiryType": "00",
-                    "subscriberName": "SBI",
-                    "subscriberNumber": ""
-                  }
-                },
-                "2": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "1000000",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "10894660624",
-                    "inquiryDate": "2026-04-24+05:30",
-                    "inquiryType": "09",
-                    "subscriberName": "ADBIRLACAP",
-                    "subscriberNumber": ""
-                  }
-                },
-                "3": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "700",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "10722474473",
-                    "inquiryDate": "2026-03-21+05:30",
-                    "inquiryType": "61",
-                    "subscriberName": "TCL",
-                    "subscriberNumber": ""
-                  }
-                },
-                "4": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "3500000",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "10700459366",
-                    "inquiryDate": "2026-03-17+05:30",
-                    "inquiryType": "51",
-                    "subscriberName": "TCL",
-                    "subscriberNumber": ""
-                  }
-                },
-                "5": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "500000",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "10672858421",
-                    "inquiryDate": "2026-03-11+05:30",
-                    "inquiryType": "05",
-                    "subscriberName": "BAJAJ FIN LTD",
-                    "subscriberNumber": ""
-                  }
-                },
-                "6": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "500000",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "10349928756",
-                    "inquiryDate": "2026-01-07+05:30",
-                    "inquiryType": "05",
-                    "subscriberName": "BAJAJ FIN LTD",
-                    "subscriberNumber": ""
-                  }
-                },
-                "7": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "500000",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "10043487536",
-                    "inquiryDate": "2025-12-10+05:30",
-                    "inquiryType": "00",
-                    "subscriberName": "BAJAJ FIN LTD",
-                    "subscriberNumber": ""
-                  }
-                },
-                "8": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "150000",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "9988915611",
-                    "inquiryDate": "2025-11-30+05:30",
-                    "inquiryType": "09",
-                    "subscriberName": "BAJAJ FIN LTD",
-                    "subscriberNumber": ""
-                  }
-                },
-                "9": {
-                  "Inquiry": {
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "amount": "500000",
-                    "bureau": "",
-                    "description": "",
-                    "enqControlNum": "9939656534",
-                    "inquiryDate": "2025-11-20+05:30",
-                    "inquiryType": "00",
-                    "subscriberName": "BAJAJ FIN LTD",
-                    "subscriberNumber": ""
-                  }
+                  "amount": "150000",
+                  "bureau": "",
+                  "description": "",
+                  "enqControlNum": "6626752718",
+                  "inquiryDate": "2023-10-21+05:30",
+                  "inquiryType": "00",
+                  "subscriberName": "BAJAJ FIN LTD",
+                  "subscriberNumber": ""
                 }
               },
               "Message": {
@@ -944,7 +585,7 @@
                 },
                 "text": ""
               },
-              "ReferenceKey": "11110721643",
+              "ReferenceKey": "11112240286",
               "SafetyCheckPassed": true,
               "Sources": {
                 "Source": {
@@ -954,8 +595,8 @@
                     "rank": "100000",
                     "symbol": "CIBIL"
                   },
-                  "InquiryDate": "2026-06-08T10:37:49.000+05:30",
-                  "OriginalData": "eyJjb250cm9sRGF0YSI6eyJzdWNjZXNzIjp0cnVlfSwicmVzcG9uc2VUeXBlIjoiSElUIiwiSUNSU19TdWJqZWN0SW5xdWlyeUJ5VFVFRl9SZXNwb25zZSI6eyJoZWFkZXIiOnsibXNnUmVmTnVtIjoiZWEyNWJjZDktYThmNC00OTE1LTgzY2MtNWRlZGMxMGEwZTRlIn0sInN1Y2Nlc3MiOnRydWUsInRpbWVzdGFtcCI6IjIwMjYtMDYtMDhUMTA6Mzc6NDkrMDUzMCIsImR1cGxpY2F0ZWRJbnF1aXJ5IjpmYWxzZSwiZWNuIjoxMTExMDcyMTY0MywiZmlyc3RFY24iOjExMDI5MDI1MDksInN1YmplY3RSZXR1cm5Db2RlIjoxLCJzdWJqZWN0IjpbeyJmaWQiOjI5OTMxODA4MywibmFtZSI6eyJuYW1lMSI6IkpBS0tBIFRFSkFTV0lOSSIsImRvYiI6IjE5OTIwMzI0IiwiZ2VuZGVyIjoiMiIsImVycm9yQ29kZVNlZ21lbnQiOiJaWiJ9LCJpZCI6W3sic2VyaWFsTnVtYmVyIjo0Njg0MjYyNDAsImlkVHlwZSI6IjAxIiwiaWROdW1iZXIiOiJCSElQSjgxNjdNIiwiZW5yaWNoTW9kZSI6IlIifSx7InNlcmlhbE51bWJlciI6MTUxODg1NzMzMiwiaWRUeXBlIjoiMDkiLCJpZE51bWJlciI6IjYwMDc1NzY1NTkzNzM3IiwiZW5yaWNoTW9kZSI6IlIifV0sInRlbGVwaG9uZSI6W3sic2VyaWFsTnVtYmVyIjozOTI0MjgyMjksInRlbGVwaG9uZVR5cGUiOiIwMSIsInRlbGVwaG9uZU51bWJlciI6Ijk0OTAxNTkxMjAiLCJlbnJpY2hNb2RlIjoiUiJ9LHsic2VyaWFsTnVtYmVyIjoxMzE3NjQ5NTczLCJ0ZWxlcGhvbmVUeXBlIjoiMDIiLCJ0ZWxlcGhvbmVOdW1iZXIiOiIyNDAwNjIwNSIsImVucmljaE1vZGUiOiJSIn0seyJzZXJpYWxOdW1iZXIiOjEzMDk4NzQ1MDQsInRlbGVwaG9uZVR5cGUiOiIwMiIsInRlbGVwaG9uZU51bWJlciI6IjMyNTAyMTM1IiwiZW5yaWNoTW9kZSI6IlIifSx7InNlcmlhbE51bWJlciI6OTQxNjA2NzM3LCJ0ZWxlcGhvbmVUeXBlIjoiMDEiLCJ0ZWxlcGhvbmVOdW1iZXIiOiI5OTg1MTQ5ODk4IiwiZW5yaWNoTW9kZSI6IkUifV0sImFkZHJlc3MiOlt7InNlcmlhbE51bWJlciI6NTUyNTM1NzE3NywibGluZTEiOiJWSUxMQSBOTyA4IFNVQklTSEkgV0lORFNPUiBNRURBSyIsImxpbmU1IjoiTUVEQUsiLCJzdGF0ZUNvZGUiOiIzNiIsInBpbkNvZGUiOjUwMTIwMywiYWRkcmVzc0NhdGVnb3J5IjoiMDQiLCJyZXBvcnRlZERhdGUiOiIyMDI2MDMzMSIsImVucmljaE1vZGUiOiJSIiwibWVtYmVyU2hvcnROYW1lIjoiVENMIn0seyJzZXJpYWxOdW1iZXIiOjk5MjAyNDM2NiwibGluZTEiOiJITk8xLTI1Ni8xUiIsImxpbmUyIjoiQU1OQUdBUktBUkkiLCJsaW5lMyI6Ik1OQUdBUi01MDUwMDEiLCJsaW5lNCI6IktBUklNTkFHQVIiLCJzdGF0ZUNvZGUiOiIyOCIsInBpbkNvZGUiOjUwNTAwMSwiYWRkcmVzc0NhdGVnb3J5IjoiMDIiLCJyZXBvcnRlZERhdGUiOiIyMDE4MDcyMSIsImVucmljaE1vZGUiOiJSIiwibWVtYmVyU2hvcnROYW1lIjoiQkFKQUogRklOIExURCJ9LHsic2VyaWFsTnVtYmVyIjo0NDEzNjM1NDIsImxpbmUxIjoiRE8gSiBWRUVSQVNXQU1ZIEhOTyA0IDUgMTA1IiwibGluZTIiOiJSIEsgTkFHQVIgTkFXQUJQRVQgTkVMTE9SRSIsImxpbmUzIjoiTkVMTE9SRSIsImxpbmU0IjoiTkVMTE9SRSIsImxpbmU1IjoiQU5ESFJBIFBSQURFU0giLCJzdGF0ZUNvZGUiOiIyOCIsInBpbkNvZGUiOjUyNDAwMiwiYWRkcmVzc0NhdGVnb3J5IjoiMDQiLCJyZXBvcnRlZERhdGUiOiIyMDEyMDkzMCIsImVucmljaE1vZGUiOiJSIiwibWVtYmVyU2hvcnROYW1lIjoiQU5ESFJBIEJBTksifV0sImVtYWlsIjpbeyJzZXJpYWxOdW1iZXIiOjUzODkwNzc3MywiZW1haWxJRCI6IkRSLlRFSkFTV0lOSUpBS0tBQEdNQUlMLkNPTSJ9LHsic2VyaWFsTnVtYmVyIjoxNjQyOTQxNTMsImVtYWlsSUQiOiJET0NUT1IuVEVKQVNXQU5JSkFLS0FAR01BSUwuQ09NIn1dLCJhY2NvdW50IjpbeyJzZXJpYWxOdW1iZXIiOjQxNjM3MjIxMzEsImZpbGVTaW5jZURhdGUiOiIyMDI2MDUwNSIsImFjY291bnROdW1iZXIiOiJBQlNfSERMXzAwMDAwMTAzODYyMyIsImFjY291bnRUeXBlIjoiMTIiLCJtZW1iZXJLb2IiOiJOQiIsIm1lbWJlckNvZGUiOjg5NDcwMDAxLCJtZW1iZXJTaG9ydE5hbWUiOiJBREJJUkxBQ0FQIiwib3duZXJzaGlwSW5kaWNhdG9yIjoiMSIsImRhdGVPcGVuZWQiOiIyMDI2MDQyOCIsImRhdGVPZkxhc3RQYXltZW50IjoiMjAyNjA1MDMiLCJyZXBvcnRlZERhdGUiOiIyMDI2MDUzMSIsImhpZ2hDcmVkaXRBbW91bnQiOjQwMDAwMDAsImN1cnJlbnRCYWxhbmNlIjo0MDAwMDAwLCJhbW91bnRPdmVyZHVlIjowLCJwYXltZW50SGlzdG9yeSI6WzkwMSw5MDFdLCJwYXltZW50SGlzdFN0YXJ0RGF0ZSI6IjIwMjYwNTAxIiwicGF5bWVudEhpc3RFbmREYXRlIjoiMjAyNjA0MDEiLCJ2YWx1ZU9mQ29sbGF0ZXJhbCI6LTEsImNyZWRpdExpbWl0IjotMSwiY2FzaExpbWl0IjotMSwicmF0ZU9mSW50ZXJlc3QiOi0xLjAsInJlcGF5bWVudFRlbnVyZSI6LTEsIkVNSUFtb3VudCI6LTEsIndyaXR0ZW5PZmZBbXRUb3RhbCI6LTEsIndyaXR0ZW5PZmZBbXRQcmluY2lwYWwiOi0xLCJzZXR0bGVtZW50QW1vdW50IjotMSwicGF5bWVudEZyZXF1ZW5jeSI6IjAzIiwiYWN0dWFsUGF5bWVudEFtb3VudCI6LTF9LHsic2VyaWFsTnVtYmVyIjo0MTI3MzI1NDA3LCJmaWxlU2luY2VEYXRlIjoiMjAyNjA0MTEiLCJhY2NvdW50TnVtYmVyIjoiUDQwMFBIRjg1NzQ2ODAyIiwiYWNjb3VudFR5cGUiOiIwOSIsIm1lbWJlcktvYiI6Ik5CIiwibWVtYmVyQ29kZSI6NjYwMzAwMDEsIm1lbWJlclNob3J0TmFtZSI6IkJBSkFKIEZJTiBMVEQiLCJvd25lcnNoaXBJbmRpY2F0b3IiOiIxIiwiZGF0ZU9wZW5lZCI6IjIwMjYwMzI2IiwiZGF0ZU9mTGFzdFBheW1lbnQiOiIyMDI2MDUwMiIsInJlcG9ydGVkRGF0ZSI6IjIwMjYwNTMxIiwiaGlnaENyZWRpdEFtb3VudCI6NDg5Njk4MSwiY3VycmVudEJhbGFuY2UiOjQ5MDgyMDgsImFtb3VudE92ZXJkdWUiOjAsInBheW1lbnRIaXN0b3J5IjpbMCwwLDBdLCJwYXltZW50SGlzdFN0YXJ0RGF0ZSI6IjIwMjYwNTAxIiwicGF5bWVudEhpc3RFbmREYXRlIjoiMjAyNjAzMDEiLCJ2YWx1ZU9mQ29sbGF0ZXJhbCI6LTEsInR5cGVPZkNvbGxhdGVyYWwiOiIwMCIsImNyZWRpdExpbWl0IjotMSwiY2FzaExpbWl0IjotMSwicmF0ZU9mSW50ZXJlc3QiOjEzLjAsInJlcGF5bWVudFRlbnVyZSI6OTYsIkVNSUFtb3VudCI6NTQxOTIsIndyaXR0ZW5PZmZBbXRUb3RhbCI6LTEsIndyaXR0ZW5PZmZBbXRQcmluY2lwYWwiOi0xLCJzZXR0bGVtZW50QW1vdW50IjotMSwicGF5bWVudEZyZXF1ZW5jeSI6IjAzIiwiYWN0dWFsUGF5bWVudEFtb3VudCI6NTI0NDR9LHsic2VyaWFsTnVtYmVyIjo0MTE0MTE4ODk0LCJmaWxlU2luY2VEYXRlIjoiMjAyNjA0MDYiLCJhY2NvdW50TnVtYmVyIjoiMDA4NjAzNTYzNSIsImFjY291bnRUeXBlIjoiNjEiLCJtZW1iZXJLb2IiOiJOQiIsIm1lbWJlckNvZGUiOjg5NjYwMDAxLCJtZW1iZXJTaG9ydE5hbWUiOiJUQ0wiLCJvd25lcnNoaXBJbmRpY2F0b3IiOiIxIiwiZGF0ZU9wZW5lZCI6IjIwMjYwMzI0IiwiZGF0ZU9mTGFzdFBheW1lbnQiOiIyMDI2MDUwNSIsInJlcG9ydGVkRGF0ZSI6IjIwMjYwNTMxIiwiaGlnaENyZWRpdEFtb3VudCI6MjAwMDAwMCwiY3VycmVudEJhbGFuY2UiOjIwMDAwMDAsImFtb3VudE92ZXJkdWUiOjAsInBheW1lbnRIaXN0b3J5IjpbMCwwLDBdLCJwYXltZW50SGlzdFN0YXJ0RGF0ZSI6IjIwMjYwNTAxIiwicGF5bWVudEhpc3RFbmREYXRlIjoiMjAyNjAzMDEiLCJ2YWx1ZU9mQ29sbGF0ZXJhbCI6LTEsImNyZWRpdExpbWl0IjotMSwiY2FzaExpbWl0IjotMSwicmF0ZU9mSW50ZXJlc3QiOjEzLjAsInJlcGF5bWVudFRlbnVyZSI6LTEsIkVNSUFtb3VudCI6LTEsIndyaXR0ZW5PZmZBbXRUb3RhbCI6LTEsIndyaXR0ZW5PZmZBbXRQcmluY2lwYWwiOi0xLCJzZXR0bGVtZW50QW1vdW50IjotMSwiYWN0dWFsUGF5bWVudEFtb3VudCI6LTF9LHsic2VyaWFsTnVtYmVyIjozNDAyMTM4MDA2LCJmaWxlU2luY2VEYXRlIjoiMjAyNTAyMDUiLCJhY2NvdW50TnVtYmVyIjoiMDAwMTAxMzg3MDAwNjQyMTQxNSIsImFjY291bnRUeXBlIjoiMTAiLCJtZW1iZXJLb2IiOiJCUCIsIm1lbWJlckNvZGUiOjMwODAwMDEsIm1lbWJlclNob3J0TmFtZSI6IkhERkMgQkFOSyIsIm93bmVyc2hpcEluZGljYXRvciI6IjEiLCJkYXRlT3BlbmVkIjoiMjAyNTAxMjciLCJkYXRlT2ZMYXN0UGF5bWVudCI6IjIwMjUwNjAyIiwicmVwb3J0ZWREYXRlIjoiMjAyNjA1MzEiLCJoaWdoQ3JlZGl0QW1vdW50IjozNTI4MiwiY3VycmVudEJhbGFuY2UiOjAsImFtb3VudE92ZXJkdWUiOi0xLCJwYXltZW50SGlzdG9yeSI6WzAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMF0sInBheW1lbnRIaXN0U3RhcnREYXRlIjoiMjAyNjA1MDEiLCJwYXltZW50SGlzdEVuZERhdGUiOiIyMDI1MDEwMSIsInZhbHVlT2ZDb2xsYXRlcmFsIjotMSwiY3JlZGl0TGltaXQiOjEwODAwMCwiY2FzaExpbWl0IjotMSwicmF0ZU9mSW50ZXJlc3QiOi0xLjAsInJlcGF5bWVudFRlbnVyZSI6LTEsIkVNSUFtb3VudCI6LTEsIndyaXR0ZW5PZmZBbXRUb3RhbCI6LTEsIndyaXR0ZW5PZmZBbXRQcmluY2lwYWwiOi0xLCJzZXR0bGVtZW50QW1vdW50IjotMSwiYWN0dWFsUGF5bWVudEFtb3VudCI6LTF9LHsic2VyaWFsTnVtYmVyIjoxNzI0OTQwODAwLCJmaWxlU2luY2VEYXRlIjoiMjAyMTA2MjMiLCJhY2NvdW50TnVtYmVyIjoiNDUwMTIwMzI3IiwiYWNjb3VudFR5cGUiOiIwNiIsIm1lbWJlcktvYiI6IkJQIiwibWVtYmVyQ29kZSI6MzA4MDAwMSwibWVtYmVyU2hvcnROYW1lIjoiSERGQyBCQU5LIiwib3duZXJzaGlwSW5kaWNhdG9yIjoiMSIsImRhdGVPcGVuZWQiOiIyMDIxMDUxNSIsImRhdGVPZkxhc3RQYXltZW50IjoiMjAyMTA4MDUiLCJkYXRlQ2xvc2VkIjoiMjAyMTA4MDUiLCJyZXBvcnRlZERhdGUiOiIyMDIxMDgzMSIsImhpZ2hDcmVkaXRBbW91bnQiOjEzMDc2LCJjdXJyZW50QmFsYW5jZSI6MCwiYW1vdW50T3ZlcmR1ZSI6MCwicGF5bWVudEhpc3RvcnkiOlswLDAsMCwwXSwicGF5bWVudEhpc3RTdGFydERhdGUiOiIyMDIxMDgwMSIsInBheW1lbnRIaXN0RW5kRGF0ZSI6IjIwMjEwNTAxIiwidmFsdWVPZkNvbGxhdGVyYWwiOi0xLCJjcmVkaXRMaW1pdCI6LTEsImNhc2hMaW1pdCI6LTEsInJhdGVPZkludGVyZXN0IjotMS4wLCJyZXBheW1lbnRUZW51cmUiOi0xLCJFTUlBbW91bnQiOi0xLCJ3cml0dGVuT2ZmQW10VG90YWwiOi0xLCJ3cml0dGVuT2ZmQW10UHJpbmNpcGFsIjotMSwic2V0dGxlbWVudEFtb3VudCI6LTEsInBheW1lbnRGcmVxdWVuY3kiOiIwMyIsImFjdHVhbFBheW1lbnRBbW91bnQiOjQ0NzV9LHsic2VyaWFsTnVtYmVyIjoxNzI4ODMxNjg0LCJmaWxlU2luY2VEYXRlIjoiMjAyMTA3MDQiLCJhY2NvdW50TnVtYmVyIjoiMDAwMTAxOTA2MDAwNzE1NTEzOSIsImFjY291bnRUeXBlIjoiMDYiLCJtZW1iZXJLb2IiOiJCUCIsIm1lbWJlckNvZGUiOjMwODAwMDEsIm1lbWJlclNob3J0TmFtZSI6IkhERkMgQkFOSyIsIm93bmVyc2hpcEluZGljYXRvciI6IjEiLCJkYXRlT3BlbmVkIjoiMjAyMTA1MTMiLCJkYXRlT2ZMYXN0UGF5bWVudCI6IjIwMjEwODA1IiwiZGF0ZUNsb3NlZCI6IjIwMjEwOTA5IiwicmVwb3J0ZWREYXRlIjoiMjAyMTA5MzAiLCJoaWdoQ3JlZGl0QW1vdW50IjowLCJjdXJyZW50QmFsYW5jZSI6MCwiYW1vdW50T3ZlcmR1ZSI6LTEsInBheW1lbnRIaXN0b3J5IjpbMCwwLDAsMCwwXSwicGF5bWVudEhpc3RTdGFydERhdGUiOiIyMDIxMDkwMSIsInBheW1lbnRIaXN0RW5kRGF0ZSI6IjIwMjEwNTAxIiwidmFsdWVPZkNvbGxhdGVyYWwiOi0xLCJjcmVkaXRMaW1pdCI6LTEsImNhc2hMaW1pdCI6LTEsInJhdGVPZkludGVyZXN0IjotMS4wLCJyZXBheW1lbnRUZW51cmUiOi0xLCJFTUlBbW91bnQiOi0xLCJ3cml0dGVuT2ZmQW10VG90YWwiOi0xLCJ3cml0dGVuT2ZmQW10UHJpbmNpcGFsIjotMSwic2V0dGxlbWVudEFtb3VudCI6LTEsImFjdHVhbFBheW1lbnRBbW91bnQiOi0xfSx7InNlcmlhbE51bWJlciI6NzEzNDU5NDk2LCJmaWxlU2luY2VEYXRlIjoiMjAxNjA3MDgiLCJhY2NvdW50TnVtYmVyIjoiMDUxNzMwMTAwMTA3ODE0IiwiYWNjb3VudFR5cGUiOiIwOCIsIm1lbWJlcktvYiI6IkJOIiwibWVtYmVyQ29kZSI6MTE3MDAwMSwibWVtYmVyU2hvcnROYW1lIjoiVU5JT04gQkFOSyIsIm93bmVyc2hpcEluZGljYXRvciI6IjEiLCJkYXRlT3BlbmVkIjoiMjAxNjA2MTUiLCJkYXRlT2ZMYXN0UGF5bWVudCI6IjIwMjAxMjEwIiwicmVwb3J0ZWREYXRlIjoiMjAyNjA1MzEiLCJoaWdoQ3JlZGl0QW1vdW50Ijo2MDAwMDAsImN1cnJlbnRCYWxhbmNlIjotMiwiYW1vdW50T3ZlcmR1ZSI6MCwicGF5bWVudEhpc3RvcnkiOlswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCw5MDEsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDkwMSw5MDEsOTAxLDkwMSw5MDEsOTAxLDkwMSw5MDEsOTAxXSwicGF5bWVudEhpc3RTdGFydERhdGUiOiIyMDI2MDUwMSIsInBheW1lbnRIaXN0RW5kRGF0ZSI6IjIwMjMwNjAxIiwidmFsdWVPZkNvbGxhdGVyYWwiOi0xLCJ0eXBlT2ZDb2xsYXRlcmFsIjoiMDAiLCJjcmVkaXRMaW1pdCI6LTEsImNhc2hMaW1pdCI6LTEsInJhdGVPZkludGVyZXN0IjotMS4wLCJyZXBheW1lbnRUZW51cmUiOjE2OCwiRU1JQW1vdW50Ijo4NDcwLCJ3cml0dGVuT2ZmQW10VG90YWwiOi0xLCJ3cml0dGVuT2ZmQW10UHJpbmNpcGFsIjotMSwic2V0dGxlbWVudEFtb3VudCI6LTEsInBheW1lbnRGcmVxdWVuY3kiOiIwMyIsImFjdHVhbFBheW1lbnRBbW91bnQiOi0xfSx7InNlcmlhbE51bWJlciI6Mzg4MTU4MTUyLCJmaWxlU2luY2VEYXRlIjoiMjAxMzAxMjMiLCJhY2NvdW50TnVtYmVyIjoiMDUxNzMwMTAwMDUwODUzIiwiYWNjb3VudFR5cGUiOiIwOCIsIm1lbWJlcktvYiI6IkJOIiwibWVtYmVyQ29kZSI6MTE3MDAwMSwibWVtYmVyU2hvcnROYW1lIjoiVU5JT04gQkFOSyIsIm93bmVyc2hpcEluZGljYXRvciI6IjEiLCJkYXRlT3BlbmVkIjoiMjAxMjA4MDEiLCJkYXRlT2ZMYXN0UGF5bWVudCI6IjIwMjAxMTIzIiwiZGF0ZUNsb3NlZCI6IjIwMjAxMTIzIiwicmVwb3J0ZWREYXRlIjoiMjAyMDExMzAiLCJoaWdoQ3JlZGl0QW1vdW50IjoxMjc1MDAsImN1cnJlbnRCYWxhbmNlIjowLCJhbW91bnRPdmVyZHVlIjowLCJwYXltZW50SGlzdG9yeSI6WzAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDkwLDYwLDI5LDAsMCwwLDAsMCwwLDAsMCwwXSwicGF5bWVudEhpc3RTdGFydERhdGUiOiIyMDIwMTEwMSIsInBheW1lbnRIaXN0RW5kRGF0ZSI6IjIwMTcxMjAxIiwidmFsdWVPZkNvbGxhdGVyYWwiOi0xLCJ0eXBlT2ZDb2xsYXRlcmFsIjoiMDAiLCJjcmVkaXRMaW1pdCI6LTEsImNhc2hMaW1pdCI6LTEsInJhdGVPZkludGVyZXN0IjoxMS4xLCJyZXBheW1lbnRUZW51cmUiOjU2LCJFTUlBbW91bnQiOjM4NzcsIndyaXR0ZW5PZmZBbXRUb3RhbCI6LTEsIndyaXR0ZW5PZmZBbXRQcmluY2lwYWwiOi0xLCJzZXR0bGVtZW50QW1vdW50IjotMSwicGF5bWVudEZyZXF1ZW5jeSI6IjAzIiwiYWN0dWFsUGF5bWVudEFtb3VudCI6OTYzNzB9XSwiaW5xdWlyeSI6W3siZW5xQ29udHJvbE51bSI6MTA5OTYwNTIxNzMsImRhdGVPZklucXVpcnkiOiIyMDI2MDUxNiIsImlucXVpcnlQdXJwb3NlIjoiNjEiLCJpbnF1aXJ5QW1vdW50Ijo0MDAwMDAwLCJtZW1iZXJLb2IiOiJOQiIsIm1lbWJlckNvZGUiOjY2MTY3Nzk5LCJtZW1iZXJTaG9ydE5hbWUiOiJMTlRGSU4iLCJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwic2VydmljZUNvZGVJZCI6MCwiaW5xdWlyeVJ1bGVzIjp7ImlucXVpcnlSdWxlc0lkIjoxMDAwLCJhbGxvd0VucmljaG1lbnQiOnRydWUsImFsbG93RXZlbnRHZW5lcmF0aW9uIjp0cnVlLCJpbXBhY3RBdHRyaWJ1dGVzIjp0cnVlLCJpbXBhY3RTY29yZSI6dHJ1ZSwiaXNCaWxsYWJsZSI6dHJ1ZSwibmV3U3ViamVjdENyZWF0aW9uIjp0cnVlLCJwYXJ0T2ZDSVIiOnRydWUsIm1lcmdlVHlwZSI6IlAiLCJkZXNjcmlwdGlvbiI6ImZvcm1lciBoYXJkIGlucXVpcnkifX0seyJlbnFDb250cm9sTnVtIjoxMDg5NDY2MDYyNCwiZGF0ZU9mSW5xdWlyeSI6IjIwMjYwNDI0IiwiaW5xdWlyeVB1cnBvc2UiOiIwOSIsImlucXVpcnlBbW91bnQiOjEwMDAwMDAsIm1lbWJlcktvYiI6Ik5CIiwibWVtYmVyQ29kZSI6ODk0Nzk4OTgsIm1lbWJlclNob3J0TmFtZSI6IkFEQklSTEFDQVAiLCJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwic2VydmljZUNvZGVJZCI6MCwiaW5xdWlyeVJ1bGVzIjp7ImlucXVpcnlSdWxlc0lkIjoxMDAwLCJhbGxvd0VucmljaG1lbnQiOnRydWUsImFsbG93RXZlbnRHZW5lcmF0aW9uIjp0cnVlLCJpbXBhY3RBdHRyaWJ1dGVzIjp0cnVlLCJpbXBhY3RTY29yZSI6dHJ1ZSwiaXNCaWxsYWJsZSI6dHJ1ZSwibmV3U3ViamVjdENyZWF0aW9uIjp0cnVlLCJwYXJ0T2ZDSVIiOnRydWUsIm1lcmdlVHlwZSI6IlAiLCJkZXNjcmlwdGlvbiI6ImZvcm1lciBoYXJkIGlucXVpcnkifX0seyJlbnFDb250cm9sTnVtIjoxMDcyMjQ3NDQ3MywiZGF0ZU9mSW5xdWlyeSI6IjIwMjYwMzIxIiwiaW5xdWlyeVB1cnBvc2UiOiI2MSIsImlucXVpcnlBbW91bnQiOjcwMCwibWVtYmVyS29iIjoiTkIiLCJtZW1iZXJDb2RlIjo4OTY2MTAwMSwibWVtYmVyU2hvcnROYW1lIjoiVENMIiwiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsInNlcnZpY2VDb2RlSWQiOjU5NCwiaW5xdWlyeVJ1bGVzIjp7ImlucXVpcnlSdWxlc0lkIjoxMDAwLCJhbGxvd0VucmljaG1lbnQiOnRydWUsImFsbG93RXZlbnRHZW5lcmF0aW9uIjp0cnVlLCJpbXBhY3RBdHRyaWJ1dGVzIjp0cnVlLCJpbXBhY3RTY29yZSI6dHJ1ZSwiaXNCaWxsYWJsZSI6dHJ1ZSwibmV3U3ViamVjdENyZWF0aW9uIjp0cnVlLCJwYXJ0T2ZDSVIiOnRydWUsIm1lcmdlVHlwZSI6IlAiLCJkZXNjcmlwdGlvbiI6ImZvcm1lciBoYXJkIGlucXVpcnkifX0seyJlbnFDb250cm9sTnVtIjoxMDcwMDQ1OTM2NiwiZGF0ZU9mSW5xdWlyeSI6IjIwMjYwMzE3IiwiaW5xdWlyeVB1cnBvc2UiOiI1MSIsImlucXVpcnlBbW91bnQiOjM1MDAwMDAsIm1lbWJlcktvYiI6Ik5CIiwibWVtYmVyQ29kZSI6ODk2Njg5ODksIm1lbWJlclNob3J0TmFtZSI6IlRDTCIsImlucXVpcnlSdWxlc0lkIjoxMDAwLCJzZXJ2aWNlQ29kZUlkIjowLCJpbnF1aXJ5UnVsZXMiOnsiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsImFsbG93RW5yaWNobWVudCI6dHJ1ZSwiYWxsb3dFdmVudEdlbmVyYXRpb24iOnRydWUsImltcGFjdEF0dHJpYnV0ZXMiOnRydWUsImltcGFjdFNjb3JlIjp0cnVlLCJpc0JpbGxhYmxlIjp0cnVlLCJuZXdTdWJqZWN0Q3JlYXRpb24iOnRydWUsInBhcnRPZkNJUiI6dHJ1ZSwibWVyZ2VUeXBlIjoiUCIsImRlc2NyaXB0aW9uIjoiZm9ybWVyIGhhcmQgaW5xdWlyeSJ9fSx7ImVucUNvbnRyb2xOdW0iOjEwNjcyODU4NDIxLCJkYXRlT2ZJbnF1aXJ5IjoiMjAyNjAzMTEiLCJpbnF1aXJ5UHVycG9zZSI6IjA1IiwiaW5xdWlyeUFtb3VudCI6NTAwMDAwLCJtZW1iZXJLb2IiOiJOQiIsIm1lbWJlckNvZGUiOjY2MDM2MjU1LCJtZW1iZXJTaG9ydE5hbWUiOiJCQUpBSiBGSU4gTFREIiwiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsInNlcnZpY2VDb2RlSWQiOjU5NywiaW5xdWlyeVJ1bGVzIjp7ImlucXVpcnlSdWxlc0lkIjoxMDAwLCJhbGxvd0VucmljaG1lbnQiOnRydWUsImFsbG93RXZlbnRHZW5lcmF0aW9uIjp0cnVlLCJpbXBhY3RBdHRyaWJ1dGVzIjp0cnVlLCJpbXBhY3RTY29yZSI6dHJ1ZSwiaXNCaWxsYWJsZSI6dHJ1ZSwibmV3U3ViamVjdENyZWF0aW9uIjp0cnVlLCJwYXJ0T2ZDSVIiOnRydWUsIm1lcmdlVHlwZSI6IlAiLCJkZXNjcmlwdGlvbiI6ImZvcm1lciBoYXJkIGlucXVpcnkifX0seyJlbnFDb250cm9sTnVtIjoxMDM0OTkyODc1NiwiZGF0ZU9mSW5xdWlyeSI6IjIwMjYwMTA3IiwiaW5xdWlyeVB1cnBvc2UiOiIwNSIsImlucXVpcnlBbW91bnQiOjUwMDAwMCwibWVtYmVyS29iIjoiTkIiLCJtZW1iZXJDb2RlIjo2NjAzNjI1NSwibWVtYmVyU2hvcnROYW1lIjoiQkFKQUogRklOIExURCIsImlucXVpcnlSdWxlc0lkIjoxMDAwLCJzZXJ2aWNlQ29kZUlkIjo1OTcsImlucXVpcnlSdWxlcyI6eyJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwiYWxsb3dFbnJpY2htZW50Ijp0cnVlLCJhbGxvd0V2ZW50R2VuZXJhdGlvbiI6dHJ1ZSwiaW1wYWN0QXR0cmlidXRlcyI6dHJ1ZSwiaW1wYWN0U2NvcmUiOnRydWUsImlzQmlsbGFibGUiOnRydWUsIm5ld1N1YmplY3RDcmVhdGlvbiI6dHJ1ZSwicGFydE9mQ0lSIjp0cnVlLCJtZXJnZVR5cGUiOiJQIiwiZGVzY3JpcHRpb24iOiJmb3JtZXIgaGFyZCBpbnF1aXJ5In19LHsiZW5xQ29udHJvbE51bSI6MTAwNDM0ODc1MzYsImRhdGVPZklucXVpcnkiOiIyMDI1MTIxMCIsImlucXVpcnlQdXJwb3NlIjoiMDAiLCJpbnF1aXJ5QW1vdW50Ijo1MDAwMDAsIm1lbWJlcktvYiI6Ik5CIiwibWVtYmVyQ29kZSI6NjYwMzYyNTUsIm1lbWJlclNob3J0TmFtZSI6IkJBSkFKIEZJTiBMVEQiLCJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwic2VydmljZUNvZGVJZCI6MCwiaW5xdWlyeVJ1bGVzIjp7ImlucXVpcnlSdWxlc0lkIjoxMDAwLCJhbGxvd0VucmljaG1lbnQiOnRydWUsImFsbG93RXZlbnRHZW5lcmF0aW9uIjp0cnVlLCJpbXBhY3RBdHRyaWJ1dGVzIjp0cnVlLCJpbXBhY3RTY29yZSI6dHJ1ZSwiaXNCaWxsYWJsZSI6dHJ1ZSwibmV3U3ViamVjdENyZWF0aW9uIjp0cnVlLCJwYXJ0T2ZDSVIiOnRydWUsIm1lcmdlVHlwZSI6IlAiLCJkZXNjcmlwdGlvbiI6ImZvcm1lciBoYXJkIGlucXVpcnkifX0seyJlbnFDb250cm9sTnVtIjo5OTg4OTE1NjExLCJkYXRlT2ZJbnF1aXJ5IjoiMjAyNTExMzAiLCJpbnF1aXJ5UHVycG9zZSI6IjA5IiwiaW5xdWlyeUFtb3VudCI6MTUwMDAwLCJtZW1iZXJLb2IiOiJOQiIsIm1lbWJlckNvZGUiOjY2MDM2MjU1LCJtZW1iZXJTaG9ydE5hbWUiOiJCQUpBSiBGSU4gTFREIiwiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsInNlcnZpY2VDb2RlSWQiOjU5NywiaW5xdWlyeVJ1bGVzIjp7ImlucXVpcnlSdWxlc0lkIjoxMDAwLCJhbGxvd0VucmljaG1lbnQiOnRydWUsImFsbG93RXZlbnRHZW5lcmF0aW9uIjp0cnVlLCJpbXBhY3RBdHRyaWJ1dGVzIjp0cnVlLCJpbXBhY3RTY29yZSI6dHJ1ZSwiaXNCaWxsYWJsZSI6dHJ1ZSwibmV3U3ViamVjdENyZWF0aW9uIjp0cnVlLCJwYXJ0T2ZDSVIiOnRydWUsIm1lcmdlVHlwZSI6IlAiLCJkZXNjcmlwdGlvbiI6ImZvcm1lciBoYXJkIGlucXVpcnkifX0seyJlbnFDb250cm9sTnVtIjo5OTM5NjU2NTM0LCJkYXRlT2ZJbnF1aXJ5IjoiMjAyNTExMjAiLCJpbnF1aXJ5UHVycG9zZSI6IjAwIiwiaW5xdWlyeUFtb3VudCI6NTAwMDAwLCJtZW1iZXJLb2IiOiJOQiIsIm1lbWJlckNvZGUiOjY2MDM2MjU1LCJtZW1iZXJTaG9ydE5hbWUiOiJCQUpBSiBGSU4gTFREIiwiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsInNlcnZpY2VDb2RlSWQiOjAsImlucXVpcnlSdWxlcyI6eyJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwiYWxsb3dFbnJpY2htZW50Ijp0cnVlLCJhbGxvd0V2ZW50R2VuZXJhdGlvbiI6dHJ1ZSwiaW1wYWN0QXR0cmlidXRlcyI6dHJ1ZSwiaW1wYWN0U2NvcmUiOnRydWUsImlzQmlsbGFibGUiOnRydWUsIm5ld1N1YmplY3RDcmVhdGlvbiI6dHJ1ZSwicGFydE9mQ0lSIjp0cnVlLCJtZXJnZVR5cGUiOiJQIiwiZGVzY3JpcHRpb24iOiJmb3JtZXIgaGFyZCBpbnF1aXJ5In19LHsiZW5xQ29udHJvbE51bSI6OTc5NTE2ODk5OSwiZGF0ZU9mSW5xdWlyeSI6IjIwMjUxMDIwIiwiaW5xdWlyeVB1cnBvc2UiOiIwMCIsImlucXVpcnlBbW91bnQiOjYwMDAwMCwibWVtYmVyS29iIjoiQk4iLCJtZW1iZXJDb2RlIjoxMTc4ODk5LCJtZW1iZXJTaG9ydE5hbWUiOiJVTklPTiBCQU5LIiwiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsInNlcnZpY2VDb2RlSWQiOjAsImlucXVpcnlSdWxlcyI6eyJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwiYWxsb3dFbnJpY2htZW50Ijp0cnVlLCJhbGxvd0V2ZW50R2VuZXJhdGlvbiI6dHJ1ZSwiaW1wYWN0QXR0cmlidXRlcyI6dHJ1ZSwiaW1wYWN0U2NvcmUiOnRydWUsImlzQmlsbGFibGUiOnRydWUsIm5ld1N1YmplY3RDcmVhdGlvbiI6dHJ1ZSwicGFydE9mQ0lSIjp0cnVlLCJtZXJnZVR5cGUiOiJQIiwiZGVzY3JpcHRpb24iOiJmb3JtZXIgaGFyZCBpbnF1aXJ5In19LHsiZW5xQ29udHJvbE51bSI6OTI1MTQ1OTQ3NywiZGF0ZU9mSW5xdWlyeSI6IjIwMjUwNjI1IiwiaW5xdWlyeVB1cnBvc2UiOiIwOSIsImlucXVpcnlBbW91bnQiOjYwMDAwMCwibWVtYmVyS29iIjoiQlAiLCJtZW1iZXJDb2RlIjozMDgxNTM4LCJtZW1iZXJTaG9ydE5hbWUiOiJIREZDIEJBTksiLCJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwic2VydmljZUNvZGVJZCI6MCwiaW5xdWlyeVJ1bGVzIjp7ImlucXVpcnlSdWxlc0lkIjoxMDAwLCJhbGxvd0VucmljaG1lbnQiOnRydWUsImFsbG93RXZlbnRHZW5lcmF0aW9uIjp0cnVlLCJpbXBhY3RBdHRyaWJ1dGVzIjp0cnVlLCJpbXBhY3RTY29yZSI6dHJ1ZSwiaXNCaWxsYWJsZSI6dHJ1ZSwibmV3U3ViamVjdENyZWF0aW9uIjp0cnVlLCJwYXJ0T2ZDSVIiOnRydWUsIm1lcmdlVHlwZSI6IlAiLCJkZXNjcmlwdGlvbiI6ImZvcm1lciBoYXJkIGlucXVpcnkifX0seyJlbnFDb250cm9sTnVtIjo4NTU2MzM1ODQ1LCJkYXRlT2ZJbnF1aXJ5IjoiMjAyNTAxMDIiLCJpbnF1aXJ5UHVycG9zZSI6IjUwIiwiaW5xdWlyeUFtb3VudCI6MjUwMDAwMDAsIm1lbWJlcktvYiI6IkJTIiwibWVtYmVyQ29kZSI6MTE4ODg4LCJtZW1iZXJTaG9ydE5hbWUiOiJTQkkiLCJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwic2VydmljZUNvZGVJZCI6NDY3LCJpbnF1aXJ5UnVsZXMiOnsiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsImFsbG93RW5yaWNobWVudCI6dHJ1ZSwiYWxsb3dFdmVudEdlbmVyYXRpb24iOnRydWUsImltcGFjdEF0dHJpYnV0ZXMiOnRydWUsImltcGFjdFNjb3JlIjp0cnVlLCJpc0JpbGxhYmxlIjp0cnVlLCJuZXdTdWJqZWN0Q3JlYXRpb24iOnRydWUsInBhcnRPZkNJUiI6dHJ1ZSwibWVyZ2VUeXBlIjoiUCIsImRlc2NyaXB0aW9uIjoiZm9ybWVyIGhhcmQgaW5xdWlyeSJ9fSx7ImVucUNvbnRyb2xOdW0iOjg1NTYzMzU2NjIsImRhdGVPZklucXVpcnkiOiIyMDI1MDEwMiIsImlucXVpcnlQdXJwb3NlIjoiMDAiLCJpbnF1aXJ5QW1vdW50Ijo0MDAwMDAsIm1lbWJlcktvYiI6IkJTIiwibWVtYmVyQ29kZSI6MTE5OTY2LCJtZW1iZXJTaG9ydE5hbWUiOiJTQkkiLCJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwic2VydmljZUNvZGVJZCI6NDA1LCJpbnF1aXJ5UnVsZXMiOnsiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsImFsbG93RW5yaWNobWVudCI6dHJ1ZSwiYWxsb3dFdmVudEdlbmVyYXRpb24iOnRydWUsImltcGFjdEF0dHJpYnV0ZXMiOnRydWUsImltcGFjdFNjb3JlIjp0cnVlLCJpc0JpbGxhYmxlIjp0cnVlLCJuZXdTdWJqZWN0Q3JlYXRpb24iOnRydWUsInBhcnRPZkNJUiI6dHJ1ZSwibWVyZ2VUeXBlIjoiUCIsImRlc2NyaXB0aW9uIjoiZm9ybWVyIGhhcmQgaW5xdWlyeSJ9fSx7ImVucUNvbnRyb2xOdW0iOjQ0MDI0OTI5ODEsImRhdGVPZklucXVpcnkiOiIyMDIyMDIwOSIsImlucXVpcnlQdXJwb3NlIjoiMDkiLCJpbnF1aXJ5QW1vdW50IjozMDAwMDAwLCJtZW1iZXJLb2IiOiJCUCIsIm1lbWJlckNvZGUiOjMwODE1MzgsIm1lbWJlclNob3J0TmFtZSI6IkhERkMgQkFOSyIsImlucXVpcnlSdWxlc0lkIjoxMDAwLCJzZXJ2aWNlQ29kZUlkIjotMSwiaW5xdWlyeVJ1bGVzIjp7ImlucXVpcnlSdWxlc0lkIjoxMDAwLCJhbGxvd0VucmljaG1lbnQiOnRydWUsImFsbG93RXZlbnRHZW5lcmF0aW9uIjp0cnVlLCJpbXBhY3RBdHRyaWJ1dGVzIjp0cnVlLCJpbXBhY3RTY29yZSI6dHJ1ZSwiaXNCaWxsYWJsZSI6dHJ1ZSwibmV3U3ViamVjdENyZWF0aW9uIjp0cnVlLCJwYXJ0T2ZDSVIiOnRydWUsIm1lcmdlVHlwZSI6IlAiLCJkZXNjcmlwdGlvbiI6ImZvcm1lciBoYXJkIGlucXVpcnkifX0seyJlbnFDb250cm9sTnVtIjoyNTE1MjQyMjc5LCJkYXRlT2ZJbnF1aXJ5IjoiMjAxODA3MjEiLCJpbnF1aXJ5UHVycG9zZSI6IjAwIiwiaW5xdWlyeUFtb3VudCI6MSwibWVtYmVyS29iIjoiTkIiLCJtZW1iZXJDb2RlIjo2NjAzNjI1NSwibWVtYmVyU2hvcnROYW1lIjoiQkFKQUogRklOIExURCIsImlucXVpcnlSdWxlc0lkIjoxMDAwLCJzZXJ2aWNlQ29kZUlkIjotMSwiaW5xdWlyeVJ1bGVzIjp7ImlucXVpcnlSdWxlc0lkIjoxMDAwLCJhbGxvd0VucmljaG1lbnQiOnRydWUsImFsbG93RXZlbnRHZW5lcmF0aW9uIjp0cnVlLCJpbXBhY3RBdHRyaWJ1dGVzIjp0cnVlLCJpbXBhY3RTY29yZSI6dHJ1ZSwiaXNCaWxsYWJsZSI6dHJ1ZSwibmV3U3ViamVjdENyZWF0aW9uIjp0cnVlLCJwYXJ0T2ZDSVIiOnRydWUsIm1lcmdlVHlwZSI6IlAiLCJkZXNjcmlwdGlvbiI6ImZvcm1lciBoYXJkIGlucXVpcnkifX0seyJlbnFDb250cm9sTnVtIjoxMTAyOTAyNTA5LCJkYXRlT2ZJbnF1aXJ5IjoiMjAxNjA2MDkiLCJpbnF1aXJ5UHVycG9zZSI6IjA4IiwiaW5xdWlyeUFtb3VudCI6NjAwMDAwLCJtZW1iZXJLb2IiOiJCTiIsIm1lbWJlckNvZGUiOjEwMjc4NjksIm1lbWJlclNob3J0TmFtZSI6IkFOREhSQSBCQU5LIExJQ0VOQ0VDQU5DRUxMRUQiLCJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwic2VydmljZUNvZGVJZCI6LTEsImlucXVpcnlSdWxlcyI6eyJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwiYWxsb3dFbnJpY2htZW50Ijp0cnVlLCJhbGxvd0V2ZW50R2VuZXJhdGlvbiI6dHJ1ZSwiaW1wYWN0QXR0cmlidXRlcyI6dHJ1ZSwiaW1wYWN0U2NvcmUiOnRydWUsImlzQmlsbGFibGUiOnRydWUsIm5ld1N1YmplY3RDcmVhdGlvbiI6dHJ1ZSwicGFydE9mQ0lSIjp0cnVlLCJtZXJnZVR5cGUiOiJQIiwiZGVzY3JpcHRpb24iOiJmb3JtZXIgaGFyZCBpbnF1aXJ5In19XSwiY2RyIjp7fSwiZW1wbG95bWVudCI6eyJzZXJpYWxOdW1iZXIiOjQxMjczMjU0MDcsImFjY291bnRUeXBlIjoiMDkiLCJyZXBvcnRlZERhdGUiOiIyMDI2MDQzMCIsIm9jY3VwYXRpb25Db2RlIjoiMDIifSwic2NvcmVzIjpbeyJzY29yZU5hbWUiOiJDSUJJTFRVU0MzIiwic2NvcmVDYXJkTmFtZSI6IjA4Iiwic2NvcmVDYXJkVmVyc2lvbiI6IjEwIiwic2NvcmVEYXRlIjoiMDgwNjIwMjYiLCJzY29yZSI6IjAwNzU5IiwiZXhjbHVzaW9uQ29kZXMiOlt7ImV4Y2x1c2lvbkNvZGVOYW1lIjoiZXhjbHVzaW9uQ29kZTEiLCJleGNsdXNpb25Db2RlVmFsdWUiOiIwMCJ9LHsiZXhjbHVzaW9uQ29kZU5hbWUiOiJleGNsdXNpb25Db2RlMiIsImV4Y2x1c2lvbkNvZGVWYWx1ZSI6IjAwIn0seyJleGNsdXNpb25Db2RlTmFtZSI6ImV4Y2x1c2lvbkNvZGUzIiwiZXhjbHVzaW9uQ29kZVZhbHVlIjoiMDAifSx7ImV4Y2x1c2lvbkNvZGVOYW1lIjoiZXhjbHVzaW9uQ29kZTQiLCJleGNsdXNpb25Db2RlVmFsdWUiOiIwMCJ9LHsiZXhjbHVzaW9uQ29kZU5hbWUiOiJleGNsdXNpb25Db2RlNSIsImV4Y2x1c2lvbkNvZGVWYWx1ZSI6IjAwIn0seyJleGNsdXNpb25Db2RlTmFtZSI6ImV4Y2x1c2lvbkNvZGU2IiwiZXhjbHVzaW9uQ29kZVZhbHVlIjoiMDAifSx7ImV4Y2x1c2lvbkNvZGVOYW1lIjoiZXhjbHVzaW9uQ29kZTciLCJleGNsdXNpb25Db2RlVmFsdWUiOiIwMCJ9LHsiZXhjbHVzaW9uQ29kZU5hbWUiOiJleGNsdXNpb25Db2RlOSIsImV4Y2x1c2lvbkNvZGVWYWx1ZSI6IjAwIn0seyJleGNsdXNpb25Db2RlTmFtZSI6ImV4Y2x1c2lvbkNvZGUxMCIsImV4Y2x1c2lvbkNvZGVWYWx1ZSI6IjAwIn1dLCJyZWFzb25Db2RlcyI6W3sicmVhc29uQ29kZU5hbWUiOiJyZWFzb25Db2RlMSIsInJlYXNvbkNvZGVWYWx1ZSI6IjI1In0seyJyZWFzb25Db2RlTmFtZSI6InJlYXNvbkNvZGUyIiwicmVhc29uQ29kZVZhbHVlIjoiMzkifSx7InJlYXNvbkNvZGVOYW1lIjoicmVhc29uQ29kZTMiLCJyZWFzb25Db2RlVmFsdWUiOiIzNiJ9LHsicmVhc29uQ29kZU5hbWUiOiJyZWFzb25Db2RlNCIsInJlYXNvbkNvZGVWYWx1ZSI6IjAwIn0seyJyZWFzb25Db2RlTmFtZSI6InJlYXNvbkNvZGU1IiwicmVhc29uQ29kZVZhbHVlIjoiMDAifV0sImVycm9yQ29kZSI6IjAwMDAwIn1dfV0sImVycm9yIjpbXX19"
+                  "InquiryDate": "2026-06-08T14:08:58.000+05:30",
+                  "OriginalData": "eyJjb250cm9sRGF0YSI6eyJzdWNjZXNzIjp0cnVlfSwicmVzcG9uc2VUeXBlIjoiTVVMVEktSElUIiwiSUNSU19TdWJqZWN0SW5xdWlyeUJ5VFVFRl9SZXNwb25zZSI6eyJoZWFkZXIiOnsibXNnUmVmTnVtIjoiMDcxZjcwMDgtZWM1Zi00YTA2LTllNmItNDEwY2VlZTZhYmRkIn0sInN1Y2Nlc3MiOnRydWUsInRpbWVzdGFtcCI6IjIwMjYtMDYtMDhUMTQ6MDg6NTgrMDUzMCIsImR1cGxpY2F0ZWRJbnF1aXJ5IjpmYWxzZSwiZWNuIjoxMTExMjI0MDI4NiwiZmlyc3RFY24iOjcyOTI0OTcxNCwic3ViamVjdFJldHVybkNvZGUiOjIsInN1YmplY3QiOlt7ImZpZCI6MzQ5NDA3NDgyLCJuYW1lIjp7Im5hbWUxIjoiUFJBVkVFTiBLVU1BUiBQUkFWRUVOIiwibmFtZTIiOiJLVU1BUiIsImRvYiI6IjE5ODkwNTEwIiwiZ2VuZGVyIjoiMiIsImVycm9yQ29kZVNlZ21lbnQiOiJaWiJ9LCJpZCI6W3sic2VyaWFsTnVtYmVyIjoxNDk3NDgzMTQsImlkVHlwZSI6IjAxIiwiaWROdW1iZXIiOiJDV1JQSzc0NDlDIiwiZW5yaWNoTW9kZSI6IlIifSx7InNlcmlhbE51bWJlciI6MTk0NTU2NzYyLCJpZFR5cGUiOiIwMyIsImlkTnVtYmVyIjoiVVFJMDAwNDIxOCIsImVucmljaE1vZGUiOiJSIn1dLCJ0ZWxlcGhvbmUiOlt7InNlcmlhbE51bWJlciI6MTM1NDAzNzExMSwidGVsZXBob25lVHlwZSI6IjAzIiwidGVsZXBob25lTnVtYmVyIjoiOTcxMTMwMDgyOCIsImVucmljaE1vZGUiOiJFIn0seyJzZXJpYWxOdW1iZXIiOjEzNTM2Nzg0NzAsInRlbGVwaG9uZVR5cGUiOiIwMSIsInRlbGVwaG9uZU51bWJlciI6IjkxOTcxMTMwMDgyOCIsImVucmljaE1vZGUiOiJSIn0seyJzZXJpYWxOdW1iZXIiOjYzMTIyODUzMCwidGVsZXBob25lVHlwZSI6IjAwIiwidGVsZXBob25lTnVtYmVyIjoiOTY1NDAxMjc3MCIsImVucmljaE1vZGUiOiJVIn0seyJzZXJpYWxOdW1iZXIiOjM2NDA3Mjc1NiwidGVsZXBob25lVHlwZSI6IjAxIiwidGVsZXBob25lTnVtYmVyIjoiOTcxNzM2MzY5NSIsImVucmljaE1vZGUiOiJVIn1dLCJhZGRyZXNzIjpbeyJzZXJpYWxOdW1iZXIiOjE0Nzc5MDQ0ODUsImxpbmUxIjoiMzAyIEIgNEIgSElHIEZMQVRTICBNT1RJQSBLSEFOIiwic3RhdGVDb2RlIjoiMDciLCJwaW5Db2RlIjoxMTAwNTUsImFkZHJlc3NDYXRlZ29yeSI6IjAzIiwicmVwb3J0ZWREYXRlIjoiMjAyMTEwMzEiLCJlbnJpY2hNb2RlIjoiUiIsIm1lbWJlclNob3J0TmFtZSI6IkFYSVMgQkFOSyJ9LHsic2VyaWFsTnVtYmVyIjoxNDY3MTg4NDE2LCJsaW5lMSI6Ijg3SCBGTE9PUiA4MDRBIEE0IEREQSBISUcgRkxBVCIsImxpbmUyIjoiTU9USUEgS0hBTiBQQUhBUiBHQU5KIE5PUlRIIERFTEhJIiwic3RhdGVDb2RlIjoiMDciLCJwaW5Db2RlIjoxMTAwNTUsImFkZHJlc3NDYXRlZ29yeSI6IjAyIiwicmVzaWRlbmNlQ29kZSI6IjAyIiwicmVwb3J0ZWREYXRlIjoiMjAyMTEwMjYiLCJlbnJpY2hNb2RlIjoiRSIsIm1lbWJlclNob3J0TmFtZSI6IkFYSVMgQkFOSyJ9LHsic2VyaWFsTnVtYmVyIjo2MTU4OTY5MTcsImxpbmUxIjoiQUhMQVdBVCBGSU5BTkNFTU9USUFUSEFOIFBBSEFSR0FOSiBORVcgRCIsImxpbmUyIjoiRUxISTQwMiBEIEhJViBGTEFUIEdPTEQgTkVSQSBBUFBBUlRNRU5UIiwibGluZTQiOiJORVcgREVMSEkiLCJsaW5lNSI6IkRFTEhJIiwic3RhdGVDb2RlIjoiMDciLCJwaW5Db2RlIjoxMTAwMDYsImFkZHJlc3NDYXRlZ29yeSI6IjAxIiwicmVwb3J0ZWREYXRlIjoiMjAxNTA2MTciLCJlbnJpY2hNb2RlIjoiUiIsIm1lbWJlclNob3J0TmFtZSI6IklDSUNJIEJBTksifSx7InNlcmlhbE51bWJlciI6NTQ3MjQxMTExLCJsaW5lMSI6IkFHR1JJQ1VMVFVSSVNUVlBPIERJR0hBTCBKSEFKSkFSUk9IVEFLIFIiLCJsaW5lMiI6Ik9BREhBUlJZQU5BIiwibGluZTQiOiJKSEFKSkFSIiwibGluZTUiOiJKSEFKSkFSIiwic3RhdGVDb2RlIjoiMDYiLCJwaW5Db2RlIjoxMjQxMDMsImFkZHJlc3NDYXRlZ29yeSI6IjA0IiwicmVwb3J0ZWREYXRlIjoiMjAxNDA5MTMiLCJlbnJpY2hNb2RlIjoiVSIsIm1lbWJlclNob3J0TmFtZSI6IklDSUNJIEJBTksifV0sImVtYWlsIjpbeyJzZXJpYWxOdW1iZXIiOjM3MjM0NzMzLCJlbWFpbElEIjoiUFJBVkVFTktVTUFSODVAR01BSUwuQ09NIn1dLCJhY2NvdW50IjpbeyJzZXJpYWxOdW1iZXIiOjE4Mzk0NzAxMTAsImZpbGVTaW5jZURhdGUiOiIyMDIxMTExMyIsImFjY291bnROdW1iZXIiOiIwODkwMDAwMDM4NDM0NzUiLCJhY2NvdW50VHlwZSI6IjEwIiwibWVtYmVyS29iIjoiQlAiLCJtZW1iZXJDb2RlIjozMjkwMDAxLCJtZW1iZXJTaG9ydE5hbWUiOiJBWElTIEJBTksiLCJvd25lcnNoaXBJbmRpY2F0b3IiOiIxIiwiZGF0ZU9wZW5lZCI6IjIwMjExMDMwIiwiZGF0ZU9mTGFzdFBheW1lbnQiOiIyMDIzMDQxNiIsInJlcG9ydGVkRGF0ZSI6IjIwMjMwNDMwIiwiaGlnaENyZWRpdEFtb3VudCI6NzE1MCwiY3VycmVudEJhbGFuY2UiOjQxNjgsImFtb3VudE92ZXJkdWUiOjAsInBheW1lbnRIaXN0b3J5IjpbMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMF0sInBheW1lbnRIaXN0U3RhcnREYXRlIjoiMjAyMzA0MDEiLCJwYXltZW50SGlzdEVuZERhdGUiOiIyMDIxMTAwMSIsInZhbHVlT2ZDb2xsYXRlcmFsIjotMSwiY3JlZGl0TGltaXQiOjI1MDAwMCwiY2FzaExpbWl0Ijo1MDAwMCwicmF0ZU9mSW50ZXJlc3QiOi0xLjAsInJlcGF5bWVudFRlbnVyZSI6LTEsIkVNSUFtb3VudCI6LTEsIndyaXR0ZW5PZmZBbXRUb3RhbCI6LTEsIndyaXR0ZW5PZmZBbXRQcmluY2lwYWwiOi0xLCJzZXR0bGVtZW50QW1vdW50IjotMSwiYWN0dWFsUGF5bWVudEFtb3VudCI6Mzg2fSx7InNlcmlhbE51bWJlciI6NTkwNDkzOTE0LCJmaWxlU2luY2VEYXRlIjoiMjAxNTA4MDgiLCJhY2NvdW50TnVtYmVyIjoiTEFKSEowMDAzMjg0NDM4MyIsImFjY291bnRUeXBlIjoiMDEiLCJtZW1iZXJLb2IiOiJCUCIsIm1lbWJlckNvZGUiOjMwOTAwMDEsIm1lbWJlclNob3J0TmFtZSI6IklDSUNJIEJBTksiLCJvd25lcnNoaXBJbmRpY2F0b3IiOiI0IiwiZGF0ZU9wZW5lZCI6IjIwMTUwNjI3IiwiZGF0ZU9mTGFzdFBheW1lbnQiOiIyMDIwMDYyMyIsImRhdGVDbG9zZWQiOiIyMDIwMDcwMyIsInJlcG9ydGVkRGF0ZSI6IjIwMjAwNzMxIiwiaGlnaENyZWRpdEFtb3VudCI6MTUwMzAwMCwiY3VycmVudEJhbGFuY2UiOjAsImFtb3VudE92ZXJkdWUiOi0xLCJwYXltZW50SGlzdG9yeSI6WzAsOTAxLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwtMiwwLDAsMCwwXSwicGF5bWVudEhpc3RTdGFydERhdGUiOiIyMDIwMDcwMSIsInBheW1lbnRIaXN0RW5kRGF0ZSI6IjIwMTcwODAxIiwidmFsdWVPZkNvbGxhdGVyYWwiOi0xLCJjcmVkaXRMaW1pdCI6LTEsImNhc2hMaW1pdCI6LTEsInJhdGVPZkludGVyZXN0IjotMS4wLCJyZXBheW1lbnRUZW51cmUiOi0xLCJFTUlBbW91bnQiOi0xLCJ3cml0dGVuT2ZmQW10VG90YWwiOi0xLCJ3cml0dGVuT2ZmQW10UHJpbmNpcGFsIjotMSwic2V0dGxlbWVudEFtb3VudCI6LTEsImFjdHVhbFBheW1lbnRBbW91bnQiOi0xfSx7InNlcmlhbE51bWJlciI6NTA3OTY3MDA5LCJmaWxlU2luY2VEYXRlIjoiMjAxNDA5MjkiLCJhY2NvdW50TnVtYmVyIjoiMjkyMTg2NTIiLCJhY2NvdW50VHlwZSI6IjAxIiwibWVtYmVyS29iIjoiQlAiLCJtZW1iZXJDb2RlIjozMDgwMDAxLCJtZW1iZXJTaG9ydE5hbWUiOiJIREZDIEJBTksiLCJvd25lcnNoaXBJbmRpY2F0b3IiOiIxIiwiZGF0ZU9wZW5lZCI6IjIwMTQwODEyIiwiZGF0ZU9mTGFzdFBheW1lbnQiOiIyMDE3MDMxNiIsImRhdGVDbG9zZWQiOiIyMDE3MDMxNiIsInJlcG9ydGVkRGF0ZSI6IjIwMTcwMzMxIiwiaGlnaENyZWRpdEFtb3VudCI6NDA0Mzc5LCJjdXJyZW50QmFsYW5jZSI6MCwiYW1vdW50T3ZlcmR1ZSI6MCwicGF5bWVudEhpc3RvcnkiOlswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLCJwYXltZW50SGlzdFN0YXJ0RGF0ZSI6IjIwMTcwMzAxIiwicGF5bWVudEhpc3RFbmREYXRlIjoiMjAxNDA4MDEiLCJ2YWx1ZU9mQ29sbGF0ZXJhbCI6LTEsImNyZWRpdExpbWl0IjotMSwiY2FzaExpbWl0IjotMSwicmF0ZU9mSW50ZXJlc3QiOi0xLjAsInJlcGF5bWVudFRlbnVyZSI6LTEsIkVNSUFtb3VudCI6LTEsIndyaXR0ZW5PZmZBbXRUb3RhbCI6LTEsIndyaXR0ZW5PZmZBbXRQcmluY2lwYWwiOi0xLCJzZXR0bGVtZW50QW1vdW50IjotMSwicGF5bWVudEZyZXF1ZW5jeSI6IjAzIiwiYWN0dWFsUGF5bWVudEFtb3VudCI6MTMyODd9XSwiaW5xdWlyeSI6W3siZW5xQ29udHJvbE51bSI6NjYyNjc1MjcxOCwiZGF0ZU9mSW5xdWlyeSI6IjIwMjMxMDIxIiwiaW5xdWlyeVB1cnBvc2UiOiIwMCIsImlucXVpcnlBbW91bnQiOjE1MDAwMCwibWVtYmVyS29iIjoiTkIiLCJtZW1iZXJDb2RlIjo2NjAzNjI1NSwibWVtYmVyU2hvcnROYW1lIjoiQkFKQUogRklOIExURCIsImlucXVpcnlSdWxlc0lkIjoxMDAwLCJzZXJ2aWNlQ29kZUlkIjowLCJpbnF1aXJ5UnVsZXMiOnsiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsImFsbG93RW5yaWNobWVudCI6dHJ1ZSwiYWxsb3dFdmVudEdlbmVyYXRpb24iOnRydWUsImltcGFjdEF0dHJpYnV0ZXMiOnRydWUsImltcGFjdFNjb3JlIjp0cnVlLCJpc0JpbGxhYmxlIjp0cnVlLCJuZXdTdWJqZWN0Q3JlYXRpb24iOnRydWUsInBhcnRPZkNJUiI6dHJ1ZSwibWVyZ2VUeXBlIjoiUCIsImRlc2NyaXB0aW9uIjoiZm9ybWVyIGhhcmQgaW5xdWlyeSJ9fSx7ImVucUNvbnRyb2xOdW0iOjQ1NTQ0NjgzMjAsImRhdGVPZklucXVpcnkiOiIyMDIyMDQxMSIsImlucXVpcnlQdXJwb3NlIjoiMTAiLCJpbnF1aXJ5QW1vdW50IjoxMDAsIm1lbWJlcktvYiI6IlBDIiwibWVtYmVyQ29kZSI6NjUwMjg4ODgsIm1lbWJlclNob3J0TmFtZSI6IlNCSSBDQVJEIiwiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsInNlcnZpY2VDb2RlSWQiOi0xLCJpbnF1aXJ5UnVsZXMiOnsiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsImFsbG93RW5yaWNobWVudCI6dHJ1ZSwiYWxsb3dFdmVudEdlbmVyYXRpb24iOnRydWUsImltcGFjdEF0dHJpYnV0ZXMiOnRydWUsImltcGFjdFNjb3JlIjp0cnVlLCJpc0JpbGxhYmxlIjp0cnVlLCJuZXdTdWJqZWN0Q3JlYXRpb24iOnRydWUsInBhcnRPZkNJUiI6dHJ1ZSwibWVyZ2VUeXBlIjoiUCIsImRlc2NyaXB0aW9uIjoiZm9ybWVyIGhhcmQgaW5xdWlyeSJ9fSx7ImVucUNvbnRyb2xOdW0iOjQxNzU2ODQxMzksImRhdGVPZklucXVpcnkiOiIyMDIxMTAyOSIsImlucXVpcnlQdXJwb3NlIjoiMTAiLCJpbnF1aXJ5QW1vdW50IjoxMDAwMCwibWVtYmVyS29iIjoiQlAiLCJtZW1iZXJDb2RlIjozMjkxMTEzLCJtZW1iZXJTaG9ydE5hbWUiOiJBWElTIEJBTksiLCJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwic2VydmljZUNvZGVJZCI6LTEsImlucXVpcnlSdWxlcyI6eyJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwiYWxsb3dFbnJpY2htZW50Ijp0cnVlLCJhbGxvd0V2ZW50R2VuZXJhdGlvbiI6dHJ1ZSwiaW1wYWN0QXR0cmlidXRlcyI6dHJ1ZSwiaW1wYWN0U2NvcmUiOnRydWUsImlzQmlsbGFibGUiOnRydWUsIm5ld1N1YmplY3RDcmVhdGlvbiI6dHJ1ZSwicGFydE9mQ0lSIjp0cnVlLCJtZXJnZVR5cGUiOiJQIiwiZGVzY3JpcHRpb24iOiJmb3JtZXIgaGFyZCBpbnF1aXJ5In19LHsiZW5xQ29udHJvbE51bSI6NDE2ODE0NDc2MCwiZGF0ZU9mSW5xdWlyeSI6IjIwMjExMDI2IiwiaW5xdWlyeVB1cnBvc2UiOiI1MSIsImlucXVpcnlBbW91bnQiOjEwMDAwMDAsIm1lbWJlcktvYiI6IkJQIiwibWVtYmVyQ29kZSI6MzI5MTExMywibWVtYmVyU2hvcnROYW1lIjoiQVhJUyBCQU5LIiwiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsInNlcnZpY2VDb2RlSWQiOi0xLCJpbnF1aXJ5UnVsZXMiOnsiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsImFsbG93RW5yaWNobWVudCI6dHJ1ZSwiYWxsb3dFdmVudEdlbmVyYXRpb24iOnRydWUsImltcGFjdEF0dHJpYnV0ZXMiOnRydWUsImltcGFjdFNjb3JlIjp0cnVlLCJpc0JpbGxhYmxlIjp0cnVlLCJuZXdTdWJqZWN0Q3JlYXRpb24iOnRydWUsInBhcnRPZkNJUiI6dHJ1ZSwibWVyZ2VUeXBlIjoiUCIsImRlc2NyaXB0aW9uIjoiZm9ybWVyIGhhcmQgaW5xdWlyeSJ9fSx7ImVucUNvbnRyb2xOdW0iOjQxNjU4MjA2MDEsImRhdGVPZklucXVpcnkiOiIyMDIxMTAyNSIsImlucXVpcnlQdXJwb3NlIjoiMTAiLCJpbnF1aXJ5QW1vdW50IjoxMDAwMCwibWVtYmVyS29iIjoiQlAiLCJtZW1iZXJDb2RlIjozMjkxMTEzLCJtZW1iZXJTaG9ydE5hbWUiOiJBWElTIEJBTksiLCJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwic2VydmljZUNvZGVJZCI6LTEsImlucXVpcnlSdWxlcyI6eyJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwiYWxsb3dFbnJpY2htZW50Ijp0cnVlLCJhbGxvd0V2ZW50R2VuZXJhdGlvbiI6dHJ1ZSwiaW1wYWN0QXR0cmlidXRlcyI6dHJ1ZSwiaW1wYWN0U2NvcmUiOnRydWUsImlzQmlsbGFibGUiOnRydWUsIm5ld1N1YmplY3RDcmVhdGlvbiI6dHJ1ZSwicGFydE9mQ0lSIjp0cnVlLCJtZXJnZVR5cGUiOiJQIiwiZGVzY3JpcHRpb24iOiJmb3JtZXIgaGFyZCBpbnF1aXJ5In19LHsiZW5xQ29udHJvbE51bSI6MTA4MjEyNDU2MCwiZGF0ZU9mSW5xdWlyeSI6IjIwMTYwNTIxIiwiaW5xdWlyeVB1cnBvc2UiOiIxMCIsImlucXVpcnlBbW91bnQiOjEwMDAsIm1lbWJlcktvYiI6IkJQIiwibWVtYmVyQ29kZSI6MzA4MTUzOCwibWVtYmVyU2hvcnROYW1lIjoiSERGQyBCQU5LIiwiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsInNlcnZpY2VDb2RlSWQiOi0xLCJpbnF1aXJ5UnVsZXMiOnsiaW5xdWlyeVJ1bGVzSWQiOjEwMDAsImFsbG93RW5yaWNobWVudCI6dHJ1ZSwiYWxsb3dFdmVudEdlbmVyYXRpb24iOnRydWUsImltcGFjdEF0dHJpYnV0ZXMiOnRydWUsImltcGFjdFNjb3JlIjp0cnVlLCJpc0JpbGxhYmxlIjp0cnVlLCJuZXdTdWJqZWN0Q3JlYXRpb24iOnRydWUsInBhcnRPZkNJUiI6dHJ1ZSwibWVyZ2VUeXBlIjoiUCIsImRlc2NyaXB0aW9uIjoiZm9ybWVyIGhhcmQgaW5xdWlyeSJ9fSx7ImVucUNvbnRyb2xOdW0iOjg0Nzg2NzE1MiwiZGF0ZU9mSW5xdWlyeSI6IjIwMTUwNjI2IiwiaW5xdWlyeVB1cnBvc2UiOiIwMSIsImlucXVpcnlBbW91bnQiOjE1MDMwMDAsIm1lbWJlcktvYiI6IkJQIiwibWVtYmVyQ29kZSI6MzA5NzA0MCwibWVtYmVyU2hvcnROYW1lIjoiSUNJQ0kgQkFOSyIsImlucXVpcnlSdWxlc0lkIjoxMDAwLCJzZXJ2aWNlQ29kZUlkIjotMSwiaW5xdWlyeVJ1bGVzIjp7ImlucXVpcnlSdWxlc0lkIjoxMDAwLCJhbGxvd0VucmljaG1lbnQiOnRydWUsImFsbG93RXZlbnRHZW5lcmF0aW9uIjp0cnVlLCJpbXBhY3RBdHRyaWJ1dGVzIjp0cnVlLCJpbXBhY3RTY29yZSI6dHJ1ZSwiaXNCaWxsYWJsZSI6dHJ1ZSwibmV3U3ViamVjdENyZWF0aW9uIjp0cnVlLCJwYXJ0T2ZDSVIiOnRydWUsIm1lcmdlVHlwZSI6IlAiLCJkZXNjcmlwdGlvbiI6ImZvcm1lciBoYXJkIGlucXVpcnkifX0seyJlbnFDb250cm9sTnVtIjo4NDA2ODI4NDcsImRhdGVPZklucXVpcnkiOiIyMDE1MDYxNyIsImlucXVpcnlQdXJwb3NlIjoiMDEiLCJpbnF1aXJ5QW1vdW50IjoyMTAwMDAwLCJtZW1iZXJLb2IiOiJCUCIsIm1lbWJlckNvZGUiOjMwOTcwNDAsIm1lbWJlclNob3J0TmFtZSI6IklDSUNJIEJBTksiLCJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwic2VydmljZUNvZGVJZCI6LTEsImlucXVpcnlSdWxlcyI6eyJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwiYWxsb3dFbnJpY2htZW50Ijp0cnVlLCJhbGxvd0V2ZW50R2VuZXJhdGlvbiI6dHJ1ZSwiaW1wYWN0QXR0cmlidXRlcyI6dHJ1ZSwiaW1wYWN0U2NvcmUiOnRydWUsImlzQmlsbGFibGUiOnRydWUsIm5ld1N1YmplY3RDcmVhdGlvbiI6dHJ1ZSwicGFydE9mQ0lSIjp0cnVlLCJtZXJnZVR5cGUiOiJQIiwiZGVzY3JpcHRpb24iOiJmb3JtZXIgaGFyZCBpbnF1aXJ5In19LHsiZW5xQ29udHJvbE51bSI6NzQxMTIzNTU0LCJkYXRlT2ZJbnF1aXJ5IjoiMjAxNDA5MTMiLCJpbnF1aXJ5UHVycG9zZSI6IjAxIiwiaW5xdWlyeUFtb3VudCI6ODUwMDAwLCJtZW1iZXJLb2IiOiJCUCIsIm1lbWJlckNvZGUiOjMwOTcwNDAsIm1lbWJlclNob3J0TmFtZSI6IklDSUNJIEJBTksiLCJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwic2VydmljZUNvZGVJZCI6LTEsImlucXVpcnlSdWxlcyI6eyJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwiYWxsb3dFbnJpY2htZW50Ijp0cnVlLCJhbGxvd0V2ZW50R2VuZXJhdGlvbiI6dHJ1ZSwiaW1wYWN0QXR0cmlidXRlcyI6dHJ1ZSwiaW1wYWN0U2NvcmUiOnRydWUsImlzQmlsbGFibGUiOnRydWUsIm5ld1N1YmplY3RDcmVhdGlvbiI6dHJ1ZSwicGFydE9mQ0lSIjp0cnVlLCJtZXJnZVR5cGUiOiJQIiwiZGVzY3JpcHRpb24iOiJmb3JtZXIgaGFyZCBpbnF1aXJ5In19LHsiZW5xQ29udHJvbE51bSI6NzQxMDkyMDU3LCJkYXRlT2ZJbnF1aXJ5IjoiMjAxNDA5MTIiLCJpbnF1aXJ5UHVycG9zZSI6IjAxIiwiaW5xdWlyeUFtb3VudCI6MjgwMDAwLCJtZW1iZXJLb2IiOiJCUCIsIm1lbWJlckNvZGUiOjMwOTcwNDAsIm1lbWJlclNob3J0TmFtZSI6IklDSUNJIEJBTksiLCJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwic2VydmljZUNvZGVJZCI6LTEsImlucXVpcnlSdWxlcyI6eyJpbnF1aXJ5UnVsZXNJZCI6MTAwMCwiYWxsb3dFbnJpY2htZW50Ijp0cnVlLCJhbGxvd0V2ZW50R2VuZXJhdGlvbiI6dHJ1ZSwiaW1wYWN0QXR0cmlidXRlcyI6dHJ1ZSwiaW1wYWN0U2NvcmUiOnRydWUsImlzQmlsbGFibGUiOnRydWUsIm5ld1N1YmplY3RDcmVhdGlvbiI6dHJ1ZSwicGFydE9mQ0lSIjp0cnVlLCJtZXJnZVR5cGUiOiJQIiwiZGVzY3JpcHRpb24iOiJmb3JtZXIgaGFyZCBpbnF1aXJ5In19LHsiZW5xQ29udHJvbE51bSI6NzI5MjQ5NzE0LCJkYXRlT2ZJbnF1aXJ5IjoiMjAxNDA4MDQiLCJpbnF1aXJ5UHVycG9zZSI6IjAxIiwiaW5xdWlyeUFtb3VudCI6NTAwMDAwLCJtZW1iZXJLb2IiOiJCUCIsIm1lbWJlckNvZGUiOjMwODEwMTgsIm1lbWJlclNob3J0TmFtZSI6IkhERkMgQkFOSyIsImlucXVpcnlSdWxlc0lkIjoxMDAwLCJzZXJ2aWNlQ29kZUlkIjotMSwiaW5xdWlyeVJ1bGVzIjp7ImlucXVpcnlSdWxlc0lkIjoxMDAwLCJhbGxvd0VucmljaG1lbnQiOnRydWUsImFsbG93RXZlbnRHZW5lcmF0aW9uIjp0cnVlLCJpbXBhY3RBdHRyaWJ1dGVzIjp0cnVlLCJpbXBhY3RTY29yZSI6dHJ1ZSwiaXNCaWxsYWJsZSI6dHJ1ZSwibmV3U3ViamVjdENyZWF0aW9uIjp0cnVlLCJwYXJ0T2ZDSVIiOnRydWUsIm1lcmdlVHlwZSI6IlAiLCJkZXNjcmlwdGlvbiI6ImZvcm1lciBoYXJkIGlucXVpcnkifX1dLCJjZHIiOnt9LCJlbXBsb3ltZW50Ijp7fSwic2NvcmVzIjpbeyJzY29yZU5hbWUiOiJDSUJJTFRVU0MzIiwic2NvcmVDYXJkTmFtZSI6IjA4Iiwic2NvcmVDYXJkVmVyc2lvbiI6IjEwIiwic2NvcmVEYXRlIjoiMDgwNjIwMjYiLCJzY29yZSI6IjAwMC0xIiwiZXhjbHVzaW9uQ29kZXMiOlt7ImV4Y2x1c2lvbkNvZGVOYW1lIjoiZXhjbHVzaW9uQ29kZTEiLCJleGNsdXNpb25Db2RlVmFsdWUiOiIwMCJ9LHsiZXhjbHVzaW9uQ29kZU5hbWUiOiJleGNsdXNpb25Db2RlMiIsImV4Y2x1c2lvbkNvZGVWYWx1ZSI6IjAwIn0seyJleGNsdXNpb25Db2RlTmFtZSI6ImV4Y2x1c2lvbkNvZGUzIiwiZXhjbHVzaW9uQ29kZVZhbHVlIjoiMDAifSx7ImV4Y2x1c2lvbkNvZGVOYW1lIjoiZXhjbHVzaW9uQ29kZTQiLCJleGNsdXNpb25Db2RlVmFsdWUiOiIwMCJ9LHsiZXhjbHVzaW9uQ29kZU5hbWUiOiJleGNsdXNpb25Db2RlNSIsImV4Y2x1c2lvbkNvZGVWYWx1ZSI6IjAwIn0seyJleGNsdXNpb25Db2RlTmFtZSI6ImV4Y2x1c2lvbkNvZGU2IiwiZXhjbHVzaW9uQ29kZVZhbHVlIjoiMDAifSx7ImV4Y2x1c2lvbkNvZGVOYW1lIjoiZXhjbHVzaW9uQ29kZTciLCJleGNsdXNpb25Db2RlVmFsdWUiOiIwMCJ9LHsiZXhjbHVzaW9uQ29kZU5hbWUiOiJleGNsdXNpb25Db2RlOSIsImV4Y2x1c2lvbkNvZGVWYWx1ZSI6IjAwIn0seyJleGNsdXNpb25Db2RlTmFtZSI6ImV4Y2x1c2lvbkNvZGUxMCIsImV4Y2x1c2lvbkNvZGVWYWx1ZSI6IjAwIn1dLCJyZWFzb25Db2RlcyI6W3sicmVhc29uQ29kZU5hbWUiOiJyZWFzb25Db2RlMSIsInJlYXNvbkNvZGVWYWx1ZSI6IjAwIn0seyJyZWFzb25Db2RlTmFtZSI6InJlYXNvbkNvZGUyIiwicmVhc29uQ29kZVZhbHVlIjoiMDAifSx7InJlYXNvbkNvZGVOYW1lIjoicmVhc29uQ29kZTMiLCJyZWFzb25Db2RlVmFsdWUiOiIwMCJ9LHsicmVhc29uQ29kZU5hbWUiOiJyZWFzb25Db2RlNCIsInJlYXNvbkNvZGVWYWx1ZSI6IjAwIn0seyJyZWFzb25Db2RlTmFtZSI6InJlYXNvbkNvZGU1IiwicmVhc29uQ29kZVZhbHVlIjoiMDAifV0sImVycm9yQ29kZSI6IjAwMDAwIn1dfV0sImVycm9yIjpbXX19"
                 }
               },
               "TradeLinePartition": {
@@ -984,43 +625,111 @@
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": "12"
+                        "symbol": "10"
                       },
-                      "CashLimit": "-1",
+                      "CashLimit": "50000",
                       "CollateralType": {
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
                         "symbol": ""
                       },
-                      "CreditLimit": "-1",
+                      "CreditLimit": "250000",
                       "CreditType": {
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": "12"
+                        "symbol": "10"
                       },
                       "EMIAmount": "-1",
                       "PayStatusHistory": {
                         "MonthlyPayStatus": {
                           "1": {
-                            "date": "2026-05-01+05:30",
-                            "status": "STD"
+                            "date": "2023-04-01+05:30",
+                            "status": "0"
+                          },
+                          "10": {
+                            "date": "2022-07-01+05:30",
+                            "status": "0"
+                          },
+                          "11": {
+                            "date": "2022-06-01+05:30",
+                            "status": "0"
+                          },
+                          "12": {
+                            "date": "2022-05-01+05:30",
+                            "status": "0"
+                          },
+                          "13": {
+                            "date": "2022-04-01+05:30",
+                            "status": "0"
+                          },
+                          "14": {
+                            "date": "2022-03-01+05:30",
+                            "status": "0"
+                          },
+                          "15": {
+                            "date": "2022-02-01+05:30",
+                            "status": "0"
+                          },
+                          "16": {
+                            "date": "2022-01-01+05:30",
+                            "status": "0"
+                          },
+                          "17": {
+                            "date": "2021-12-01+05:30",
+                            "status": "0"
+                          },
+                          "18": {
+                            "date": "2021-11-01+05:30",
+                            "status": "0"
+                          },
+                          "19": {
+                            "date": "2021-10-01+05:30",
+                            "status": "0"
                           },
                           "2": {
-                            "date": "2026-04-01+05:30",
-                            "status": "STD"
+                            "date": "2023-03-01+05:30",
+                            "status": "0"
+                          },
+                          "3": {
+                            "date": "2023-02-01+05:30",
+                            "status": "0"
+                          },
+                          "4": {
+                            "date": "2023-01-01+05:30",
+                            "status": "0"
+                          },
+                          "5": {
+                            "date": "2022-12-01+05:30",
+                            "status": "0"
+                          },
+                          "6": {
+                            "date": "2022-11-01+05:30",
+                            "status": "0"
+                          },
+                          "7": {
+                            "date": "2022-10-01+05:30",
+                            "status": "0"
+                          },
+                          "8": {
+                            "date": "2022-09-01+05:30",
+                            "status": "0"
+                          },
+                          "9": {
+                            "date": "2022-08-01+05:30",
+                            "status": "0"
                           }
                         },
-                        "endDate": "2026-04-01+05:30",
-                        "startDate": "2026-05-01+05:30",
-                        "status": "STD,STD,"
+                        "endDate": "2021-10-01+05:30",
+                        "startDate": "2023-04-01+05:30",
+                        "status": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"
                       },
                       "PaymentFrequency": {
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": "03"
+                        "symbol": ""
                       },
                       "TermType": {
                         "abbreviation": "",
@@ -1034,12 +743,12 @@
                         "rank": "100000",
                         "symbol": ""
                       },
-                      "actualPaymentAmount": "-1",
+                      "actualPaymentAmount": "386",
                       "amountPastDue": "0",
                       "collateral": "-1",
-                      "dateLastPayment": "2026-05-03+05:30",
+                      "dateLastPayment": "2023-04-16+05:30",
                       "interestRate": "-1.00",
-                      "serialNumber": "4163722131",
+                      "serialNumber": "1839470110",
                       "termMonths": "-1"
                     },
                     "IndustryCode": {
@@ -1061,7 +770,7 @@
                       "symbol": ""
                     },
                     "Source": {
-                      "BorrowerKey": "1102902509",
+                      "BorrowerKey": "729249714",
                       "Bureau": {
                         "abbreviation": "",
                         "description": "",
@@ -1070,7 +779,7 @@
                       },
                       "InquiryDate": "2026-06-08+05:30",
                       "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                      "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                     },
                     "VerificationIndicator": {
                       "abbreviation": "",
@@ -1078,27 +787,27 @@
                       "rank": "100000",
                       "symbol": ""
                     },
-                    "accountNumber": "ABS_HDL_000001038623",
+                    "accountNumber": "089000003843475",
                     "accountsSoldTo": "",
                     "branch": "",
                     "bureau": "",
-                    "creditorName": "ADBIRLACAP",
-                    "currentBalance": "4000000",
-                    "dateAccountStatus": "2026-05-03+05:30",
-                    "dateOpened": "2026-04-28+05:30",
-                    "dateReported": "2026-05-31+05:30",
-                    "highBalance": "4000000",
+                    "creditorName": "AXIS BANK",
+                    "currentBalance": "4168",
+                    "dateAccountStatus": "2023-04-16+05:30",
+                    "dateOpened": "2021-10-30+05:30",
+                    "dateReported": "2023-04-30+05:30",
+                    "highBalance": "7150",
                     "noOfParticipants": "",
                     "position": "0",
                     "settlementAmount": "-1",
-                    "subscriberCode": "89470001",
+                    "subscriberCode": "3290001",
                     "thirdPartyName": "",
                     "writtenOffAmtTotal": "-1",
                     "writtenOffPrincipal": "-1"
                   },
                   "accountTypeAbbreviation": "",
                   "accountTypeDescription": "",
-                  "accountTypeSymbol": "12"
+                  "accountTypeSymbol": "10"
                 },
                 "2": {
                   "Tradeline": {
@@ -1112,7 +821,7 @@
                       "abbreviation": "",
                       "description": "",
                       "rank": "100000",
-                      "symbol": "1"
+                      "symbol": "4"
                     },
                     "DisputeFlag": {
                       "abbreviation": "",
@@ -1125,47 +834,179 @@
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": "09"
+                        "symbol": "01"
                       },
                       "CashLimit": "-1",
                       "CollateralType": {
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": "00"
+                        "symbol": ""
                       },
                       "CreditLimit": "-1",
                       "CreditType": {
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": "09"
+                        "symbol": "01"
                       },
-                      "EMIAmount": "54192",
+                      "EMIAmount": "-1",
                       "PayStatusHistory": {
                         "MonthlyPayStatus": {
                           "1": {
-                            "date": "2026-05-01+05:30",
+                            "date": "2020-07-01+05:30",
+                            "status": "0"
+                          },
+                          "10": {
+                            "date": "2019-10-01+05:30",
+                            "status": "0"
+                          },
+                          "11": {
+                            "date": "2019-09-01+05:30",
+                            "status": "0"
+                          },
+                          "12": {
+                            "date": "2019-08-01+05:30",
+                            "status": "0"
+                          },
+                          "13": {
+                            "date": "2019-07-01+05:30",
+                            "status": "0"
+                          },
+                          "14": {
+                            "date": "2019-06-01+05:30",
+                            "status": "0"
+                          },
+                          "15": {
+                            "date": "2019-05-01+05:30",
+                            "status": "0"
+                          },
+                          "16": {
+                            "date": "2019-04-01+05:30",
+                            "status": "0"
+                          },
+                          "17": {
+                            "date": "2019-03-01+05:30",
+                            "status": "0"
+                          },
+                          "18": {
+                            "date": "2019-02-01+05:30",
+                            "status": "0"
+                          },
+                          "19": {
+                            "date": "2019-01-01+05:30",
                             "status": "0"
                           },
                           "2": {
-                            "date": "2026-04-01+05:30",
+                            "date": "2020-06-01+05:30",
+                            "status": "STD"
+                          },
+                          "20": {
+                            "date": "2018-12-01+05:30",
+                            "status": "0"
+                          },
+                          "21": {
+                            "date": "2018-11-01+05:30",
+                            "status": "0"
+                          },
+                          "22": {
+                            "date": "2018-10-01+05:30",
+                            "status": "0"
+                          },
+                          "23": {
+                            "date": "2018-09-01+05:30",
+                            "status": "0"
+                          },
+                          "24": {
+                            "date": "2018-08-01+05:30",
+                            "status": "0"
+                          },
+                          "25": {
+                            "date": "2018-07-01+05:30",
+                            "status": "0"
+                          },
+                          "26": {
+                            "date": "2018-06-01+05:30",
+                            "status": "0"
+                          },
+                          "27": {
+                            "date": "2018-05-01+05:30",
+                            "status": "0"
+                          },
+                          "28": {
+                            "date": "2018-04-01+05:30",
+                            "status": "0"
+                          },
+                          "29": {
+                            "date": "2018-03-01+05:30",
                             "status": "0"
                           },
                           "3": {
-                            "date": "2026-03-01+05:30",
+                            "date": "2020-05-01+05:30",
+                            "status": "0"
+                          },
+                          "30": {
+                            "date": "2018-02-01+05:30",
+                            "status": "0"
+                          },
+                          "31": {
+                            "date": "2018-01-01+05:30",
+                            "status": "0"
+                          },
+                          "32": {
+                            "date": "2017-12-01+05:30",
+                            "status": "XXX"
+                          },
+                          "33": {
+                            "date": "2017-11-01+05:30",
+                            "status": "0"
+                          },
+                          "34": {
+                            "date": "2017-10-01+05:30",
+                            "status": "0"
+                          },
+                          "35": {
+                            "date": "2017-09-01+05:30",
+                            "status": "0"
+                          },
+                          "36": {
+                            "date": "2017-08-01+05:30",
+                            "status": "0"
+                          },
+                          "4": {
+                            "date": "2020-04-01+05:30",
+                            "status": "0"
+                          },
+                          "5": {
+                            "date": "2020-03-01+05:30",
+                            "status": "0"
+                          },
+                          "6": {
+                            "date": "2020-02-01+05:30",
+                            "status": "0"
+                          },
+                          "7": {
+                            "date": "2020-01-01+05:30",
+                            "status": "0"
+                          },
+                          "8": {
+                            "date": "2019-12-01+05:30",
+                            "status": "0"
+                          },
+                          "9": {
+                            "date": "2019-11-01+05:30",
                             "status": "0"
                           }
                         },
-                        "endDate": "2026-03-01+05:30",
-                        "startDate": "2026-05-01+05:30",
-                        "status": "0,0,0,"
+                        "endDate": "2017-08-01+05:30",
+                        "startDate": "2020-07-01+05:30",
+                        "status": "0,STD,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,XXX,0,0,0,0,"
                       },
                       "PaymentFrequency": {
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": "03"
+                        "symbol": ""
                       },
                       "TermType": {
                         "abbreviation": "",
@@ -1179,13 +1020,13 @@
                         "rank": "100000",
                         "symbol": ""
                       },
-                      "actualPaymentAmount": "52444",
-                      "amountPastDue": "0",
+                      "actualPaymentAmount": "-1",
+                      "amountPastDue": "-1",
                       "collateral": "-1",
-                      "dateLastPayment": "2026-05-02+05:30",
-                      "interestRate": "13.00",
-                      "serialNumber": "4127325407",
-                      "termMonths": "96"
+                      "dateLastPayment": "2020-06-23+05:30",
+                      "interestRate": "-1.00",
+                      "serialNumber": "590493914",
+                      "termMonths": "-1"
                     },
                     "IndustryCode": {
                       "abbreviation": "",
@@ -1206,7 +1047,7 @@
                       "symbol": ""
                     },
                     "Source": {
-                      "BorrowerKey": "1102902509",
+                      "BorrowerKey": "729249714",
                       "Bureau": {
                         "abbreviation": "",
                         "description": "",
@@ -1215,7 +1056,7 @@
                       },
                       "InquiryDate": "2026-06-08+05:30",
                       "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                      "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                     },
                     "VerificationIndicator": {
                       "abbreviation": "",
@@ -1223,27 +1064,28 @@
                       "rank": "100000",
                       "symbol": ""
                     },
-                    "accountNumber": "P400PHF85746802",
+                    "accountNumber": "LAJHJ00032844383",
                     "accountsSoldTo": "",
                     "branch": "",
                     "bureau": "",
-                    "creditorName": "BAJAJ FIN LTD",
-                    "currentBalance": "4908208",
-                    "dateAccountStatus": "2026-05-02+05:30",
-                    "dateOpened": "2026-03-26+05:30",
-                    "dateReported": "2026-05-31+05:30",
-                    "highBalance": "4896981",
+                    "creditorName": "ICICI BANK",
+                    "currentBalance": "0",
+                    "dateAccountStatus": "2020-06-23+05:30",
+                    "dateClosed": "2020-07-03+05:30",
+                    "dateOpened": "2015-06-27+05:30",
+                    "dateReported": "2020-07-31+05:30",
+                    "highBalance": "1503000",
                     "noOfParticipants": "",
                     "position": "1",
                     "settlementAmount": "-1",
-                    "subscriberCode": "66030001",
+                    "subscriberCode": "3090001",
                     "thirdPartyName": "",
                     "writtenOffAmtTotal": "-1",
                     "writtenOffPrincipal": "-1"
                   },
                   "accountTypeAbbreviation": "",
                   "accountTypeDescription": "",
-                  "accountTypeSymbol": "09"
+                  "accountTypeSymbol": "01"
                 },
                 "3": {
                   "Tradeline": {
@@ -1270,7 +1112,7 @@
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": "61"
+                        "symbol": "01"
                       },
                       "CashLimit": "-1",
                       "CollateralType": {
@@ -1284,33 +1126,149 @@
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": "61"
+                        "symbol": "01"
                       },
                       "EMIAmount": "-1",
                       "PayStatusHistory": {
                         "MonthlyPayStatus": {
                           "1": {
-                            "date": "2026-05-01+05:30",
+                            "date": "2017-03-01+05:30",
+                            "status": "0"
+                          },
+                          "10": {
+                            "date": "2016-06-01+05:30",
+                            "status": "0"
+                          },
+                          "11": {
+                            "date": "2016-05-01+05:30",
+                            "status": "0"
+                          },
+                          "12": {
+                            "date": "2016-04-01+05:30",
+                            "status": "0"
+                          },
+                          "13": {
+                            "date": "2016-03-01+05:30",
+                            "status": "0"
+                          },
+                          "14": {
+                            "date": "2016-02-01+05:30",
+                            "status": "0"
+                          },
+                          "15": {
+                            "date": "2016-01-01+05:30",
+                            "status": "0"
+                          },
+                          "16": {
+                            "date": "2015-12-01+05:30",
+                            "status": "0"
+                          },
+                          "17": {
+                            "date": "2015-11-01+05:30",
+                            "status": "0"
+                          },
+                          "18": {
+                            "date": "2015-10-01+05:30",
+                            "status": "0"
+                          },
+                          "19": {
+                            "date": "2015-09-01+05:30",
                             "status": "0"
                           },
                           "2": {
-                            "date": "2026-04-01+05:30",
+                            "date": "2017-02-01+05:30",
+                            "status": "0"
+                          },
+                          "20": {
+                            "date": "2015-08-01+05:30",
+                            "status": "0"
+                          },
+                          "21": {
+                            "date": "2015-07-01+05:30",
+                            "status": "0"
+                          },
+                          "22": {
+                            "date": "2015-06-01+05:30",
+                            "status": "0"
+                          },
+                          "23": {
+                            "date": "2015-05-01+05:30",
+                            "status": "0"
+                          },
+                          "24": {
+                            "date": "2015-04-01+05:30",
+                            "status": "0"
+                          },
+                          "25": {
+                            "date": "2015-03-01+05:30",
+                            "status": "0"
+                          },
+                          "26": {
+                            "date": "2015-02-01+05:30",
+                            "status": "0"
+                          },
+                          "27": {
+                            "date": "2015-01-01+05:30",
+                            "status": "0"
+                          },
+                          "28": {
+                            "date": "2014-12-01+05:30",
+                            "status": "0"
+                          },
+                          "29": {
+                            "date": "2014-11-01+05:30",
                             "status": "0"
                           },
                           "3": {
-                            "date": "2026-03-01+05:30",
+                            "date": "2017-01-01+05:30",
+                            "status": "0"
+                          },
+                          "30": {
+                            "date": "2014-10-01+05:30",
+                            "status": "0"
+                          },
+                          "31": {
+                            "date": "2014-09-01+05:30",
+                            "status": "0"
+                          },
+                          "32": {
+                            "date": "2014-08-01+05:30",
+                            "status": "0"
+                          },
+                          "4": {
+                            "date": "2016-12-01+05:30",
+                            "status": "0"
+                          },
+                          "5": {
+                            "date": "2016-11-01+05:30",
+                            "status": "0"
+                          },
+                          "6": {
+                            "date": "2016-10-01+05:30",
+                            "status": "0"
+                          },
+                          "7": {
+                            "date": "2016-09-01+05:30",
+                            "status": "0"
+                          },
+                          "8": {
+                            "date": "2016-08-01+05:30",
+                            "status": "0"
+                          },
+                          "9": {
+                            "date": "2016-07-01+05:30",
                             "status": "0"
                           }
                         },
-                        "endDate": "2026-03-01+05:30",
-                        "startDate": "2026-05-01+05:30",
-                        "status": "0,0,0,"
+                        "endDate": "2014-08-01+05:30",
+                        "startDate": "2017-03-01+05:30",
+                        "status": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"
                       },
                       "PaymentFrequency": {
                         "abbreviation": "",
                         "description": "",
                         "rank": "100000",
-                        "symbol": ""
+                        "symbol": "03"
                       },
                       "TermType": {
                         "abbreviation": "",
@@ -1324,12 +1282,12 @@
                         "rank": "100000",
                         "symbol": ""
                       },
-                      "actualPaymentAmount": "-1",
+                      "actualPaymentAmount": "13287",
                       "amountPastDue": "0",
                       "collateral": "-1",
-                      "dateLastPayment": "2026-05-05+05:30",
-                      "interestRate": "13.00",
-                      "serialNumber": "4114118894",
+                      "dateLastPayment": "2017-03-16+05:30",
+                      "interestRate": "-1.00",
+                      "serialNumber": "507967009",
                       "termMonths": "-1"
                     },
                     "IndustryCode": {
@@ -1351,7 +1309,7 @@
                       "symbol": ""
                     },
                     "Source": {
-                      "BorrowerKey": "1102902509",
+                      "BorrowerKey": "729249714",
                       "Bureau": {
                         "abbreviation": "",
                         "description": "",
@@ -1360,7 +1318,7 @@
                       },
                       "InquiryDate": "2026-06-08+05:30",
                       "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
+                      "Reference": "071f7008-ec5f-4a06-9e6b-410ceee6abdd"
                     },
                     "VerificationIndicator": {
                       "abbreviation": "",
@@ -1368,220 +1326,20 @@
                       "rank": "100000",
                       "symbol": ""
                     },
-                    "accountNumber": "0086035635",
+                    "accountNumber": "29218652",
                     "accountsSoldTo": "",
                     "branch": "",
                     "bureau": "",
-                    "creditorName": "TCL",
-                    "currentBalance": "2000000",
-                    "dateAccountStatus": "2026-05-05+05:30",
-                    "dateOpened": "2026-03-24+05:30",
-                    "dateReported": "2026-05-31+05:30",
-                    "highBalance": "2000000",
+                    "creditorName": "HDFC BANK",
+                    "currentBalance": "0",
+                    "dateAccountStatus": "2017-03-16+05:30",
+                    "dateClosed": "2017-03-16+05:30",
+                    "dateOpened": "2014-08-12+05:30",
+                    "dateReported": "2017-03-31+05:30",
+                    "highBalance": "404379",
                     "noOfParticipants": "",
                     "position": "2",
                     "settlementAmount": "-1",
-                    "subscriberCode": "89660001",
-                    "thirdPartyName": "",
-                    "writtenOffAmtTotal": "-1",
-                    "writtenOffPrincipal": "-1"
-                  },
-                  "accountTypeAbbreviation": "",
-                  "accountTypeDescription": "",
-                  "accountTypeSymbol": "61"
-                },
-                "4": {
-                  "Tradeline": {
-                    "AccountCondition": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "AccountDesignator": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": "1"
-                    },
-                    "DisputeFlag": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "GrantedTrade": {
-                      "AccountType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "10"
-                      },
-                      "CashLimit": "-1",
-                      "CollateralType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "CreditLimit": "108000",
-                      "CreditType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "10"
-                      },
-                      "EMIAmount": "-1",
-                      "PayStatusHistory": {
-                        "MonthlyPayStatus": {
-                          "1": {
-                            "date": "2026-05-01+05:30",
-                            "status": "0"
-                          },
-                          "10": {
-                            "date": "2025-08-01+05:30",
-                            "status": "0"
-                          },
-                          "11": {
-                            "date": "2025-07-01+05:30",
-                            "status": "0"
-                          },
-                          "12": {
-                            "date": "2025-06-01+05:30",
-                            "status": "0"
-                          },
-                          "13": {
-                            "date": "2025-05-01+05:30",
-                            "status": "0"
-                          },
-                          "14": {
-                            "date": "2025-04-01+05:30",
-                            "status": "0"
-                          },
-                          "15": {
-                            "date": "2025-03-01+05:30",
-                            "status": "0"
-                          },
-                          "16": {
-                            "date": "2025-02-01+05:30",
-                            "status": "0"
-                          },
-                          "17": {
-                            "date": "2025-01-01+05:30",
-                            "status": "0"
-                          },
-                          "2": {
-                            "date": "2026-04-01+05:30",
-                            "status": "0"
-                          },
-                          "3": {
-                            "date": "2026-03-01+05:30",
-                            "status": "0"
-                          },
-                          "4": {
-                            "date": "2026-02-01+05:30",
-                            "status": "0"
-                          },
-                          "5": {
-                            "date": "2026-01-01+05:30",
-                            "status": "0"
-                          },
-                          "6": {
-                            "date": "2025-12-01+05:30",
-                            "status": "0"
-                          },
-                          "7": {
-                            "date": "2025-11-01+05:30",
-                            "status": "0"
-                          },
-                          "8": {
-                            "date": "2025-10-01+05:30",
-                            "status": "0"
-                          },
-                          "9": {
-                            "date": "2025-09-01+05:30",
-                            "status": "0"
-                          }
-                        },
-                        "endDate": "2025-01-01+05:30",
-                        "startDate": "2026-05-01+05:30",
-                        "status": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"
-                      },
-                      "PaymentFrequency": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "TermType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "WorstPayStatus": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "actualPaymentAmount": "-1",
-                      "amountPastDue": "-1",
-                      "collateral": "-1",
-                      "dateLastPayment": "2025-06-02+05:30",
-                      "interestRate": "-1.00",
-                      "serialNumber": "3402138006",
-                      "termMonths": "-1"
-                    },
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "OpenClosed": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "PayStatus": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "VerificationIndicator": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "accountNumber": "0001013870006421415",
-                    "accountsSoldTo": "",
-                    "branch": "",
-                    "bureau": "",
-                    "creditorName": "HDFC BANK",
-                    "currentBalance": "0",
-                    "dateAccountStatus": "2025-06-02+05:30",
-                    "dateOpened": "2025-01-27+05:30",
-                    "dateReported": "2026-05-31+05:30",
-                    "highBalance": "35282",
-                    "noOfParticipants": "",
-                    "position": "3",
-                    "settlementAmount": "-1",
                     "subscriberCode": "3080001",
                     "thirdPartyName": "",
                     "writtenOffAmtTotal": "-1",
@@ -1589,866 +1347,7 @@
                   },
                   "accountTypeAbbreviation": "",
                   "accountTypeDescription": "",
-                  "accountTypeSymbol": "10"
-                },
-                "5": {
-                  "Tradeline": {
-                    "AccountCondition": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "AccountDesignator": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": "1"
-                    },
-                    "DisputeFlag": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "GrantedTrade": {
-                      "AccountType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "06"
-                      },
-                      "CashLimit": "-1",
-                      "CollateralType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "CreditLimit": "-1",
-                      "CreditType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "06"
-                      },
-                      "EMIAmount": "-1",
-                      "PayStatusHistory": {
-                        "MonthlyPayStatus": {
-                          "1": {
-                            "date": "2021-08-01+05:30",
-                            "status": "0"
-                          },
-                          "2": {
-                            "date": "2021-07-01+05:30",
-                            "status": "0"
-                          },
-                          "3": {
-                            "date": "2021-06-01+05:30",
-                            "status": "0"
-                          },
-                          "4": {
-                            "date": "2021-05-01+05:30",
-                            "status": "0"
-                          }
-                        },
-                        "endDate": "2021-05-01+05:30",
-                        "startDate": "2021-08-01+05:30",
-                        "status": "0,0,0,0,"
-                      },
-                      "PaymentFrequency": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "03"
-                      },
-                      "TermType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "WorstPayStatus": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "actualPaymentAmount": "4475",
-                      "amountPastDue": "0",
-                      "collateral": "-1",
-                      "dateLastPayment": "2021-08-05+05:30",
-                      "interestRate": "-1.00",
-                      "serialNumber": "1724940800",
-                      "termMonths": "-1"
-                    },
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "OpenClosed": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "PayStatus": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "VerificationIndicator": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "accountNumber": "450120327",
-                    "accountsSoldTo": "",
-                    "branch": "",
-                    "bureau": "",
-                    "creditorName": "HDFC BANK",
-                    "currentBalance": "0",
-                    "dateAccountStatus": "2021-08-05+05:30",
-                    "dateClosed": "2021-08-05+05:30",
-                    "dateOpened": "2021-05-15+05:30",
-                    "dateReported": "2021-08-31+05:30",
-                    "highBalance": "13076",
-                    "noOfParticipants": "",
-                    "position": "4",
-                    "settlementAmount": "-1",
-                    "subscriberCode": "3080001",
-                    "thirdPartyName": "",
-                    "writtenOffAmtTotal": "-1",
-                    "writtenOffPrincipal": "-1"
-                  },
-                  "accountTypeAbbreviation": "",
-                  "accountTypeDescription": "",
-                  "accountTypeSymbol": "06"
-                },
-                "6": {
-                  "Tradeline": {
-                    "AccountCondition": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "AccountDesignator": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": "1"
-                    },
-                    "DisputeFlag": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "GrantedTrade": {
-                      "AccountType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "06"
-                      },
-                      "CashLimit": "-1",
-                      "CollateralType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "CreditLimit": "-1",
-                      "CreditType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "06"
-                      },
-                      "EMIAmount": "-1",
-                      "PayStatusHistory": {
-                        "MonthlyPayStatus": {
-                          "1": {
-                            "date": "2021-09-01+05:30",
-                            "status": "0"
-                          },
-                          "2": {
-                            "date": "2021-08-01+05:30",
-                            "status": "0"
-                          },
-                          "3": {
-                            "date": "2021-07-01+05:30",
-                            "status": "0"
-                          },
-                          "4": {
-                            "date": "2021-06-01+05:30",
-                            "status": "0"
-                          },
-                          "5": {
-                            "date": "2021-05-01+05:30",
-                            "status": "0"
-                          }
-                        },
-                        "endDate": "2021-05-01+05:30",
-                        "startDate": "2021-09-01+05:30",
-                        "status": "0,0,0,0,0,"
-                      },
-                      "PaymentFrequency": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "TermType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "WorstPayStatus": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "actualPaymentAmount": "-1",
-                      "amountPastDue": "-1",
-                      "collateral": "-1",
-                      "dateLastPayment": "2021-08-05+05:30",
-                      "interestRate": "-1.00",
-                      "serialNumber": "1728831684",
-                      "termMonths": "-1"
-                    },
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "OpenClosed": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "PayStatus": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "VerificationIndicator": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "accountNumber": "0001019060007155139",
-                    "accountsSoldTo": "",
-                    "branch": "",
-                    "bureau": "",
-                    "creditorName": "HDFC BANK",
-                    "currentBalance": "0",
-                    "dateAccountStatus": "2021-08-05+05:30",
-                    "dateClosed": "2021-09-09+05:30",
-                    "dateOpened": "2021-05-13+05:30",
-                    "dateReported": "2021-09-30+05:30",
-                    "highBalance": "0",
-                    "noOfParticipants": "",
-                    "position": "5",
-                    "settlementAmount": "-1",
-                    "subscriberCode": "3080001",
-                    "thirdPartyName": "",
-                    "writtenOffAmtTotal": "-1",
-                    "writtenOffPrincipal": "-1"
-                  },
-                  "accountTypeAbbreviation": "",
-                  "accountTypeDescription": "",
-                  "accountTypeSymbol": "06"
-                },
-                "7": {
-                  "Tradeline": {
-                    "AccountCondition": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "AccountDesignator": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": "1"
-                    },
-                    "DisputeFlag": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "GrantedTrade": {
-                      "AccountType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "08"
-                      },
-                      "CashLimit": "-1",
-                      "CollateralType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "00"
-                      },
-                      "CreditLimit": "-1",
-                      "CreditType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "08"
-                      },
-                      "EMIAmount": "8470",
-                      "PayStatusHistory": {
-                        "MonthlyPayStatus": {
-                          "1": {
-                            "date": "2026-05-01+05:30",
-                            "status": "0"
-                          },
-                          "10": {
-                            "date": "2025-08-01+05:30",
-                            "status": "0"
-                          },
-                          "11": {
-                            "date": "2025-07-01+05:30",
-                            "status": "0"
-                          },
-                          "12": {
-                            "date": "2025-06-01+05:30",
-                            "status": "0"
-                          },
-                          "13": {
-                            "date": "2025-05-01+05:30",
-                            "status": "0"
-                          },
-                          "14": {
-                            "date": "2025-04-01+05:30",
-                            "status": "0"
-                          },
-                          "15": {
-                            "date": "2025-03-01+05:30",
-                            "status": "0"
-                          },
-                          "16": {
-                            "date": "2025-02-01+05:30",
-                            "status": "STD"
-                          },
-                          "17": {
-                            "date": "2025-01-01+05:30",
-                            "status": "0"
-                          },
-                          "18": {
-                            "date": "2024-12-01+05:30",
-                            "status": "0"
-                          },
-                          "19": {
-                            "date": "2024-11-01+05:30",
-                            "status": "0"
-                          },
-                          "2": {
-                            "date": "2026-04-01+05:30",
-                            "status": "0"
-                          },
-                          "20": {
-                            "date": "2024-10-01+05:30",
-                            "status": "0"
-                          },
-                          "21": {
-                            "date": "2024-09-01+05:30",
-                            "status": "0"
-                          },
-                          "22": {
-                            "date": "2024-08-01+05:30",
-                            "status": "0"
-                          },
-                          "23": {
-                            "date": "2024-07-01+05:30",
-                            "status": "0"
-                          },
-                          "24": {
-                            "date": "2024-06-01+05:30",
-                            "status": "0"
-                          },
-                          "25": {
-                            "date": "2024-05-01+05:30",
-                            "status": "0"
-                          },
-                          "26": {
-                            "date": "2024-04-01+05:30",
-                            "status": "0"
-                          },
-                          "27": {
-                            "date": "2024-03-01+05:30",
-                            "status": "0"
-                          },
-                          "28": {
-                            "date": "2024-02-01+05:30",
-                            "status": "STD"
-                          },
-                          "29": {
-                            "date": "2024-01-01+05:30",
-                            "status": "STD"
-                          },
-                          "3": {
-                            "date": "2026-03-01+05:30",
-                            "status": "0"
-                          },
-                          "30": {
-                            "date": "2023-12-01+05:30",
-                            "status": "STD"
-                          },
-                          "31": {
-                            "date": "2023-11-01+05:30",
-                            "status": "STD"
-                          },
-                          "32": {
-                            "date": "2023-10-01+05:30",
-                            "status": "STD"
-                          },
-                          "33": {
-                            "date": "2023-09-01+05:30",
-                            "status": "STD"
-                          },
-                          "34": {
-                            "date": "2023-08-01+05:30",
-                            "status": "STD"
-                          },
-                          "35": {
-                            "date": "2023-07-01+05:30",
-                            "status": "STD"
-                          },
-                          "36": {
-                            "date": "2023-06-01+05:30",
-                            "status": "STD"
-                          },
-                          "4": {
-                            "date": "2026-02-01+05:30",
-                            "status": "0"
-                          },
-                          "5": {
-                            "date": "2026-01-01+05:30",
-                            "status": "0"
-                          },
-                          "6": {
-                            "date": "2025-12-01+05:30",
-                            "status": "0"
-                          },
-                          "7": {
-                            "date": "2025-11-01+05:30",
-                            "status": "0"
-                          },
-                          "8": {
-                            "date": "2025-10-01+05:30",
-                            "status": "0"
-                          },
-                          "9": {
-                            "date": "2025-09-01+05:30",
-                            "status": "0"
-                          }
-                        },
-                        "endDate": "2023-06-01+05:30",
-                        "startDate": "2026-05-01+05:30",
-                        "status": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,STD,0,0,0,0,0,0,0,0,0,0,0,STD,STD,STD,STD,STD,STD,STD,STD,STD,"
-                      },
-                      "PaymentFrequency": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "03"
-                      },
-                      "TermType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "WorstPayStatus": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "actualPaymentAmount": "-1",
-                      "amountPastDue": "0",
-                      "collateral": "-1",
-                      "dateLastPayment": "2020-12-10+05:30",
-                      "interestRate": "-1.00",
-                      "serialNumber": "713459496",
-                      "termMonths": "168"
-                    },
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "OpenClosed": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "PayStatus": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "VerificationIndicator": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "accountNumber": "051730100107814",
-                    "accountsSoldTo": "",
-                    "branch": "",
-                    "bureau": "",
-                    "creditorName": "UNION BANK",
-                    "currentBalance": "-2",
-                    "dateAccountStatus": "2020-12-10+05:30",
-                    "dateOpened": "2016-06-15+05:30",
-                    "dateReported": "2026-05-31+05:30",
-                    "highBalance": "600000",
-                    "noOfParticipants": "",
-                    "position": "6",
-                    "settlementAmount": "-1",
-                    "subscriberCode": "1170001",
-                    "thirdPartyName": "",
-                    "writtenOffAmtTotal": "-1",
-                    "writtenOffPrincipal": "-1"
-                  },
-                  "accountTypeAbbreviation": "",
-                  "accountTypeDescription": "",
-                  "accountTypeSymbol": "08"
-                },
-                "8": {
-                  "Tradeline": {
-                    "AccountCondition": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "AccountDesignator": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": "1"
-                    },
-                    "DisputeFlag": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "GrantedTrade": {
-                      "AccountType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "08"
-                      },
-                      "CashLimit": "-1",
-                      "CollateralType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "00"
-                      },
-                      "CreditLimit": "-1",
-                      "CreditType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "08"
-                      },
-                      "EMIAmount": "3877",
-                      "PayStatusHistory": {
-                        "MonthlyPayStatus": {
-                          "1": {
-                            "date": "2020-11-01+05:30",
-                            "status": "0"
-                          },
-                          "10": {
-                            "date": "2020-02-01+05:30",
-                            "status": "0"
-                          },
-                          "11": {
-                            "date": "2020-01-01+05:30",
-                            "status": "0"
-                          },
-                          "12": {
-                            "date": "2019-12-01+05:30",
-                            "status": "0"
-                          },
-                          "13": {
-                            "date": "2019-11-01+05:30",
-                            "status": "0"
-                          },
-                          "14": {
-                            "date": "2019-10-01+05:30",
-                            "status": "0"
-                          },
-                          "15": {
-                            "date": "2019-09-01+05:30",
-                            "status": "0"
-                          },
-                          "16": {
-                            "date": "2019-08-01+05:30",
-                            "status": "0"
-                          },
-                          "17": {
-                            "date": "2019-07-01+05:30",
-                            "status": "0"
-                          },
-                          "18": {
-                            "date": "2019-06-01+05:30",
-                            "status": "0"
-                          },
-                          "19": {
-                            "date": "2019-05-01+05:30",
-                            "status": "0"
-                          },
-                          "2": {
-                            "date": "2020-10-01+05:30",
-                            "status": "0"
-                          },
-                          "20": {
-                            "date": "2019-04-01+05:30",
-                            "status": "0"
-                          },
-                          "21": {
-                            "date": "2019-03-01+05:30",
-                            "status": "0"
-                          },
-                          "22": {
-                            "date": "2019-02-01+05:30",
-                            "status": "0"
-                          },
-                          "23": {
-                            "date": "2019-01-01+05:30",
-                            "status": "0"
-                          },
-                          "24": {
-                            "date": "2018-12-01+05:30",
-                            "status": "0"
-                          },
-                          "25": {
-                            "date": "2018-11-01+05:30",
-                            "status": "90"
-                          },
-                          "26": {
-                            "date": "2018-10-01+05:30",
-                            "status": "60"
-                          },
-                          "27": {
-                            "date": "2018-09-01+05:30",
-                            "status": "29"
-                          },
-                          "28": {
-                            "date": "2018-08-01+05:30",
-                            "status": "0"
-                          },
-                          "29": {
-                            "date": "2018-07-01+05:30",
-                            "status": "0"
-                          },
-                          "3": {
-                            "date": "2020-09-01+05:30",
-                            "status": "0"
-                          },
-                          "30": {
-                            "date": "2018-06-01+05:30",
-                            "status": "0"
-                          },
-                          "31": {
-                            "date": "2018-05-01+05:30",
-                            "status": "0"
-                          },
-                          "32": {
-                            "date": "2018-04-01+05:30",
-                            "status": "0"
-                          },
-                          "33": {
-                            "date": "2018-03-01+05:30",
-                            "status": "0"
-                          },
-                          "34": {
-                            "date": "2018-02-01+05:30",
-                            "status": "0"
-                          },
-                          "35": {
-                            "date": "2018-01-01+05:30",
-                            "status": "0"
-                          },
-                          "36": {
-                            "date": "2017-12-01+05:30",
-                            "status": "0"
-                          },
-                          "4": {
-                            "date": "2020-08-01+05:30",
-                            "status": "0"
-                          },
-                          "5": {
-                            "date": "2020-07-01+05:30",
-                            "status": "0"
-                          },
-                          "6": {
-                            "date": "2020-06-01+05:30",
-                            "status": "0"
-                          },
-                          "7": {
-                            "date": "2020-05-01+05:30",
-                            "status": "0"
-                          },
-                          "8": {
-                            "date": "2020-04-01+05:30",
-                            "status": "0"
-                          },
-                          "9": {
-                            "date": "2020-03-01+05:30",
-                            "status": "0"
-                          }
-                        },
-                        "endDate": "2017-12-01+05:30",
-                        "startDate": "2020-11-01+05:30",
-                        "status": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,90,60,29,0,0,0,0,0,0,0,0,0,"
-                      },
-                      "PaymentFrequency": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "03"
-                      },
-                      "TermType": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "WorstPayStatus": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": ""
-                      },
-                      "actualPaymentAmount": "96370",
-                      "amountPastDue": "0",
-                      "collateral": "-1",
-                      "dateLastPayment": "2020-11-23+05:30",
-                      "interestRate": "11.10",
-                      "serialNumber": "388158152",
-                      "termMonths": "56"
-                    },
-                    "IndustryCode": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "OpenClosed": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "PayStatus": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "Source": {
-                      "BorrowerKey": "1102902509",
-                      "Bureau": {
-                        "abbreviation": "",
-                        "description": "",
-                        "rank": "100000",
-                        "symbol": "CIBIL"
-                      },
-                      "InquiryDate": "2026-06-08+05:30",
-                      "Locale": "en_IN",
-                      "Reference": "ea25bcd9-a8f4-4915-83cc-5dedc10a0e4e"
-                    },
-                    "VerificationIndicator": {
-                      "abbreviation": "",
-                      "description": "",
-                      "rank": "100000",
-                      "symbol": ""
-                    },
-                    "accountNumber": "051730100050853",
-                    "accountsSoldTo": "",
-                    "branch": "",
-                    "bureau": "",
-                    "creditorName": "UNION BANK",
-                    "currentBalance": "0",
-                    "dateAccountStatus": "2020-11-23+05:30",
-                    "dateClosed": "2020-11-23+05:30",
-                    "dateOpened": "2012-08-01+05:30",
-                    "dateReported": "2020-11-30+05:30",
-                    "highBalance": "127500",
-                    "noOfParticipants": "",
-                    "position": "7",
-                    "settlementAmount": "-1",
-                    "subscriberCode": "1170001",
-                    "thirdPartyName": "",
-                    "writtenOffAmtTotal": "-1",
-                    "writtenOffPrincipal": "-1"
-                  },
-                  "accountTypeAbbreviation": "",
-                  "accountTypeDescription": "",
-                  "accountTypeSymbol": "08"
+                  "accountTypeSymbol": "01"
                 }
               },
               "currentversion": "5.0"
@@ -2456,19 +1355,19 @@
             "Type": "SingleCreditReport"
           },
           "CreditSummaryData": {
-            "CreditCardUtilization": "0",
+            "CreditCardUtilization": "1.67",
             "CreditMix": "0",
-            "Inquires": "13",
-            "OldestCreditAccountPeriod": "166",
+            "Inquires": "1",
+            "OldestCreditAccountPeriod": "141",
             "OnTimePaymentHistory": "100"
           }
         },
-        "ResponseKey": "0236c05de868890e:67d024d9:19ea5989a75:-4f8e",
+        "ResponseKey": "66657b43472e30b6:36d3eec5:19ea6541fb0:-4b5",
         "ResponseStatus": "Success"
       }
     },
-    "htmlUrl": "https://myscore.cibil.com/CreditView/webtokenasset.page?enterprise=MEGHDOOT&pcc=BHIPJ8167M&webtoken=-BFzGP8j-2vsWMRVImMUkzLdjUEYOC9nf95IrG5Hapuj5eKe582agltgXLy2w7caUhnjbOpoiT6JLvIZqEOuVA"
+    "htmlUrl": "https://myscore.cibil.com/CreditView/webtokenasset.page?enterprise=MEGHDOOT&pcc=CWRPK7449C&webtoken=5QIe_xi-MOyPHt4O2p03BxJXlTubMx2IbTwmYiW6qri1dsIgsrnHwgjrdaZL2JybP-aR6X6NDZ0AbbQBjHTisQ"
   },
   "success": "True",
-  "transaction_id": "94412934856839f54c28cf61ff4a739c7f42cb12eec6ebe42c517ae08432a7aa"
+  "transaction_id": "34b535dbd9184d7ebf1a34d9f2862b89a28ee9468472848eef5ed4904f133b7e"
 }
