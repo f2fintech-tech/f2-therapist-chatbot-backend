@@ -104,7 +104,6 @@ async def fetch_cibil(payload: CibilFetchRequest, db: Session = Depends(get_db))
     raw_bureau_json = report.pop("_raw_bureau_json", None)
 
     # 3. Update User Record Details
-    user.phone = clean_phone
     if user.name == "Guest" or not user.name:
          user.name = name
     db.flush()

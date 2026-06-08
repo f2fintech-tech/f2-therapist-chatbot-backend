@@ -217,8 +217,20 @@ class UserCreditReport(Base):
     pdf_url = Column(Text, nullable=True)       # The download link/URL for the PDF report
     fetched_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+
+class UserLoanCalculatorActivity(Base):
+    """Stores user activity logs on the loan calculator tools."""
+    __tablename__ = "user_loan_calculator_activities"
+
+    id = Column(String(36), primary_key=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    calculator_type = Column(String(32), nullable=False, index=True)  # "emi", "compare", "prepayment", "eligibility"
+    loan_type = Column(String(32), nullable=True)  # "home", "business", etc.
+    inputs = Column(JSON, nullable=False)  # Map of all input values filled by the user
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
     def __repr__(self):
-        return f"<UserCreditReport(id={self.id}, user_id={self.user_id}, bureau={self.bureau}, score={self.score})>"
+        return f"<UserLoanCalculatorActivity(id={self.id}, user_id={self.user_id}, calculator_type={self.calculator_type})>"
 
 
 # ==================== Database Initialization ====================
