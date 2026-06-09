@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import List, Dict, Tuple
 from google import genai
 from dotenv import load_dotenv
+from src.exceptions import TrainingDataNotFoundError
 
 try:
     from pinecone import Pinecone
@@ -54,8 +55,7 @@ class SupervisedFineTuner:
     def load_training_examples(self) -> List[Dict]:
         """Load conversation training examples"""
         if not self.conversation_data_path.exists():
-            logger.error(f"Training data not found at {self.conversation_data_path}")
-            return []
+            raise TrainingDataNotFoundError(f"Training data not found at {self.conversation_data_path}")
 
         with open(self.conversation_data_path, 'r', encoding='utf-8') as f:
             examples = json.load(f)
