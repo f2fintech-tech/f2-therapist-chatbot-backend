@@ -11,12 +11,11 @@ MIN_SCORE = 0
 NEUTRAL_COMPONENT_SCORE = 50
 
 PILLAR_WEIGHTS: dict[str, float] = {
-    "money_iq": 0.20,
-    "debt_health": 0.20,
-    "financial_safety": 0.20,
+    "money_iq": 0.25,
+    "debt_health": 0.25,
+    "financial_safety": 0.25,
     "credit_health": 0.15,
     "loan_comfort": 0.10,
-    "mood_health": 0.15,
 }
 
 TEST_TO_PILLAR: dict[str, str] = {
@@ -26,7 +25,6 @@ TEST_TO_PILLAR: dict[str, str] = {
     "debt_balance": "debt_health",
     "debt_pressure": "debt_health",
     "debt_pressure_analysis": "debt_health",
-    "stress_metrics": "mood_health",
     "emergency_fund": "financial_safety",
     "financial_safety": "financial_safety",
     "credit_readiness": "credit_health",
@@ -35,7 +33,7 @@ TEST_TO_PILLAR: dict[str, str] = {
     "loan_comfort": "loan_comfort",
 }
 
-PRESSURE_TEST_TYPES = {"debt_balance", "debt_pressure", "debt_pressure_analysis", "stress_metrics"}
+PRESSURE_TEST_TYPES = {"debt_balance", "debt_pressure", "debt_pressure_analysis"}
 WEIGHTED_RECENT_AVERAGES = (0.6, 0.3, 0.1)
 WELLNESS_TIERS = (
     (0, 20, "Recovering"),
@@ -185,7 +183,7 @@ def calculate_mood_health(trend_state: dict[str, Any] | None) -> int:
     return clamp_score(mood_health)
 
 
-def calculate_wellness_score(pillars: dict[str, int], mood_health: int) -> int:
+def calculate_wellness_score(pillars: dict[str, int], mood_health: int | None = None) -> int:
     """Combine all wellness pillars into the final rounded 0-100 score."""
 
     weighted_score = (
@@ -194,7 +192,6 @@ def calculate_wellness_score(pillars: dict[str, int], mood_health: int) -> int:
         + clamp_score(pillars.get("financial_safety")) * PILLAR_WEIGHTS["financial_safety"]
         + clamp_score(pillars.get("credit_health")) * PILLAR_WEIGHTS["credit_health"]
         + clamp_score(pillars.get("loan_comfort")) * PILLAR_WEIGHTS["loan_comfort"]
-        + clamp_score(mood_health) * PILLAR_WEIGHTS["mood_health"]
     )
     return clamp_score(weighted_score)
 
