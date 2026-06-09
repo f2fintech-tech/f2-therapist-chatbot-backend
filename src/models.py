@@ -233,6 +233,30 @@ class UserLoanCalculatorActivity(Base):
         return f"<UserLoanCalculatorActivity(id={self.id}, user_id={self.user_id}, calculator_type={self.calculator_type})>"
 
 
+class Advisor(Base):
+    """Advisor model representing the expert profile."""
+    __tablename__ = "advisors"
+
+    f2_fintech_id = Column(String(255), primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    designation = Column(String(255), nullable=False)
+    avatar_url = Column(String(1000), nullable=True)
+    availability = Column(String(32), default="available", nullable=False)  # "available" or "unavailable"
+    expertise = Column(JSON, nullable=True)  # List of strings
+    strength = Column(String(255), nullable=True)
+    bio = Column(Text, nullable=True)
+    rating = Column(Float, default=4.8, nullable=False)
+    reviews_count = Column(Integer, default=15, nullable=False)
+    next_slot = Column(String(255), nullable=True)
+    category = Column(String(255), nullable=False)
+    fee = Column(Integer, default=899, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<Advisor(f2_fintech_id={self.f2_fintech_id}, name={self.name})>"
+
+
 # ==================== Database Initialization ====================
 def init_db():
     """Initialize the database by creating all tables."""
