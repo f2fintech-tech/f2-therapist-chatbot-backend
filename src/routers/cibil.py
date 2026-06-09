@@ -226,6 +226,43 @@ def backfill_raw_json(user_id: str, db: Session = Depends(get_db)):
     return reparsed or stored_report
 
 
+@router.get("/enquiries", response_model=List[Dict[str, Any]])
+def get_all_cibil_enquiries(db: Session = Depends(get_db)):
+    """
+    Retrieve all CIBIL/Experian credit reports fetched across the platform.
+    Used by the Admin Portal to display inquiries.
+    """
+    try:
+        results = (
+            db.query(UserCreditReport, User)
+            .join(User, UserCreditReport.user_id == User.id)
+            .order_by(UserCreditReport.fetched_at.desc())
+            .all()
+        )
+        
+        enquiries = []
+        for report, user in results:
+            enquiries.append({
+                "id": report.id,
+                "user_id": report.user_id,
+                "name": user.name or "Guest",
+                "email": user.email or "",
+                "phone": user.phone or "",
+                "pan": report.report_data.get("pan", ""),
+                "bureau": report.bureau,
+                "score": report.score,
+                "pdf_url": report.pdf_url,
+                "fetched_at": report.fetched_at.isoformat()
+            })
+        return enquiries
+    except Exception as e:
+        logger.error(f"Error fetching CIBIL enquiries: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve CIBIL enquiries: {str(e)}"
+        )
+
+
 @router.get("/report/{user_id}", response_model=Dict[str, Any])
 def get_cibil_report(user_id: str, db: Session = Depends(get_db)):
     """
