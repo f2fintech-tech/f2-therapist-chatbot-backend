@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
-from src.models import MoodLiveState, MoodTrendState, TestResult, User, WellnessBreakdown
+from src.models import MoodLiveState, MoodTrendState, TestResult, User, WellnessBreakdown, UserCreditReport
 from src.utils.mood_trend_engine import build_live_mood_state, trend_state_to_live_equivalent, update_trend_state
 from src.utils.momentum_tracker import calculate_momentum_score
 from src.utils.wellness_insights import generate_wellness_insights
@@ -160,6 +160,17 @@ def recalculate_wellness(
     )
     result_payloads = [_serialize_test_result(result) for result in test_results]
     pillars = build_pillar_scores(result_payloads)
+
+    # Prioritize actual fetched CIBIL report score over mock credit assessment score
+    credit_report = (
+        session.query(UserCreditReport)
+        .filter(UserCreditReport.user_id == user_id)
+        .order_by(UserCreditReport.fetched_at.desc())
+        .first()
+    )
+    if credit_report:
+        normalized_cibil = clamp_score(round((credit_report.score - 300) / 6.0))
+        pillars["credit_health"] = normalized_cibil
 
     trend_row = session.query(MoodTrendState).filter(MoodTrendState.user_id == user_id).first()
     trend_state = {
