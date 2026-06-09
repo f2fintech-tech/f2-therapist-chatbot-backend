@@ -15,6 +15,12 @@ import time
 from src.utils.emotion_analyzer import analyze_emotion
 from src.utils.results_store import append_test_result
 from src.model.rag_evaluator import evaluate_chat_session
+from src.exceptions import (
+    EmbeddingError,
+    GenerationError,
+    TrainingDataNotFoundError,
+    PineconeConnectionError
+)
 
 try:
     from pinecone import Pinecone
@@ -97,53 +103,55 @@ class ModelTester:
     def _get_rag_context(self, query: str, top_k: int = 3) -> str:
         """Retrieve relevant context from Pinecone"""
         if not self.index:
-            return ""
+            raise PineconeConnectionError("Pinecone index is not connected/initialized")
 
+        # 1. Embed the query
         try:
-            # Embed the query
             embed_result = self.client.models.embed_content(
                 model="gemini-embedding-2",
                 contents=query,
             )
             embeddings = getattr(embed_result, "embeddings", None)
-            if not embeddings:
-                return ""
+        except Exception as e:
+            raise EmbeddingError(f"Gemini embedding generation failed: {e}")
 
-            query_vector = embeddings[0].values
+        if not embeddings:
+            raise EmbeddingError("Gemini embedding result is empty or invalid")
 
-            # Search Pinecone
+        query_vector = embeddings[0].values
+
+        # 2. Search Pinecone
+        try:
             search_results: Any = self.index.query(
                 vector=query_vector,
                 top_k=top_k,
                 include_metadata=True
             )
-
-            context = ""
-            matches: Any = getattr(search_results, "matches", None)
-            if matches is None and isinstance(search_results, dict):
-                matches = search_results.get("matches")
-
-            if matches:
-                context = "\n# RELEVANT KNOWLEDGE BASE:\n"
-                for match in cast(List[Any], matches):
-                    metadata = getattr(match, "metadata", None)
-                    if metadata is None and isinstance(match, dict):
-                        metadata = match.get("metadata", {})
-
-                    content = ""
-                    if isinstance(metadata, dict):
-                        content = metadata.get("content", "")[:200]
-                    else:
-                        content = getattr(metadata, "content", "")[:200]
-
-                    if content:
-                        context += f"- {content}\n"
-
-            return context
-
         except Exception as e:
-            logger.debug(f"RAG retrieval error: {e}")
-            return ""
+            raise PineconeConnectionError(f"Pinecone query failed: {e}")
+
+        context = ""
+        matches: Any = getattr(search_results, "matches", None)
+        if matches is None and isinstance(search_results, dict):
+            matches = search_results.get("matches")
+
+        if matches:
+            context = "\n# RELEVANT KNOWLEDGE BASE:\n"
+            for match in cast(List[Any], matches):
+                metadata = getattr(match, "metadata", None)
+                if metadata is None and isinstance(match, dict):
+                    metadata = match.get("metadata", {})
+
+                content = ""
+                if isinstance(metadata, dict):
+                    content = metadata.get("content", "")[:200]
+                else:
+                    content = getattr(metadata, "content", "")[:200]
+
+                if content:
+                    context += f"- {content}\n"
+
+        return context
 
     def test_query(self, user_query: str, use_rag: bool = True) -> Dict:
         """
@@ -160,25 +168,15 @@ class ModelTester:
         logger.info(f"QUERY: {user_query}")
         logger.info(f"{'=' * 80}")
 
-        result = {
-            'query': user_query,
-            'response': '',
-            'rag_used': False,
-            'response_length': 0,
-            'generation_time': 0,
-            'timestamp': time.time()
-        }
+        rag_context = ""
+        rag_used = False
+        if use_rag:
+            rag_context = self._get_rag_context(user_query)
+            if rag_context:
+                rag_used = True
 
-        try:
-            # Get RAG context if enabled
-            rag_context = ""
-            if use_rag:
-                rag_context = self._get_rag_context(user_query)
-                if rag_context:
-                    result['rag_used'] = True
-
-            # Build prompt
-            prompt = f"""{self.system_prompt}
+        # Build prompt
+        prompt = f"""{self.system_prompt}
 
 {rag_context}
 
@@ -186,33 +184,37 @@ User: {user_query}
 
 Your response (remember to acknowledge emotion first, then provide guidance):"""
 
-            # Generate response
-            start_time = time.time()
+        # Generate response
+        start_time = time.time()
+        try:
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=prompt,
             )
-            generation_time = time.time() - start_time
-
-            if response and response.text:
-                result['response'] = response.text
-                result['response_length'] = len(response.text)
-                result['generation_time'] = generation_time
-
-                logger.info(f"\nRESPONSE ({result['response_length']} chars, {generation_time:.2f}s):")
-                logger.info("-" * 80)
-                logger.info(response.text)
-                logger.info("-" * 80)
-
-                if result['rag_used']:
-                    logger.info("✓ RAG context was used")
-            else:
-                logger.error("No response generated")
-                result['response'] = "Error: No response generated"
-
         except Exception as e:
-            logger.error(f"Error during generation: {e}")
-            result['response'] = f"Error: {str(e)}"
+            raise GenerationError(f"Gemini generation call failed: {e}")
+
+        generation_time = time.time() - start_time
+
+        if not response or not response.text:
+            raise GenerationError("No response generated or response text is empty")
+
+        result = {
+            'query': user_query,
+            'response': response.text,
+            'rag_used': rag_used,
+            'response_length': len(response.text),
+            'generation_time': generation_time,
+            'timestamp': time.time()
+        }
+
+        logger.info(f"\nRESPONSE ({result['response_length']} chars, {generation_time:.2f}s):")
+        logger.info("-" * 80)
+        logger.info(response.text)
+        logger.info("-" * 80)
+
+        if rag_used:
+            logger.info("✓ RAG context was used")
 
         return result
 
@@ -227,8 +229,11 @@ Your response (remember to acknowledge emotion first, then provide guidance):"""
 
         for i, query in enumerate(queries, 1):
             logger.info(f"\n[Test {i}/{len(queries)}]")
-            result = self.test_query(query, use_rag=use_rag)
-            results.append(result)
+            try:
+                result = self.test_query(query, use_rag=use_rag)
+                results.append(result)
+            except (EmbeddingError, PineconeConnectionError, GenerationError) as e:
+                logger.error(f"Error executing query {i} ('{query}'): {e}")
 
             # Add delay between requests to avoid rate limiting
             if i < len(queries):
@@ -244,8 +249,7 @@ Your response (remember to acknowledge emotion first, then provide guidance):"""
         # Load training data
         training_path = Path("src/data/processed/conversation_training_data.json")
         if not training_path.exists():
-            logger.error("Training data not found")
-            return []
+            raise TrainingDataNotFoundError(f"Training data not found at {training_path}")
 
         with open(training_path, 'r', encoding='utf-8') as f:
             examples = json.load(f)
@@ -268,19 +272,22 @@ Your response (remember to acknowledge emotion first, then provide guidance):"""
             logger.info(f"Intent: {intent}")
 
             # Test the query
-            result = self.test_query(user_input, use_rag=True)
-            result['category'] = category
-            result['intent'] = intent
-            result['expected_response'] = expected_response
+            try:
+                result = self.test_query(user_input, use_rag=True)
+                result['category'] = category
+                result['intent'] = intent
+                result['expected_response'] = expected_response
 
-            # Evaluate response quality (simple heuristics)
-            result['quality_metrics'] = self._evaluate_response(
-                result['response'],
-                expected_response,
-                user_input
-            )
+                # Evaluate response quality (simple heuristics)
+                result['quality_metrics'] = self._evaluate_response(
+                    result['response'],
+                    expected_response,
+                    user_input
+                )
 
-            results.append(result)
+                results.append(result)
+            except (EmbeddingError, PineconeConnectionError, GenerationError) as e:
+                logger.error(f"Failed to test training example {i}: {e}")
 
             # Delay between requests
             if i < min(num_examples, len(examples)):
@@ -535,20 +542,23 @@ def main():
         logger.info("\n" + "=" * 80)
         logger.info("CUSTOM QUERY TEST")
         logger.info("=" * 80)
-        result = tester.test_query(args.query, use_rag=not args.no_rag)
+        try:
+            result = tester.test_query(args.query, use_rag=not args.no_rag)
 
-        output_path = Path("src/model/model_test_results.json")
-        results_summary = {
-            "timestamp": time.time(),
-            "model": tester.model_name,
-            "prompt_type": "fine-tuned" if tester.use_finetuned else "base",
-            "mode": "single_custom_query",
-            "custom_query_test": result,
-        }
+            output_path = Path("src/model/model_test_results.json")
+            results_summary = {
+                "timestamp": time.time(),
+                "model": tester.model_name,
+                "prompt_type": "fine-tuned" if tester.use_finetuned else "base",
+                "mode": "single_custom_query",
+                "custom_query_test": result,
+            }
 
-        saved_path = tester._save_test_results(results_summary, output_path)
+            saved_path = tester._save_test_results(results_summary, output_path)
 
-        logger.info(f"✓ Custom query result saved to {output_path}")
+            logger.info(f"✓ Custom query result saved to {output_path}")
+        except (EmbeddingError, PineconeConnectionError, GenerationError) as e:
+            logger.error(f"Custom query execution failed: {e}")
         logger.info("=" * 80)
         return
 
@@ -558,7 +568,12 @@ def main():
         logger.info("\n" + "=" * 80)
         logger.info("TEST 1: EVALUATING WITH TRAINING EXAMPLES")
         logger.info("=" * 80)
-        training_results = tester.test_with_training_examples(num_examples=5)
+        try:
+            training_results = tester.test_with_training_examples(num_examples=5)
+        except TrainingDataNotFoundError as e:
+            logger.error(f"Training data file is missing: {e}")
+        except (EmbeddingError, PineconeConnectionError, GenerationError) as e:
+            logger.error(f"Failed executing training examples test: {e}")
 
     # Test 2: With custom queries (real-world scenarios)
     logger.info("\n" + "=" * 80)
@@ -573,7 +588,11 @@ def main():
         "I'm ashamed about my spending habits but I can't stop"
     ]
 
-    custom_results = tester.test_multiple_queries(custom_queries, use_rag=True)
+    custom_results = []
+    try:
+        custom_results = tester.test_multiple_queries(custom_queries, use_rag=True)
+    except (EmbeddingError, PineconeConnectionError, GenerationError) as e:
+        logger.error(f"Failed executing batch query tests: {e}")
 
     # Save results
     logger.info("\n" + "=" * 80)
@@ -583,6 +602,14 @@ def main():
     output_path = Path("src/model/model_test_results.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    total_tests = len(training_results) + len(custom_results)
+    if total_tests > 0:
+        avg_response_len = sum(
+            r['response_length'] for r in training_results + custom_results
+        ) / total_tests
+    else:
+        avg_response_len = 0
+
     results_summary = {
         'timestamp': time.time(),
         'model': tester.model_name,
@@ -590,10 +617,8 @@ def main():
         'training_examples_test': training_results,
         'custom_queries_test': custom_results,
         'summary': {
-            'total_tests': len(training_results) + len(custom_results),
-            'avg_response_length': sum(
-                r['response_length'] for r in training_results + custom_results
-            ) / (len(training_results) + len(custom_results))
+            'total_tests': total_tests,
+            'avg_response_length': avg_response_len
         }
     }
 
