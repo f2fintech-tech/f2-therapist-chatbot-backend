@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
-def generate_mock_report(name: str, phone: str, pan: str) -> Dict[str, Any]:
+def generate_mock_report(name: str, phone: str, pan: str, is_company: bool = False) -> Dict[str, Any]:
     """
     Generate a highly realistic and deterministic CIBIL report based on the PAN card.
     Using hashing ensures that the same PAN will always retrieve the same credit score and history.
@@ -68,67 +68,112 @@ def generate_mock_report(name: str, phone: str, pan: str) -> Dict[str, Any]:
 
     # Detailed Mock Accounts
     accounts = []
-    
-    # 1. Credit Card Account (always present)
-    cc_banks = ["HDFC Bank", "SBI Card", "ICICI Bank", "Axis Bank"]
-    cc_bank = cc_banks[hash_int % len(cc_banks)]
-    cc_limit = 50000 + ((hash_int % 10) * 50000) # 50K to 500K
-    cc_balance = int(cc_limit * (utilization / 100.0))
-    accounts.append({
-        "lender": cc_bank,
-        "type": "Credit Card",
-        "sanctioned_amount": cc_limit,
-        "outstanding_balance": cc_balance,
-        "payment_status": "Current" if defaults == 0 else "30 Days Past Due",
-        "open_date": f"{(2026 - int(credit_age_years))}-06-15",
-        "is_active": True
-    })
-
-    # 2. Personal/Auto Loan Account (if age is higher)
-    if credit_age_years > 2:
-        loan_banks = ["HDFC Bank", "Kotak Mahindra", "SBI", "Tata Capital"]
-        loan_bank = loan_banks[(hash_int + 1) % len(loan_banks)]
-        loan_amount = 100000 + ((hash_int % 8) * 100000) # 100K to 800K
-        loan_balance = int(loan_amount * 0.4) if defaults == 0 else int(loan_amount * 0.8)
-        accounts.append({
-            "lender": loan_bank,
-            "type": "Personal Loan",
-            "sanctioned_amount": loan_amount,
-            "outstanding_balance": loan_balance,
-            "payment_status": "Current" if defaults == 0 else "60 Days Past Due",
-            "open_date": f"{(2026 - int(credit_age_years - 1))}-11-20",
-            "is_active": True
-        })
-
-    # 3. Active Consumer Durable Loan
-    if credit_age_years > 1:
-        cd_lenders = ["Bajaj Finserv", "Capital First", "Home Credit"]
-        cd_lender = cd_lenders[(hash_int + 2) % len(cd_lenders)]
-        accounts.append({
-            "lender": cd_lender,
-            "type": "Consumer Durable Loan",
-            "sanctioned_amount": 35000,
-            "outstanding_balance": 12500,
-            "payment_status": "Current",
-            "open_date": f"{(2026 - int(credit_age_years))}-01-10",
-            "is_active": True
-        })
-
-    # Actionable Improvement Tips
     tips = []
-    if utilization > 30:
-        tips.append("Your credit card utilization is above the recommended 30%. Try paying off outstanding card balances to lower it.")
-    if enquiries_l6m > 2:
-        tips.append("You have multiple credit inquiries in the last 6 months. Avoid applying for new credit lines consecutively to protect your score.")
-    if payment_on_time < 95:
-        tips.append("Missed or late payments are hurting your score. Set up auto-debit payments for your loan EMIs and credit cards.")
-    if defaults > 0 or write_offs > 0:
-        tips.append("Unresolved defaults/past-due accounts are flag markers on your report. Contact your lenders to resolve settlements and get a No Due Certificate (NDC).")
-    if secured_loans == 0:
-        tips.append("Your credit profile lacks secured loans. Adding a secured credit line (like a gold loan or secure FD-backed card) will improve your credit mix.")
-    
-    if not tips:
-        tips.append("Great job! Your credit habits are healthy. Keep utilization low and continue making timely payments to maintain this excellent score.")
+
+    if is_company:
+        # Commercial / Corporate Credit Accounts
+        # 1. Term Loan (Corporate)
+        accounts.append({
+            "lender": "State Bank of India",
+            "type": "Term Loan (Corporate)",
+            "sanctioned_amount": 15000000,
+            "outstanding_balance": 9500000 if defaults == 0 else 14000000,
+            "payment_status": "Current" if defaults == 0 else "30 Days Past Due",
+            "open_date": f"{(2026 - int(credit_age_years))}-03-12",
+            "is_active": True
+        })
+        # 2. Cash Credit / Overdraft Limit
+        accounts.append({
+            "lender": "HDFC Bank",
+            "type": "Cash Credit / Overdraft",
+            "sanctioned_amount": 5000000,
+            "outstanding_balance": int(5000000 * (utilization / 100.0)),
+            "payment_status": "Current",
+            "open_date": f"{(2026 - int(credit_age_years))}-09-18",
+            "is_active": True
+        })
+        if credit_age_years > 2:
+            # 3. Bank Guarantee or Letter of Credit
+            accounts.append({
+                "lender": "ICICI Bank",
+                "type": "Letter of Credit / Trade Credit",
+                "sanctioned_amount": 2500000,
+                "outstanding_balance": 0,
+                "payment_status": "Current",
+                "open_date": f"{(2026 - int(credit_age_years - 1))}-11-05",
+                "is_active": True
+            })
+
+        if utilization > 40:
+            tips.append("Your working capital / cash credit limit utilization is high. Try to service interest on time and clear outstanding balances regularly.")
+        if enquiries_l6m > 2:
+            tips.append("Frequent applications for commercial loans or bank guarantees can adversely impact your company's credit profile.")
+        if payment_on_time < 95:
+            tips.append("Late payments on term loans or overdrafts are impacting the company's CIBIL Rank. Set up auto-debit mechanisms.")
+        if defaults > 0 or write_offs > 0:
+            tips.append("Unresolved defaults in commercial accounts are major red flags. Settle any disputes or past due amounts with your commercial lenders.")
+        if not tips:
+            tips.append("Excellent commercial credit history! Maintain a healthy Debt Service Coverage Ratio (DSCR) to keep this rating.")
+    else:
+        # 1. Credit Card Account (always present)
+        cc_banks = ["HDFC Bank", "SBI Card", "ICICI Bank", "Axis Bank"]
+        cc_bank = cc_banks[hash_int % len(cc_banks)]
+        cc_limit = 50000 + ((hash_int % 10) * 50000) # 50K to 500K
+        cc_balance = int(cc_limit * (utilization / 100.0))
+        accounts.append({
+            "lender": cc_bank,
+            "type": "Credit Card",
+            "sanctioned_amount": cc_limit,
+            "outstanding_balance": cc_balance,
+            "payment_status": "Current" if defaults == 0 else "30 Days Past Due",
+            "open_date": f"{(2026 - int(credit_age_years))}-06-15",
+            "is_active": True
+        })
+
+        # 2. Personal/Auto Loan Account (if age is higher)
+        if credit_age_years > 2:
+            loan_banks = ["HDFC Bank", "Kotak Mahindra", "SBI", "Tata Capital"]
+            loan_bank = loan_banks[(hash_int + 1) % len(loan_banks)]
+            loan_amount = 100000 + ((hash_int % 8) * 100000) # 100K to 800K
+            loan_balance = int(loan_amount * 0.4) if defaults == 0 else int(loan_amount * 0.8)
+            accounts.append({
+                "lender": loan_bank,
+                "type": "Personal Loan",
+                "sanctioned_amount": loan_amount,
+                "outstanding_balance": loan_balance,
+                "payment_status": "Current" if defaults == 0 else "60 Days Past Due",
+                "open_date": f"{(2026 - int(credit_age_years - 1))}-11-20",
+                "is_active": True
+            })
+
+        # 3. Active Consumer Durable Loan
+        if credit_age_years > 1:
+            cd_lenders = ["Bajaj Finserv", "Capital First", "Home Credit"]
+            cd_lender = cd_lenders[(hash_int + 2) % len(cd_lenders)]
+            accounts.append({
+                "lender": cd_lender,
+                "type": "Consumer Durable Loan",
+                "sanctioned_amount": 35000,
+                "outstanding_balance": 12500,
+                "payment_status": "Current",
+                "open_date": f"{(2026 - int(credit_age_years))}-01-10",
+                "is_active": True
+            })
+
+        # Actionable Improvement Tips
+        if utilization > 30:
+            tips.append("Your credit card utilization is above the recommended 30%. Try paying off outstanding card balances to lower it.")
+        if enquiries_l6m > 2:
+            tips.append("You have multiple credit inquiries in the last 6 months. Avoid applying for new credit lines consecutively to protect your score.")
+        if payment_on_time < 95:
+            tips.append("Missed or late payments are hurting your score. Set up auto-debit payments for your loan EMIs and credit cards.")
+        if defaults > 0 or write_offs > 0:
+            tips.append("Unresolved defaults/past-due accounts are flag markers on your report. Contact your lenders to resolve settlements and get a No Due Certificate (NDC).")
+        if secured_loans == 0:
+            tips.append("Your credit profile lacks secured loans. Adding a secured credit line (like a gold loan or secure FD-backed card) will improve your credit mix.")
+        
+        if not tips:
+            tips.append("Great job! Your credit habits are healthy. Keep utilization low and continue making timely payments to maintain this excellent score.")
 
     return {
         "score": score,
@@ -157,7 +202,7 @@ class CibilNoRecordError(Exception):
     pass
 
 
-async def fetch_actual_cibil_report(name: str, phone: str, pan: str) -> Dict[str, Any]:
+async def fetch_actual_cibil_report(name: str, phone: str, pan: str, is_company: bool = False) -> Dict[str, Any]:
     """
     Core API client function. Attempts to query the real CIBIL API (Timble Glance) if configured.
     Raises CibilNoRecordError if the bureau explicitly says no records were found.
@@ -168,7 +213,7 @@ async def fetch_actual_cibil_report(name: str, phone: str, pan: str) -> Dict[str
 
     if not api_url or not api_key:
         logger.info("CIBIL_API_URL or CIBIL_API_KEY not configured. Falling back to simulated bureau report.")
-        return generate_mock_report(name, phone, pan)
+        return generate_mock_report(name, phone, pan, is_company=is_company)
 
     logger.info(f"[CIBIL] Attempting real API call to: {api_url}")
     logger.info(f"[CIBIL] API key (first 6 chars): {api_key[:6]}...")
@@ -289,7 +334,7 @@ def normalize_cibil_report_from_raw(raw_bureau_json: Dict[str, Any], name: str =
     return normalized
 
 
-async def fetch_actual_experian_report(name: str, phone: str, pan: str) -> Dict[str, Any]:
+async def fetch_actual_experian_report(name: str, phone: str, pan: str, is_company: bool = False) -> Dict[str, Any]:
     """
     Core API client function for Experian (Digitap). Attempts to query the real Experian API if configured.
     Raises CibilNoRecordError if the bureau explicitly says no records were found.
@@ -301,7 +346,7 @@ async def fetch_actual_experian_report(name: str, phone: str, pan: str) -> Dict[
 
     if not api_url or not api_key:
         logger.info("EXPERIAN_API_URL or EXPERIAN_API_KEY not configured. Falling back to simulated bureau report.")
-        return generate_mock_report(name, phone, pan)
+        return generate_mock_report(name, phone, pan, is_company=is_company)
 
     logger.info(f"[EXPERIAN] Attempting real API call to: {api_url}")
     logger.info(f"[EXPERIAN] API key (first 6 chars): {api_key[:6]}..., Client-ID: {client_id}")

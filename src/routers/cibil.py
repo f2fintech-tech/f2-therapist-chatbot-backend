@@ -26,6 +26,7 @@ class CibilFetchRequest(BaseModel):
     phone: str = Field(..., description="10-digit mobile number")
     pan: str = Field(..., description="10-character PAN Card number")
     bureau: str = Field("cibil", description="Bureau to fetch: 'cibil' or 'experian'")
+    report_type: Optional[str] = Field("individual", description="Type of report: 'individual' or 'company'")
 
 class CibilReportResponse(BaseModel):
     score: int
@@ -79,10 +80,15 @@ async def fetch_cibil(payload: CibilFetchRequest, db: Session = Depends(get_db))
 
     # 2. Fetch Report from CIBIL or Experian
     try:
-        if payload.bureau.lower().strip() == "experian":
-            report = await fetch_actual_experian_report(name=name, phone=clean_phone, pan=pan)
+        is_company = False
+        bureau_str = payload.bureau.lower().strip()
+        if payload.report_type == "company" or "company" in bureau_str:
+            is_company = True
+
+        if "experian" in bureau_str:
+            report = await fetch_actual_experian_report(name=name, phone=clean_phone, pan=pan, is_company=is_company)
         else:
-            report = await fetch_actual_cibil_report(name=name, phone=clean_phone, pan=pan)
+            report = await fetch_actual_cibil_report(name=name, phone=clean_phone, pan=pan, is_company=is_company)
     except CibilNoRecordError as e:
         logger.warning(f"No credit record found for PAN {pan[:5]}*****: {e}")
         raise HTTPException(

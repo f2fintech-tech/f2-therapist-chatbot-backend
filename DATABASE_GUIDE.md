@@ -11,115 +11,82 @@ This guide contains easy-to-run terminal commands and SQL queries to inspect, ma
 psql "postgresql://postgres:F2fintech_26@therapist-chatbot-db.c5k4w0icgzcw.ap-south-1.rds.amazonaws.com:5432/therapist_chatbot"
 ```
 
-### Step B: Set client encoding to UTF-8 (Crucial for Windows & Emojis)
-As soon as you connect and see the `therapist_chatbot=>` prompt, run this command to prevent emoji display errors:
+### Step B: Set client encoding to UTF-8 (Crucial for Emojis)
+As soon as you connect and see the `therapist_chatbot=>` prompt, run this to prevent display errors:
 ```sql
 \encoding UTF8
 ```
 
-### Handy general PostgreSQL commands:
+### 💡 Handy General Shortcuts:
 * **Show all tables:** `\dt`
 * **Show table columns/schema:** `\d table_name` (e.g., `\d users`)
-* **Toggle expanded table formatting (useful for reading long messages/JSON):** `\x`
+* **Toggle expanded table formatting (very useful for reading long text/JSON):** `\x`
 * **Exit psql console:** `\q`
 
 ---
 
-## 🛠️ 2. Core Database Schema & Content Management
+## 👥 2. User Accounts & Consolidated Profiles
 
-Use these commands to inspect tables, view columns, check content, or create, delete, and modify tables.
-
-### Check how many tables you have:
-* **Option A (Shortcut):** Run `\dt` inside your `psql` session.
-* **Option B (SQL Query):**
-  ```sql
-  SELECT table_name 
-  FROM information_schema.tables 
-  WHERE table_schema = 'public';
-  ```
-
-### Check table columns (schema):
-* **Option A (Shortcut):** Run `\d table_name` (e.g., `\d users`).
-* **Option B (SQL Query):**
-  ```sql
-  SELECT column_name, data_type, is_nullable 
-  FROM information_schema.columns 
-  WHERE table_name = 'users';
-  ```
-
-### Check table content (rows):
-* **View all columns (first 10 rows):**
-  ```sql
-  SELECT * FROM users LIMIT 10;
-  ```
-* **View specific columns only:**
-  ```sql
-  SELECT id, email, name FROM users;
-  ```
-
-### Create a new table:
+### View all registered and guest users:
 ```sql
-CREATE TABLE new_table_name (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+SELECT id, email, name, phone, hearts, is_guest, created_at FROM users;
 ```
 
-### Delete (Drop) a table:
+### Find a specific user by email:
 ```sql
-DROP TABLE IF EXISTS new_table_name;
-```
-
-### Modify (Alter) an existing table:
-* **Add a new column:**
-  ```sql
-  ALTER TABLE users ADD COLUMN new_column_name VARCHAR(255);
-  ```
-* **Drop (Remove) a column:**
-  ```sql
-  ALTER TABLE users DROP COLUMN new_column_name;
-  ```
-* **Modify a column type:**
-  ```sql 
-  ALTER TABLE users ALTER COLUMN phone TYPE VARCHAR(64);
-  ```
-
----
-
-## 👥 3. Users Table (`users`)
-
-This table stores all user profiles, credentials, guest status, and overall scores.
-
-### Check all user profiles (ID, Email, Name, and Hearts):
-```sql
-SELECT id, email, name, hearts, is_guest, created_at FROM users;
-```
-
-### Check a specific user's details:
-```sql
-SELECT id, email, name, phone, location, occupation, bio, risk_tolerance 
+SELECT id, email, name, phone, location, occupation, wellness_score, wellness_tier 
 FROM users 
 WHERE email = 'gnd.dhiman@gmail.com';
 ```
 
-### Check total number of users (registered vs guests):
+### Check consolidated JSON telemetry profiles:
 ```sql
-SELECT is_guest, COUNT(*) as total_count 
-FROM users 
-GROUP BY is_guest;
-```
-
-### Reset / Truncate all users (WARNING: Deletes all database records):
-```sql
-TRUNCATE TABLE users, conversations, conversation_messages, mood_live_state, mood_trend_state, test_results, wellness_breakdown, user_consolidated_profiles CASCADE;
+SELECT user_id, updated_at, data FROM user_consolidated_profiles LIMIT 5;
 ```
 
 ---
 
-## 💬 4. Conversations & Messages (`conversations`, `conversation_messages`)
+## 📅 3. Advisors & Appointments (New Tables)
 
-These tables store chat session summaries and individual messages between users and the AI.
+### View all advisors and their availability status:
+```sql
+SELECT f2_fintech_id, name, designation, availability, rating, reviews_count FROM advisors;
+```
+
+### View all upcoming / booked consultations:
+```sql
+SELECT id, user_id, advisor_name, date, time, completed, cancelled, notes 
+FROM advisor_appointments 
+ORDER BY booked_at DESC;
+```
+
+### Inspect appointment cancel reasons (check user vs manager cancel logs):
+```sql
+SELECT id, advisor_name, date, time, cancelled, notes 
+FROM advisor_appointments 
+WHERE cancelled = true;
+```
+
+---
+
+## 💳 4. Credit Scores & Calculator Activity (New Tables)
+
+### View all fetched CIBIL & Experian credit reports:
+```sql
+SELECT id, user_id, bureau, score, pdf_url, fetched_at FROM user_credit_reports ORDER BY fetched_at DESC;
+```
+
+### View recent user calculations (EMI, Compares, Eligibility):
+```sql
+SELECT id, user_id, calculator_type, loan_type, inputs, created_at 
+FROM user_loan_calculator_activities 
+ORDER BY created_at DESC 
+LIMIT 10;
+```
+
+---
+
+## 💬 5. Chat History & Mood Telemetry
 
 ### View the latest conversation sessions:
 ```sql
@@ -137,29 +104,25 @@ WHERE conversation_id = 'YOUR_CONVERSATION_ID_HERE'
 ORDER BY created_at ASC;
 ```
 
-### View all conversations and messages for a specific user:
+### View the live emotional metrics of a user:
 ```sql
-SELECT c.title, m.role, m.content, m.created_at
-FROM conversations c
-JOIN conversation_messages m ON c.id = m.conversation_id
-WHERE c.user_id = 'YOUR_USER_ID_HERE'
-ORDER BY m.created_at ASC;
+SELECT stress, urgency, openness, willingness, emotion, updated_at 
+FROM mood_live_state 
+WHERE user_id = 'YOUR_USER_ID_HERE';
 ```
 
 ---
 
-## 📊 5. Test Results & Breakdown (`test_results`, `wellness_breakdown`)
+## 📊 6. Assessments & Scores
 
-These tables record completed financial health tests and calculated category scores.
-
-### View all test results for a specific user:
+### View all financial health test results for a user:
 ```sql
 SELECT test_type, raw_score, normalized_score, completed_at, insights 
 FROM test_results 
 WHERE user_id = 'YOUR_USER_ID_HERE';
 ```
 
-### View the calculated wellness score breakdown for a specific user:
+### View overall wellness scores:
 ```sql
 SELECT money_iq, debt_health, credit_health, overall_score, wellness_tier 
 FROM wellness_breakdown 
@@ -168,59 +131,35 @@ WHERE user_id = 'YOUR_USER_ID_HERE';
 
 ---
 
-## 🧠 6. User Mood State (`mood_live_state`, `mood_trend_state`)
+## 🐍 7. Python Helper Scripts
 
-These tables store live mood metrics captured during conversation.
+Run these diagnostic commands directly from the backend project folder:
 
-### View the live emotional metrics of a user:
-```sql
-SELECT stress, urgency, openness, willingness, emotion, updated_at 
-FROM mood_live_state 
-WHERE user_id = 'YOUR_USER_ID_HERE';
+### Test database connection:
+```powershell
+python test_db_conn.py
 ```
 
-### View the smoothed emotional trend of a user over time:
-```sql
-SELECT stress_trend, urgency_trend, openness_trend, willingness_trend, emotion_trend, updated_at 
-FROM mood_trend_state 
-WHERE user_id = 'YOUR_USER_ID_HERE';
+### Print first 10 rows of all tables:
+```powershell
+python inspect_db.py
+```
+
+### Run a custom query directly from terminal:
+```powershell
+python run_query.py "SELECT COUNT(*) FROM users;"
+```
+
+### Migrate local SQLite data (`test.db`) to AWS RDS:
+```powershell
+python migrate_sqlite_to_postgres.py
 ```
 
 ---
 
-## 📂 7. Telemetry Profile (`user_consolidated_profiles`)
+## ⚠️ 8. Reset Database Tables
 
-This table stores cached JSON telemetry (page activity, calculator history, etc.).
-
-### View cached JSON telemetry data:
+### Clear user data only (keeps schema):
 ```sql
-SELECT data, updated_at 
-FROM user_consolidated_profiles 
-WHERE user_id = 'YOUR_USER_ID_HERE';
-```
-
----
-
-## 🐍 8. Python Helper Scripts
-
-If you want to run these diagnostics or migrations using Python from the command line:
-
-### Test Database Connection:
-```powershell
-.\.venv\Scripts\python.exe test_db_conn.py
-```
-
-### Quick Table Contents Dump (First 10 rows of all tables):
-```powershell
-.\.venv\Scripts\python.exe inspect_db.py
-```
-
-### Run a Custom SQL Query:
-```powershell
-.\.venv\Scripts\python.exe run_query.py "SELECT COUNT(*) FROM users;"
-```
-
-### Migrate SQLite data (`test.db`) to PostgreSQL RDS:
-```powershell
-.\.venv\Scripts\python.exe migrate_sqlite_to_postgres.py
+TRUNCATE TABLE users, conversations, conversation_messages, mood_live_state, mood_trend_state, test_results, wellness_breakdown, user_consolidated_profiles, user_credit_reports, user_loan_calculator_activities, advisor_appointments CASCADE;
 ```
