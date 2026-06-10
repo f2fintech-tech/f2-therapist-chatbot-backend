@@ -502,3 +502,45 @@ async def join_appointment(appt_id: str, db: Session = Depends(get_db)):
         db.rollback()
         logger.error(f"Error joining appointment: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to mark appointment joined: {str(e)}")
+
+class AppointmentReschedule(BaseModel):
+    date: str
+    time: str
+
+@router.put("/appointments/{appt_id}/reschedule", response_model=AppointmentResponse)
+async def reschedule_appointment(appt_id: str, payload: AppointmentReschedule, db: Session = Depends(get_db)):
+    try:
+        appt = db.query(AdvisorAppointment).filter(AdvisorAppointment.id == appt_id).first()
+        if not appt:
+            raise HTTPException(status_code=404, detail="Appointment not found")
+        if appt.cancelled:
+            raise HTTPException(status_code=400, detail="Cannot reschedule a cancelled appointment")
+        if appt.completed:
+            raise HTTPException(status_code=400, detail="Cannot reschedule a completed appointment")
+        
+        appt.date = payload.date
+        appt.time = payload.time
+        db.commit()
+        db.refresh(appt)
+        return AppointmentResponse(
+            id=appt.id,
+            user_id=appt.user_id,
+            advisor_id=appt.advisor_id,
+            advisor_name=appt.advisor_name,
+            date=appt.date,
+            time=appt.time,
+            notes=appt.notes,
+            booked_at=appt.booked_at.isoformat(),
+            completed=appt.completed,
+            cancelled=appt.cancelled,
+            rating=appt.rating,
+            feedback=appt.feedback,
+            meet_url=appt.meet_url,
+            joined=appt.joined
+        )
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error rescheduling appointment: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to reschedule appointment: {str(e)}")
