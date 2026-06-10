@@ -247,12 +247,13 @@ def get_all_cibil_enquiries(db: Session = Depends(get_db)):
                 "user_id": report.user_id,
                 "name": user.name or "Guest",
                 "email": user.email or "",
-                "phone": user.phone or "",
+                "phone": report.report_data.get("phone") or user.phone or "",
                 "pan": report.report_data.get("pan", ""),
                 "bureau": report.bureau,
                 "score": report.score,
                 "pdf_url": report.pdf_url,
-                "fetched_at": report.fetched_at.isoformat()
+                "fetched_at": report.fetched_at.isoformat(),
+                "accounts": report.report_data.get("accounts", [])
             })
         return enquiries
     except Exception as e:
