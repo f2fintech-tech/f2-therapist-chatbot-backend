@@ -3,8 +3,10 @@ Authentication router — signup, login, token refresh, hearts management.
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime, timedelta
+from typing import List, Dict, Any
 import bcrypt as _bcrypt
 from jose import jwt
 from src.models import get_db, User, Conversation
@@ -61,6 +63,7 @@ class UserProfileResponse(BaseModel):
     therapy_style: str | None = None
     hearts: int
     is_guest: bool
+    goals: List[Dict[str, Any]] | None = None
 
 
 class UpdateUserProfileRequest(BaseModel):
@@ -153,6 +156,14 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
     if payload.guest_user_id:
         guest = db.query(User).filter(User.id == payload.guest_user_id).first()
         if guest and guest.is_guest == "true":
+            if guest.goals:
+                updated_goals = []
+                for g in guest.goals:
+                    if isinstance(g, dict):
+                        g_copy = dict(g)
+                        g_copy["userId"] = new_id
+                        updated_goals.append(g_copy)
+                user.goals = updated_goals
             db.query(Conversation).filter(
                 Conversation.user_id == payload.guest_user_id
             ).update({"user_id": new_id})
@@ -243,6 +254,7 @@ def get_profile(user_id: str, db: Session = Depends(get_db)):
         therapy_style=user.therapy_style,
         hearts=user.hearts,
         is_guest=user.is_guest == "true",
+        goals=user.goals or [],
     )
 
 
@@ -287,6 +299,7 @@ def update_profile(user_id: str, payload: UpdateUserProfileRequest, db: Session 
         therapy_style=user.therapy_style,
         hearts=user.hearts,
         is_guest=user.is_guest == "true",
+        goals=user.goals or [],
     )
 
 
@@ -303,3 +316,16 @@ def get_admin_stats(db: Session = Depends(get_db)):
         "guest_users": guest_users,
         "total_conversations": total_conversations
     }
+
+
+@router.put("/profile/{user_id}/goals")
+def update_user_goals(user_id: str, payload: List[Dict[str, Any]], db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.goals = payload
+    flag_modified(user, "goals")
+    db.commit()
+    db.refresh(user)
+    return {"status": "success", "goals": user.goals}
