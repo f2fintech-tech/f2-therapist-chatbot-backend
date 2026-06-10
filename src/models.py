@@ -3,7 +3,7 @@ Database models and configuration for Financial Therapist Chatbot.
 Uses SQLAlchemy ORM with PostgreSQL backend.
 """
 
-from sqlalchemy import create_engine, Column, String, DateTime, Integer, Float, ForeignKey, Text, Enum as SQLEnum, JSON, inspect, text
+from sqlalchemy import create_engine, Column, String, DateTime, Integer, Float, ForeignKey, Text, Enum as SQLEnum, JSON, inspect, text, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
@@ -253,9 +253,33 @@ class Advisor(Base):
     fee = Column(Integer, default=899, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    password_hash = Column(String(255), nullable=True)
 
     def __repr__(self):
         return f"<Advisor(f2_fintech_id={self.f2_fintech_id}, name={self.name})>"
+
+
+class AdvisorAppointment(Base):
+    """AdvisorAppointment model representing consultations/bookings for advisors."""
+    __tablename__ = "advisor_appointments"
+
+    id = Column(String(36), primary_key=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    advisor_id = Column(String(255), ForeignKey("advisors.f2_fintech_id"), nullable=False, index=True)
+    advisor_name = Column(String(255), nullable=False)
+    date = Column(String(64), nullable=False)
+    time = Column(String(64), nullable=False)
+    notes = Column(Text, nullable=True)
+    booked_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    completed = Column(Boolean, default=False, nullable=False)
+    cancelled = Column(Boolean, default=False, nullable=False)
+    rating = Column(Integer, nullable=True)
+    feedback = Column(Text, nullable=True)
+    meet_url = Column(String(1000), nullable=True)
+    joined = Column(Boolean, default=False, nullable=False)
+
+    def __repr__(self):
+        return f"<AdvisorAppointment(id={self.id}, user_id={self.user_id}, advisor_id={self.advisor_id})>"
 
 
 # ==================== Database Initialization ====================
@@ -267,6 +291,7 @@ def init_db():
         _ensure_conversation_message_mood_column()
         _ensure_user_wellness_columns()
         _ensure_credit_report_columns()
+        _ensure_advisor_password_column()
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
@@ -387,6 +412,20 @@ def _ensure_credit_report_columns():
     with engine.begin() as connection:
         connection.execute(text("ALTER TABLE user_credit_reports ADD COLUMN raw_bureau_json JSON"))
         logger.info("Added raw_bureau_json column to user_credit_reports")
+
+def _ensure_advisor_password_column():
+    """Add password_hash column to advisors table if it is missing (backward compatibility)."""
+    inspector = inspect(engine)
+    if "advisors" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("advisors")}
+    if "password_hash" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE advisors ADD COLUMN password_hash VARCHAR(255)"))
+        logger.info("Added password_hash column to advisors")
 
 def get_db():
     """Dependency for getting database session in FastAPI."""

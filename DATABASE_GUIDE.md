@@ -81,7 +81,7 @@ DROP TABLE IF EXISTS new_table_name;
   ALTER TABLE users DROP COLUMN new_column_name;
   ```
 * **Modify a column type:**
-  ```sql
+  ```sql 
   ALTER TABLE users ALTER COLUMN phone TYPE VARCHAR(64);
   ```
 

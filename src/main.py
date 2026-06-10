@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import os
 import logging
@@ -168,6 +169,10 @@ app.add_middleware(
 
 # ==================== Database Initialization ====================
 init_db()
+
+# Mount static folder for uploads and assets
+os.makedirs("src/static/avatars", exist_ok=True)
+app.mount("/static", StaticFiles(directory="src/static"), name="static")
 
 # ==================== Include Routers ====================
 # Health check routes

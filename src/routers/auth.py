@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any
 import bcrypt as _bcrypt
 from jose import jwt
-from src.models import get_db, User, Conversation
+from src.models import get_db, User, Conversation, Advisor
 from src.utils.api_security import require_api_key
 import os
 import uuid
@@ -329,3 +329,104 @@ def update_user_goals(user_id: str, payload: List[Dict[str, Any]], db: Session =
     db.commit()
     db.refresh(user)
     return {"status": "success", "goals": user.goals}
+
+
+# ==================== Advisor Auth Endpoints ====================
+
+class AdvisorSignupRequest(BaseModel):
+    f2_fintech_id: str
+    designation: str
+    password: str = Field(..., min_length=6)
+    confirm_password: str
+
+class AdvisorLoginRequest(BaseModel):
+    f2_fintech_id: str
+    password: str
+
+class AdvisorAuthResponse(BaseModel):
+    token: str
+    user_id: str
+    email: str
+    name: str
+    hearts: int
+    is_guest: bool
+    is_advisor: bool = True
+
+@router.post("/advisor/signup", response_model=AdvisorAuthResponse)
+def advisor_signup(payload: AdvisorSignupRequest, db: Session = Depends(get_db)):
+    f2_id = payload.f2_fintech_id.strip()
+    designation = payload.designation.strip()
+    
+    # Verify employee exists in advisors table
+    advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == f2_id).first()
+    if not advisor:
+        raise HTTPException(
+            status_code=404, 
+            detail="Employer not found. Check your credentials again."
+        )
+        
+    # Check designation matching case-insensitively
+    if advisor.designation.lower().strip() != designation.lower().strip():
+        raise HTTPException(
+            status_code=404, 
+            detail="Employer not found. Check your credentials again."
+        )
+        
+    if payload.password != payload.confirm_password:
+        raise HTTPException(
+            status_code=400,
+            detail="Passwords do not match."
+        )
+        
+    if advisor.password_hash:
+        raise HTTPException(
+            status_code=400,
+            detail="Employer account already registered."
+        )
+        
+    advisor.password_hash = hash_password(payload.password)
+    db.commit()
+    db.refresh(advisor)
+    
+    token = create_token(advisor.f2_fintech_id, f"{advisor.f2_fintech_id}@f2fintech.com")
+    logger.info("Advisor registered: %s", advisor.f2_fintech_id)
+    
+    return AdvisorAuthResponse(
+        token=token,
+        user_id=advisor.f2_fintech_id,
+        email=f"{advisor.f2_fintech_id}@f2fintech.com",
+        name=advisor.name,
+        hearts=99999,
+        is_guest=False,
+        is_advisor=True
+    )
+
+@router.post("/advisor/login", response_model=AdvisorAuthResponse)
+def advisor_login(payload: AdvisorLoginRequest, db: Session = Depends(get_db)):
+    f2_id = payload.f2_fintech_id.strip()
+    
+    advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == f2_id).first()
+    if not advisor or not advisor.password_hash:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid F2 Fintech ID or password."
+        )
+        
+    if not verify_password(payload.password, advisor.password_hash):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid F2 Fintech ID or password."
+        )
+        
+    token = create_token(advisor.f2_fintech_id, f"{advisor.f2_fintech_id}@f2fintech.com")
+    logger.info("Advisor logged in: %s", advisor.f2_fintech_id)
+    
+    return AdvisorAuthResponse(
+        token=token,
+        user_id=advisor.f2_fintech_id,
+        email=f"{advisor.f2_fintech_id}@f2fintech.com",
+        name=advisor.name,
+        hearts=99999,
+        is_guest=False,
+        is_advisor=True
+    )

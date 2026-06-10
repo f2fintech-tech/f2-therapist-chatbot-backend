@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
 import logging
-from src.models import Advisor, get_db
+import os
+import shutil
+from src.models import Advisor, AdvisorAppointment, get_db
 
 logger = logging.getLogger(__name__)
 
@@ -217,3 +219,286 @@ async def update_next_slot(f2_fintech_id: str, payload: NextSlotUpdate, db: Sess
         db.rollback()
         logger.error(f"Error updating advisor next-slot: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to update next-slot: {str(e)}")
+
+
+@router.post("/{f2_fintech_id}/upload-avatar")
+async def upload_avatar(
+    f2_fintech_id: str,
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload a local profile image for an advisor and update their avatar_url in the database.
+    """
+    try:
+        advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == f2_fintech_id).first()
+        if not advisor:
+            raise HTTPException(status_code=404, detail="Advisor profile not found")
+        
+        # Validate file type
+        content_type = file.content_type
+        if not content_type or not content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="Uploaded file is not an image")
+        
+        # Save to static directory as {f2_fintech_id}.png
+        target_dir = os.path.join("src", "static", "avatars")
+        os.makedirs(target_dir, exist_ok=True)
+        file_path = os.path.join(target_dir, f"{f2_fintech_id}.png")
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        # Build the dynamic URL.
+        base_url = str(request.base_url).rstrip("/")
+        avatar_url = f"{base_url}/static/avatars/{f2_fintech_id}.png"
+        
+        # Update advisor
+        advisor.avatar_url = avatar_url
+        db.commit()
+        db.refresh(advisor)
+        
+        return {"status": "success", "avatar_url": avatar_url}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error uploading avatar: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to upload avatar: {str(e)}")
+
+
+# ==================== Advisor Appointments Endpoints ====================
+
+class AppointmentCreate(BaseModel):
+    user_id: str
+    advisor_id: str
+    advisor_name: str
+    date: str
+    time: str
+    notes: Optional[str] = None
+    meet_url: Optional[str] = None
+
+class AppointmentResponse(BaseModel):
+    id: str
+    user_id: str
+    advisor_id: str
+    advisor_name: str
+    date: str
+    time: str
+    notes: Optional[str] = None
+    booked_at: str
+    completed: bool
+    cancelled: bool
+    rating: Optional[int] = None
+    feedback: Optional[str] = None
+    meet_url: Optional[str] = None
+    joined: bool
+
+class AppointmentStatusUpdate(BaseModel):
+    completed: Optional[bool] = None
+    cancelled: Optional[bool] = None
+    rating: Optional[int] = None
+    feedback: Optional[str] = None
+
+@router.post("/appointments", response_model=AppointmentResponse)
+async def book_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)):
+    import uuid
+    from datetime import datetime
+    try:
+        # Check if advisor exists
+        advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == payload.advisor_id).first()
+        if not advisor:
+            raise HTTPException(status_code=404, detail="Advisor profile not found")
+        
+        appt_id = str(uuid.uuid4())
+        new_appt = AdvisorAppointment(
+            id=appt_id,
+            user_id=payload.user_id,
+            advisor_id=payload.advisor_id,
+            advisor_name=payload.advisor_name,
+            date=payload.date,
+            time=payload.time,
+            notes=payload.notes,
+            meet_url=payload.meet_url,
+            booked_at=datetime.utcnow(),
+            completed=False,
+            cancelled=False,
+            joined=False
+        )
+        db.add(new_appt)
+        db.commit()
+        db.refresh(new_appt)
+        return AppointmentResponse(
+            id=new_appt.id,
+            user_id=new_appt.user_id,
+            advisor_id=new_appt.advisor_id,
+            advisor_name=new_appt.advisor_name,
+            date=new_appt.date,
+            time=new_appt.time,
+            notes=new_appt.notes,
+            booked_at=new_appt.booked_at.isoformat(),
+            completed=new_appt.completed,
+            cancelled=new_appt.cancelled,
+            rating=new_appt.rating,
+            feedback=new_appt.feedback,
+            meet_url=new_appt.meet_url,
+            joined=new_appt.joined
+        )
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error booking appointment: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to book appointment: {str(e)}")
+
+@router.get("/appointments/user/{user_id}", response_model=List[AppointmentResponse])
+async def get_user_appointments(user_id: str, db: Session = Depends(get_db)):
+    try:
+        appts = db.query(AdvisorAppointment).filter(AdvisorAppointment.user_id == user_id).order_by(AdvisorAppointment.booked_at.desc()).all()
+        return [
+            AppointmentResponse(
+                id=a.id,
+                user_id=a.user_id,
+                advisor_id=a.advisor_id,
+                advisor_name=a.advisor_name,
+                date=a.date,
+                time=a.time,
+                notes=a.notes,
+                booked_at=a.booked_at.isoformat(),
+                completed=a.completed,
+                cancelled=a.cancelled,
+                rating=a.rating,
+                feedback=a.feedback,
+                meet_url=a.meet_url,
+                joined=a.joined
+            ) for a in appts
+        ]
+    except Exception as e:
+        logger.error(f"Error fetching user appointments: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch user appointments: {str(e)}")
+
+@router.get("/appointments/advisor/{advisor_id}", response_model=List[AppointmentResponse])
+async def get_advisor_appointments(advisor_id: str, db: Session = Depends(get_db)):
+    try:
+        appts = db.query(AdvisorAppointment).filter(AdvisorAppointment.advisor_id == advisor_id).order_by(AdvisorAppointment.booked_at.desc()).all()
+        return [
+            AppointmentResponse(
+                id=a.id,
+                user_id=a.user_id,
+                advisor_id=a.advisor_id,
+                advisor_name=a.advisor_name,
+                date=a.date,
+                time=a.time,
+                notes=a.notes,
+                booked_at=a.booked_at.isoformat(),
+                completed=a.completed,
+                cancelled=a.cancelled,
+                rating=a.rating,
+                feedback=a.feedback,
+                meet_url=a.meet_url,
+                joined=a.joined
+            ) for a in appts
+        ]
+    except Exception as e:
+        logger.error(f"Error fetching advisor appointments: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch advisor appointments: {str(e)}")
+
+@router.get("/appointments/all", response_model=List[AppointmentResponse])
+async def get_all_appointments(db: Session = Depends(get_db)):
+    try:
+        appts = db.query(AdvisorAppointment).order_by(AdvisorAppointment.booked_at.desc()).all()
+        return [
+            AppointmentResponse(
+                id=a.id,
+                user_id=a.user_id,
+                advisor_id=a.advisor_id,
+                advisor_name=a.advisor_name,
+                date=a.date,
+                time=a.time,
+                notes=a.notes,
+                booked_at=a.booked_at.isoformat(),
+                completed=a.completed,
+                cancelled=a.cancelled,
+                rating=a.rating,
+                feedback=a.feedback,
+                meet_url=a.meet_url,
+                joined=a.joined
+            ) for a in appts
+        ]
+    except Exception as e:
+        logger.error(f"Error fetching all appointments: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch all appointments: {str(e)}")
+
+@router.put("/appointments/{appt_id}/status", response_model=AppointmentResponse)
+async def update_appointment_status(appt_id: str, payload: AppointmentStatusUpdate, db: Session = Depends(get_db)):
+    try:
+        appt = db.query(AdvisorAppointment).filter(AdvisorAppointment.id == appt_id).first()
+        if not appt:
+            raise HTTPException(status_code=404, detail="Appointment not found")
+        
+        if payload.completed is not None:
+            appt.completed = payload.completed
+        if payload.cancelled is not None:
+            appt.cancelled = payload.cancelled
+        if payload.rating is not None:
+            appt.rating = payload.rating
+        if payload.feedback is not None:
+            appt.feedback = payload.feedback
+            
+        db.commit()
+        db.refresh(appt)
+        return AppointmentResponse(
+            id=appt.id,
+            user_id=appt.user_id,
+            advisor_id=appt.advisor_id,
+            advisor_name=appt.advisor_name,
+            date=appt.date,
+            time=appt.time,
+            notes=appt.notes,
+            booked_at=appt.booked_at.isoformat(),
+            completed=appt.completed,
+            cancelled=appt.cancelled,
+            rating=appt.rating,
+            feedback=appt.feedback,
+            meet_url=appt.meet_url,
+            joined=appt.joined
+        )
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating appointment status: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to update appointment status: {str(e)}")
+
+@router.put("/appointments/{appt_id}/join", response_model=AppointmentResponse)
+async def join_appointment(appt_id: str, db: Session = Depends(get_db)):
+    try:
+        appt = db.query(AdvisorAppointment).filter(AdvisorAppointment.id == appt_id).first()
+        if not appt:
+            raise HTTPException(status_code=404, detail="Appointment not found")
+        
+        appt.joined = True
+        db.commit()
+        db.refresh(appt)
+        return AppointmentResponse(
+            id=appt.id,
+            user_id=appt.user_id,
+            advisor_id=appt.advisor_id,
+            advisor_name=appt.advisor_name,
+            date=appt.date,
+            time=appt.time,
+            notes=appt.notes,
+            booked_at=appt.booked_at.isoformat(),
+            completed=appt.completed,
+            cancelled=appt.cancelled,
+            rating=appt.rating,
+            feedback=appt.feedback,
+            meet_url=appt.meet_url,
+            joined=appt.joined
+        )
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error joining appointment: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to mark appointment joined: {str(e)}")
