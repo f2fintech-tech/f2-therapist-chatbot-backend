@@ -78,6 +78,7 @@ class User(Base):
     risk_tolerance = Column(String(255), nullable=True)
     monthly_income = Column(String(255), nullable=True)
     therapy_style = Column(String(255), nullable=True)
+    goals = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -305,6 +306,8 @@ def _ensure_users_columns():
         alter_statements.append("ALTER TABLE users ADD COLUMN monthly_income VARCHAR(255)")
     if "therapy_style" not in columns:
         alter_statements.append("ALTER TABLE users ADD COLUMN therapy_style VARCHAR(255)")
+    if "goals" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN goals JSON")
     if "created_at" not in columns:
         alter_statements.append("ALTER TABLE users ADD COLUMN created_at DATETIME")
     if "updated_at" not in columns:
