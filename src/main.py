@@ -8,9 +8,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
-from starlette.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import os
@@ -56,18 +54,46 @@ def _parse_hosts_from_origins(origins):
 
     return hosts
 
-
-class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+class HTTPSRedirectMiddleware:
     """Redirect incoming HTTP requests to HTTPS in production."""
 
-    async def dispatch(self, request: Request, call_next):
-        if ENVIRONMENT == "production":
-            forwarded_proto = request.headers.get("x-forwarded-proto", request.url.scheme)
-            if forwarded_proto != "https":
-                secure_url = request.url.replace(scheme="https")
-                return RedirectResponse(str(secure_url), status_code=308)
+    def __init__(self, app) -> None:
+        self.app = app
 
-        return await call_next(request)
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        if ENVIRONMENT == "production":
+            headers_dict = dict(scope.get("headers", []))
+            
+            # Check forwarded proto
+            forwarded_proto = headers_dict.get(b"x-forwarded-proto", b"").decode().strip()
+            if not forwarded_proto:
+                forwarded_proto = scope.get("scheme", "http")
+
+            if forwarded_proto != "https":
+                host = headers_dict.get(b"host", b"localhost").decode()
+                path = scope.get("path", "")
+                query_string = scope.get("query_string", b"").decode()
+                if query_string:
+                    query_string = f"?{query_string}"
+                secure_url = f"https://{host}{path}{query_string}"
+                
+                await send({
+                    "type": "http.response.start",
+                    "status": 308,
+                    "headers": [(b"location", secure_url.encode())]
+                })
+                await send({
+                    "type": "http.response.body",
+                    "body": b"",
+                    "more_body": False
+                })
+                return
+
+        await self.app(scope, receive, send)
 
 # ==================== Rate Limiting Setup ====================
 # ==================== FastAPI Initialization ====================
