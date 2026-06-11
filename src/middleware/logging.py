@@ -5,107 +5,97 @@ Logs all incoming requests and outgoing responses.
 
 import logging
 import time
-from fastapi import Request
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
 
-class RequestLoggingMiddleware(BaseHTTPMiddleware):
+
+class RequestLoggingMiddleware:
     """
     Middleware that logs all HTTP requests and responses.
     Tracks request duration, status codes, and request/response sizes.
     """
 
-    async def dispatch(self, request: Request, call_next) -> Response:
-        """
-        Process the request, time it, and log details.
+    def __init__(self, app) -> None:
+        self.app = app
 
-        Args:
-            request: The incoming HTTP request
-            call_next: The next middleware/route handler
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
 
-        Returns:
-            The HTTP response with logging metadata
-        """
-
-        # Start timer
         start_time = time.time()
+        method = scope.get("method", "UNKNOWN")
+        path = scope.get("path", "")
 
-        # Extract request details
-        method = request.method
-        path = request.url.path
-
-        # Log incoming request
         logger.info("Incoming Request: %s %s", method, path)
 
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                duration = time.time() - start_time
+                status_code = message.get("status", 200)
+
+                log_level = "INFO" if 200 <= status_code < 400 else "WARNING"
+                log_message = (
+                    f"{method} {path} | "
+                    f"Status: {status_code} | "
+                    f"Duration: {duration:.3f}s"
+                )
+
+                if log_level == "INFO":
+                    logger.info(log_message)
+                else:
+                    logger.warning(log_message)
+
+                # Add custom headers for tracing (X-Process-Time)
+                headers = list(message.get("headers", []))
+                headers.append((b"x-process-time", str(duration).encode()))
+                message["headers"] = headers
+
+            await send(message)
+
         try:
-            # Process request
-            response = await call_next(request)
-
-            # Calculate duration
-            duration = time.time() - start_time
-
-            # Extract response details
-            status_code = response.status_code
-
-            # Log response
-            log_level = "INFO" if 200 <= status_code < 400 else "WARNING"
-
-            log_message = (
-                f"{method} {path} | "
-                f"Status: {status_code} | "
-                f"Duration: {duration:.3f}s"
-            )
-
-            if log_level == "INFO":
-                logger.info(log_message)
-            else:
-                logger.warning(log_message)
-
-            # Add custom headers for tracing
-            response.headers["X-Process-Time"] = str(duration)
-
-            return response
-
+            await self.app(scope, receive, send_wrapper)
         except Exception as e:
-            # Calculate duration on error
             duration = time.time() - start_time
-
             logger.error(
                 f"{method} {path} | "
                 f"Error: {str(e)} | "
                 f"Duration: {duration:.3f}s",
                 exc_info=True
             )
-
             raise
 
-class SecurityLoggingMiddleware(BaseHTTPMiddleware):
+
+class SecurityLoggingMiddleware:
     """
     Middleware that logs security-related events.
     Tracks authentication failures, suspicious patterns, etc.
     """
 
-    async def dispatch(self, request: Request, call_next) -> Response:
-        """
-        Log security-related information from requests.
+    def __init__(self, app) -> None:
+        self.app = app
 
-        Args:
-            request: The incoming HTTP request
-            call_next: The next middleware/route handler
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
 
-        Returns:
-            The HTTP response
-        """
+        path = scope.get("path", "")
+        method = scope.get("method", "UNKNOWN")
 
-        # Check for suspicious patterns
-        path = request.url.path
-        method = request.method
-        client_ip = request.client.host if request.client else "unknown"
+        # Safe extraction of client IP
+        client = scope.get("client")
+        client_ip = client[0] if client else "unknown"
+
+        headers_dict = dict(scope.get("headers", []))
+
+        # Check X-Forwarded-For if available
+        forwarded_for = headers_dict.get(b"x-forwarded-for")
+        if forwarded_for:
+            client_ip = forwarded_for.decode().split(",")[0].strip()
 
         # Log authorization attempts
-        if "authorization" in request.headers:
+        if b"authorization" in headers_dict:
             logger.debug(f"Authorization attempt from {client_ip}")
 
         # Log admin/sensitive endpoint access
@@ -117,10 +107,12 @@ class SecurityLoggingMiddleware(BaseHTTPMiddleware):
         if method not in ["GET", "POST", "PUT", "DELETE"] and not path.startswith("/api"):
             logger.warning(f"Unusual HTTP method: {method} {path} from {client_ip}")
 
-        response = await call_next(request)
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                status_code = message.get("status", 200)
+                if status_code in [401, 403]:
+                    logger.warning(f"Auth failure: {method} {path} from {client_ip} - Status: {status_code}")
+            await send(message)
 
-        # Log failed authentication (401, 403)
-        if response.status_code in [401, 403]:
-            logger.warning(f"Auth failure: {method} {path} from {client_ip} - Status: {response.status_code}")
+        await self.app(scope, receive, send_wrapper)
 
-        return response
