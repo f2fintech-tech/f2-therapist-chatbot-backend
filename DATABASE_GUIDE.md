@@ -34,9 +34,9 @@ SELECT id, email, name, phone, hearts, is_guest, created_at FROM users;
 
 ### Find a specific user by email:
 ```sql
-SELECT id, email, name, phone, location, occupation, wellness_score, wellness_tier 
-FROM users 
-WHERE email = 'gnd.dhiman@gmail.com';
+    SELECT id, email, name, phone, location, occupation, wellness_score, wellness_tier 
+    FROM users 
+    WHERE email = 'gnd.dhiman@gmail.com';
 ```
 
 ### Check consolidated JSON telemetry profiles:
