@@ -10,23 +10,8 @@ from collections import defaultdict, deque
 from typing import Deque
 from urllib.parse import urlparse
 
-from fastapi import Request
-from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
-
 
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
-
-
-def _client_ip(request: Request) -> str:
-    forwarded_for = request.headers.get("x-forwarded-for", "")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
-
-    if request.client and request.client.host:
-        return request.client.host
-
-    return "unknown"
 
 
 def _normalize_origin(value: str) -> str | None:
@@ -41,90 +26,127 @@ def _normalize_origin(value: str) -> str | None:
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+class SecurityHeadersMiddleware:
     """Attach baseline security headers to every response."""
 
     def __init__(self, app, *, production: bool = False) -> None:
-        super().__init__(app)
+        self.app = app
         self.production = production
 
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
 
-        response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("X-Frame-Options", "DENY")
-        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-        response.headers.setdefault("X-Permitted-Cross-Domain-Policies", "none")
-        response.headers.setdefault("Cache-Control", "no-store")
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                
+                def set_header(k, v):
+                    k_bytes = k.lower().encode()
+                    if not any(h[0] == k_bytes for h in headers):
+                        headers.append((k_bytes, v.encode()))
 
-        if self.production:
-            response.headers.setdefault(
-                "Strict-Transport-Security",
-                "max-age=31536000; includeSubDomains",
-            )
+                set_header("X-Content-Type-Options", "nosniff")
+                set_header("X-Frame-Options", "DENY")
+                set_header("Referrer-Policy", "strict-origin-when-cross-origin")
+                set_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+                set_header("X-Permitted-Cross-Domain-Policies", "none")
+                set_header("Cache-Control", "no-store")
 
-        return response
+                if self.production:
+                    set_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+
+                message["headers"] = headers
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
 
 
-class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
+class RequestSizeLimitMiddleware:
     """Reject requests that exceed the configured body size."""
 
     def __init__(self, app, *, max_body_bytes: int = 1_048_576, exempt_paths: set[str] | None = None) -> None:
-        super().__init__(app)
+        self.app = app
         self.max_body_bytes = max_body_bytes
         self.exempt_paths = exempt_paths or set()
 
-    async def dispatch(self, request: Request, call_next):
-        # We only enforce the limit on API routes; static/docs traffic is not part of the attack surface here.
-        if not request.url.path.startswith("/api") or request.url.path in self.exempt_paths:
-            return await call_next(request)
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
 
-        content_length = request.headers.get("content-length")
-        if content_length is None:
-            return await call_next(request)
+        path = scope["path"]
+        if not path.startswith("/api") or path in self.exempt_paths:
+            await self.app(scope, receive, send)
+            return
 
-        try:
-            size = int(content_length)
-        except ValueError:
-            return JSONResponse(
-                status_code=400,
-                content={"detail": "Invalid Content-Length header"},
-            )
+        headers = dict(scope.get("headers", []))
+        content_length = headers.get(b"content-length")
 
-        if size > self.max_body_bytes:
-            return JSONResponse(
-                status_code=413,
-                content={
-                    "detail": "Request body too large",
-                    "max_bytes": self.max_body_bytes,
-                },
-            )
+        if content_length is not None:
+            try:
+                size = int(content_length.decode())
+                if size > self.max_body_bytes:
+                    await send({
+                        "type": "http.response.start",
+                        "status": 413,
+                        "headers": [(b"content-type", b"application/json")]
+                    })
+                    await send({
+                        "type": "http.response.body",
+                        "body": b'{"detail": "Request body too large"}',
+                        "more_body": False
+                    })
+                    return
+            except ValueError:
+                await send({
+                    "type": "http.response.start",
+                    "status": 400,
+                    "headers": [(b"content-type", b"application/json")]
+                })
+                await send({
+                    "type": "http.response.body",
+                    "body": b'{"detail": "Invalid Content-Length header"}',
+                    "more_body": False
+                })
+                return
 
-        return await call_next(request)
+        await self.app(scope, receive, send)
 
 
-class RateLimitMiddleware(BaseHTTPMiddleware):
+class RateLimitMiddleware:
     """Lightweight per-IP request rate limiting."""
 
-    _request_history: dict[str, Deque[float]] = defaultdict(deque)
+    _request_history = defaultdict(deque)
     _lock = threading.Lock()
 
     def __init__(self, app, *, requests_per_minute: int = 200, window_seconds: int = 60, exempt_paths: set[str] | None = None) -> None:
-        super().__init__(app)
+        self.app = app
         self.requests_per_minute = requests_per_minute
         self.window_seconds = window_seconds
         self.exempt_paths = exempt_paths or set()
 
-    async def dispatch(self, request: Request, call_next):
-        # Preflight requests should not count against the caller's quota.
-        if not request.url.path.startswith("/api") or request.url.path in self.exempt_paths:
-            return await call_next(request)
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
 
-        if request.method == "OPTIONS":
-            return await call_next(request)
+        path = scope["path"]
+        method = scope["method"]
+        if not path.startswith("/api") or path in self.exempt_paths or method == "OPTIONS":
+            await self.app(scope, receive, send)
+            return
 
-        client_ip = _client_ip(request)
+        # Extract client IP
+        client = scope.get("client")
+        client_ip = client[0] if client else "unknown"
+
+        headers = dict(scope.get("headers", []))
+        forwarded_for = headers.get(b"x-forwarded-for")
+        if forwarded_for:
+            client_ip = forwarded_for.decode().split(",")[0].strip()
+
         now = time.time()
         window_start = now - self.window_seconds
 
@@ -135,56 +157,85 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
             if len(bucket) >= self.requests_per_minute:
                 retry_after = max(1, int(self.window_seconds - (now - bucket[0])))
-                return JSONResponse(
-                    status_code=429,
-                    headers={"Retry-After": str(retry_after)},
-                    content={
-                        "detail": "Rate limit exceeded",
-                        "retry_after_seconds": retry_after,
-                    },
-                )
+                await send({
+                    "type": "http.response.start",
+                    "status": 429,
+                    "headers": [
+                        (b"content-type", b"application/json"),
+                        (b"retry-after", str(retry_after).encode())
+                    ]
+                })
+                body = f'{{"detail": "Rate limit exceeded", "retry_after_seconds": {retry_after}}}'.encode()
+                await send({
+                    "type": "http.response.body",
+                    "body": body,
+                    "more_body": False
+                })
+                return
 
             bucket.append(now)
 
-        return await call_next(request)
+        await self.app(scope, receive, send)
 
 
-class CSRFMiddleware(BaseHTTPMiddleware):
+class CSRFMiddleware:
     """Protect browser-originated unsafe requests with origin checks."""
 
     def __init__(self, app, *, enabled: bool = True, trusted_origins: list[str] | None = None, strict: bool = False) -> None:
-        super().__init__(app)
+        self.app = app
         self.enabled = enabled
         self.trusted_origins = {origin.rstrip("/") for origin in (trusted_origins or []) if origin.strip()}
         self.strict = strict
 
-    async def dispatch(self, request: Request, call_next):
-        # Safe methods are read-only, so they don't need origin validation.
-        if not self.enabled or request.method in SAFE_METHODS or not request.url.path.startswith("/api"):
-            return await call_next(request)
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
 
-        # Token-authenticated API callers are already protected by the API key/Bearer token check.
-        if request.headers.get("authorization") or request.headers.get("x-api-key"):
-            return await call_next(request)
+        method = scope["method"]
+        path = scope["path"]
+        if not self.enabled or method in SAFE_METHODS or not path.startswith("/api"):
+            await self.app(scope, receive, send)
+            return
 
-        # Only enforce browser-style CSRF checks when cookies are present, unless strict mode is enabled.
-        has_browser_cookies = bool(request.cookies)
+        headers = dict(scope.get("headers", []))
+        if b"authorization" in headers or b"x-api-key" in headers:
+            await self.app(scope, receive, send)
+            return
+
+        cookie = headers.get(b"cookie")
+        has_browser_cookies = bool(cookie)
         if not has_browser_cookies and not self.strict:
-            return await call_next(request)
+            await self.app(scope, receive, send)
+            return
 
-        origin = request.headers.get("origin") or request.headers.get("referer")
-        normalized_origin = _normalize_origin(origin or "")
+        origin = headers.get(b"origin", headers.get(b"referer"))
+        normalized_origin = _normalize_origin(origin.decode() if origin else "")
 
         if not normalized_origin:
-            return JSONResponse(
-                status_code=403,
-                content={"detail": "CSRF validation failed: missing origin"},
-            )
+            await send({
+                "type": "http.response.start",
+                "status": 403,
+                "headers": [(b"content-type", b"application/json")]
+            })
+            await send({
+                "type": "http.response.body",
+                "body": b'{"detail": "CSRF validation failed: missing origin"}',
+                "more_body": False
+            })
+            return
 
         if self.trusted_origins and normalized_origin not in self.trusted_origins:
-            return JSONResponse(
-                status_code=403,
-                content={"detail": "CSRF validation failed: untrusted origin"},
-            )
+            await send({
+                "type": "http.response.start",
+                "status": 403,
+                "headers": [(b"content-type", b"application/json")]
+            })
+            await send({
+                "type": "http.response.body",
+                "body": b'{"detail": "CSRF validation failed: untrusted origin"}',
+                "more_body": False
+            })
+            return
 
-        return await call_next(request)
+        await self.app(scope, receive, send)
