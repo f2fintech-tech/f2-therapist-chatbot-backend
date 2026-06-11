@@ -34,6 +34,10 @@ class AvailabilityUpdate(BaseModel):
 class NextSlotUpdate(BaseModel):
     next_slot: str
 
+class PasswordUpdate(BaseModel):
+    new_password: str = Field(..., min_length=6)
+
+
 @router.get("", response_model=List[AdvisorCreate])
 async def get_advisors(db: Session = Depends(get_db)):
     """
@@ -219,6 +223,28 @@ async def update_next_slot(f2_fintech_id: str, payload: NextSlotUpdate, db: Sess
         db.rollback()
         logger.error(f"Error updating advisor next-slot: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to update next-slot: {str(e)}")
+
+@router.put("/{f2_fintech_id}/password", status_code=status.HTTP_200_OK)
+async def update_password(f2_fintech_id: str, payload: PasswordUpdate, db: Session = Depends(get_db)):
+    """
+    Update the login password for an advisor.
+    """
+    try:
+        advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == f2_fintech_id).first()
+        if not advisor:
+            raise HTTPException(status_code=404, detail="Advisor profile not found")
+        
+        import bcrypt as _bcrypt
+        hashed = _bcrypt.hashpw(payload.new_password.encode(), _bcrypt.gensalt()).decode()
+        advisor.password_hash = hashed
+        db.commit()
+        return {"status": "success", "message": "Password updated successfully"}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating advisor password: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to update password: {str(e)}")
 
 
 @router.post("/{f2_fintech_id}/upload-avatar")
