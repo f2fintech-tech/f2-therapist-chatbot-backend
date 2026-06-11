@@ -4,6 +4,7 @@ Integrates with Google Gemini 3 flash preview via LangChain and Knowledge Base (
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -17,6 +18,37 @@ import re
 import time
 import json
 import threading
+import asyncio
+
+def extract_partial_response(raw_text: str) -> str:
+    """Extract partial response content from streaming structured JSON."""
+    match = re.search(r'"response"\s*:\s*"(.*)', raw_text, re.DOTALL)
+    if not match:
+        if not raw_text.strip().startswith("{"):
+            return raw_text
+        return ""
+    
+    content = match.group(1)
+    parsed_chars = []
+    escaped = False
+    for char in content:
+        if escaped:
+            if char == 'n':
+                parsed_chars.append('\n')
+            elif char == 't':
+                parsed_chars.append('\t')
+            elif char == 'r':
+                parsed_chars.append('\r')
+            else:
+                parsed_chars.append(char)
+            escaped = False
+        elif char == '\\':
+            escaped = True
+        elif char == '"':
+            break
+        else:
+            parsed_chars.append(char)
+    return "".join(parsed_chars)
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -987,13 +1019,13 @@ def format_conversation_context(messages: list[ConversationMessage]) -> str:
     return "\n".join(history_lines)
 
 # ==================== Routes ====================
-@router.post("/", response_model=ChatResponse, status_code=status.HTTP_200_OK)
+@router.post("/", status_code=status.HTTP_200_OK)
 async def chat(request: ChatRequest, http_request: Request, db: Session = Depends(get_db)):
     """
     Main chat endpoint for the financial therapy chatbot.
 
     Accepts a user message, retrieves relevant knowledge from the knowledge base,
-    manages conversation context, and returns an AI response grounded in your data.
+    manages conversation context, and returns a streamed AI response.
     Automatically persists all messages to the database.
     Input is validated and sanitized for security.
 
@@ -1002,10 +1034,7 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
         db: Database session
 
     Returns:
-        ChatResponse with the AI's response and conversation details
-
-    Raises:
-        HTTPException: For validation errors, missing API key, or database issues
+        StreamingResponse yielding tokens and final metadata
     """
     try:
         request_start = time.perf_counter()
@@ -1089,24 +1118,32 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
             conversation.updated_at = datetime.utcnow()
             db.commit()
 
-            return ChatResponse(
-                response=safety_response,
-                user_id=request.user_id,
-                conversation_id=conversation.id,
-                message_id=assistant_message_obj.id,
-                timestamp=datetime.utcnow(),
-                title=conversation_title,
-                mood={
-                    "stress_level": mood_analysis.get("stress_level"),
-                    "emotional_state": mood_analysis.get("indicators", {}).get("emotional_state"),
-                    "financial_urgency": mood_analysis.get("indicators", {}).get("financial_urgency"),
-                    "willingness_to_learn": mood_analysis.get("indicators", {}).get("willingness_to_learn"),
-                    "openness_to_solutions": mood_analysis.get("indicators", {}).get("openness_to_solutions"),
-                    "stress_confidence": mood_analysis.get("stress_confidence"),
-                    "overall_confidence": mood_analysis.get("overall_confidence"),
-                    "dimensions": _build_mood_dimensions(mood_analysis),
-                    "safety_risk": mood_analysis.get("safety_risk"),
-                },
+            async def safety_generator():
+                words = safety_response.split(" ")
+                for i, word in enumerate(words):
+                    space = " " if i > 0 else ""
+                    yield json.dumps({"type": "token", "content": space + word}) + "\n"
+                    await asyncio.sleep(0.01)
+                
+                yield json.dumps({
+                    "type": "metadata",
+                    "response": safety_response,
+                    "user_id": request.user_id,
+                    "conversation_id": conversation.id,
+                    "message_id": assistant_message_obj.id,
+                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "title": conversation_title,
+                    "mood": mood_to_store,
+                }) + "\n"
+
+            return StreamingResponse(
+                safety_generator(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no"
+                }
             )
 
         if await http_request.is_disconnected():
@@ -1293,11 +1330,6 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
             )
             logger.info("Applied quiz tier guidance to system prompt: %s", request.user_tier)
 
-        # Create messages directly (avoiding template variable substitution issues with braces in user message)
-        generation_start = time.perf_counter()
-        max_retries = 2
-        response = None
-
         def _extract_stream_text(chunk) -> str:
             if hasattr(chunk, "content"):
                 content = chunk.content
@@ -1315,197 +1347,87 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
 
             return content if isinstance(content, str) else str(content)
 
-        for attempt in range(1, max_retries + 1):
-            try:
-                messages = [
-                    SystemMessage(content=system_prompt),
-                    HumanMessage(content=enhanced_message)
-                ]
-                response_stream = llm.stream(messages)
-                streamed_parts = []
+        async def main_generator():
+            generation_start = time.perf_counter()
+            max_retries = 2
+            response_text = ""
+            streamed_parts = []
 
-                for chunk in response_stream:
-                    if await http_request.is_disconnected():
-                        logger.info(
-                            "Client disconnected during Gemini streaming for user %s in conversation %s",
-                            request.user_id,
-                            conversation.id,
-                        )
-                        if hasattr(response_stream, "close"):
-                            response_stream.close()
-                        raise HTTPException(
-                            status_code=499,
-                            detail="Request cancelled by client.",
-                        )
+            for attempt in range(1, max_retries + 1):
+                try:
+                    messages = [
+                        SystemMessage(content=system_prompt),
+                        HumanMessage(content=enhanced_message)
+                    ]
+                    streamed_parts = []
+                    last_extracted_text = ""
 
-                    chunk_text = _extract_stream_text(chunk)
-                    if chunk_text:
-                        streamed_parts.append(chunk_text)
+                    async for chunk in llm.astream(messages):
+                        if await http_request.is_disconnected():
+                            logger.info(
+                                "Client disconnected during Gemini streaming for user %s in conversation %s",
+                                request.user_id,
+                                conversation.id,
+                            )
+                            return
 
-                response = "".join(streamed_parts).strip()
-                break
-            except Exception as exc:
-                error_message = str(exc)
-                is_quota = _is_quota_exhausted(error_message)
-                is_rate_limit = _is_rate_limited(error_message)
+                        chunk_text = _extract_stream_text(chunk)
+                        if chunk_text:
+                            streamed_parts.append(chunk_text)
+                            
+                            # Extract partial response content from the JSON stream
+                            raw_accumulated = "".join(streamed_parts)
+                            current_extracted = extract_partial_response(raw_accumulated)
+                            if len(current_extracted) > len(last_extracted_text):
+                                delta = current_extracted[len(last_extracted_text):]
+                                last_extracted_text = current_extracted
+                                yield json.dumps({"type": "token", "content": delta}) + "\n"
+                                await asyncio.sleep(0)
 
-                # Retry only for temporary capacity/rate pressure and stop on final attempt.
-                if not (is_quota or is_rate_limit) or attempt == max_retries:
-                    raise
+                    response_text = last_extracted_text
+                    break
+                except Exception as exc:
+                    error_message = str(exc)
+                    is_quota = _is_quota_exhausted(error_message)
+                    is_rate_limit = _is_rate_limited(error_message)
 
-                retry_delay = _retry_delay_from_error(error_message, default_delay=5.0)
-                retry_delay = min(retry_delay, 10.0)
-                retry_reason = "quota" if is_quota else "rate limit"
-                logger.warning(
-                    "Gemini %s hit for chat route; waiting %.1fs before retrying (attempt %d/%d)",
-                    retry_reason,
-                    retry_delay,
-                    attempt,
-                    max_retries,
+                    # Retry only for temporary capacity/rate pressure and stop on final attempt.
+                    if not (is_quota or is_rate_limit) or attempt == max_retries:
+                        yield json.dumps({"type": "error", "message": f"Generation error: {error_message}"}) + "\n"
+                        return
+
+                    retry_delay = _retry_delay_from_error(error_message, default_delay=5.0)
+                    retry_delay = min(retry_delay, 10.0)
+                    retry_reason = "quota" if is_quota else "rate limit"
+                    logger.warning(
+                        "Gemini %s hit for chat route; waiting %.1fs before retrying (attempt %d/%d)",
+                        retry_reason,
+                        retry_delay,
+                        attempt,
+                        max_retries,
+                    )
+                    await asyncio.sleep(retry_delay)
+
+            if not response_text.strip():
+                logger.warning("Assistant response was empty after parsing; applying safe fallback text")
+                response_text = (
+                    "I’m here with you. Let’s take this one step at a time and focus on the next helpful move."
                 )
-                time.sleep(retry_delay)
+                yield json.dumps({"type": "token", "content": response_text}) + "\n"
 
-        if response is None:
-            raise RuntimeError("No response generated from model")
+            logger.info("Model generation completed in %.2fs", time.perf_counter() - generation_start)
 
-        logger.info("Model generation completed in %.2fs", time.perf_counter() - generation_start)
-
-        # Parse structured output so we can save the assistant response and inline evaluation scores.
-        assistant_text = None
-        evaluation = None
-        try:
-            # Handle AIMessage objects from LangChain - content can be list (multimodal) or string
-            if hasattr(response, 'content'):
-                content = response.content
-                
-                # If content is a list (multimodal response), extract text from each item
-                if isinstance(content, list):
-                    text_parts = []
-                    for item in content:
-                        if isinstance(item, dict) and 'text' in item:
-                            text_parts.append(item['text'])
-                        elif isinstance(item, str):
-                            text_parts.append(item)
-                    raw_text = ''.join(text_parts)
-                else:
-                    raw_text = str(content) if not isinstance(content, str) else content
-            else:
-                raw_text = str(response)
-            
-            logger.info(f"raw_text (first 200): {raw_text[:200]}")
-            assistant_text, evaluation = _parse_structured_chat_output(raw_text)
-            logger.info(f"Successfully parsed assistant_text (first 200): {assistant_text[:200] if assistant_text else 'None'}")
-        except Exception as e:
-            logger.warning(f"Failed to parse structured output: {e}", exc_info=True)
-            # Fallback: try to get content as string
-            if hasattr(response, 'content'):
-                content = response.content
-                if isinstance(content, list):
-                    text_parts = []
-                    for item in content:
-                        if isinstance(item, dict) and 'text' in item:
-                            text_parts.append(item['text'])
-                        elif isinstance(item, str):
-                            text_parts.append(item)
-                    assistant_text = ''.join(text_parts)
-                else:
-                    assistant_text = str(content) if not isinstance(content, str) else content
-            else:
-                assistant_text = str(response)
+            # Parse structured output for evaluation scores
+            assistant_text = response_text
             evaluation = None
-
-        if not isinstance(assistant_text, str) or not assistant_text.strip():
-            logger.warning("Assistant response was empty after parsing; applying safe fallback text")
-            assistant_text = (
-                "I’m here with you. Let’s take this one step at a time and focus on the next helpful move."
-            )
-
-        # Build mood data to store with message
-        mood_to_store = {
-            "stress_level": mood_analysis.get("stress_level"),
-            "emotional_state": mood_analysis.get("indicators", {}).get("emotional_state"),
-            "financial_urgency": mood_analysis.get("indicators", {}).get("financial_urgency"),
-            "willingness_to_learn": mood_analysis.get("indicators", {}).get("willingness_to_learn"),
-            "openness_to_solutions": mood_analysis.get("indicators", {}).get("openness_to_solutions"),
-            "stress_confidence": mood_analysis.get("stress_confidence"),
-            "overall_confidence": mood_analysis.get("overall_confidence"),
-            "dimensions": _build_mood_dimensions(mood_analysis),
-        }
-
-        # Save assistant message with mood data
-        assistant_message_obj = save_message(
-            db, conversation.id, MessageRole.ASSISTANT, assistant_text, mood=mood_to_store
-        )
-        logger.info(f"Assistant message saved: {assistant_message_obj.id}")
-
-        if not conversation.title:
-            conversation.title = _generate_conversation_title(request.message)
-        conversation_title = conversation.title
-
-        conversation.summary = _generate_conversation_summary(request.message, assistant_text)
-
-        persist_mood_snapshot(
-            user_id=request.user_id,
-            conversation_id=conversation.id,
-            user_message_id=user_message_obj.id,
-            assistant_message_id=assistant_message_obj.id,
-            user_message=request.message,
-            assistant_response=assistant_text,
-            mood_analysis=mood_analysis,
-            conversation_depth=conversation_depth,
-            model_name="gemini-3-flash-preview",
-        )
-        logger.info("Mood snapshot persisted for conversation %s", conversation.id)
-
-        wellness_snapshot = None
-        try:
-            wellness_snapshot = update_live_mood(db, user_id=request.user_id, mood_analysis=mood_analysis)
-            db.commit()
-        except Exception as exc:
-            db.rollback()
-            logger.warning("Wellness update failed for user %s: %s", request.user_id, str(exc), exc_info=True)
-
-        # Update conversation metadata
-        conversation.message_count += 2
-        conversation.updated_at = datetime.utcnow()
-        db.commit()
-
-        if experiment_enabled and experiment_assignment:
             try:
-                log_chat_experiment_assignment(
-                    user_id=request.user_id,
-                    conversation_id=conversation.id,
-                    message_id=assistant_message_obj.id,
-                    response_text=assistant_text,
-                    latency_seconds=time.perf_counter() - request_start,
-                    experiment_assignment=experiment_assignment,
-                )
-            except Exception as exc:
-                logger.warning("Experiment assignment logging failed: %s", str(exc), exc_info=True)
+                raw_text = "".join(streamed_parts)
+                _, evaluation = _parse_structured_chat_output(raw_text)
+            except Exception as e:
+                logger.warning(f"Failed to parse structured output: {e}")
 
-        logger.info(f"Chat exchange completed for user {request.user_id} in conversation {conversation.id}")
-        logger.info(f"Response length: {len(assistant_text)} characters")
-        logger.info("Total chat request completed in %.2fs", time.perf_counter() - request_start)
-
-        experiment_response = None
-        if experiment_enabled and experiment_assignment:
-            experiment_response = {
-                "enabled": True,
-                "experiment_name": experiment_assignment.get("experiment_name"),
-                "variant": experiment_assignment.get("variant"),
-                "bucket": experiment_assignment.get("bucket"),
-                "assignment_key": experiment_assignment.get("assignment_key"),
-            }
-
-        return ChatResponse(
-            response=assistant_text,
-            user_id=request.user_id,
-            conversation_id=conversation.id,
-            message_id=assistant_message_obj.id,
-            timestamp=datetime.utcnow(),
-            title=conversation_title,
-            experiment=experiment_response,
-            mood={
+            # Build mood data to store with message
+            mood_to_store = {
                 "stress_level": mood_analysis.get("stress_level"),
                 "emotional_state": mood_analysis.get("indicators", {}).get("emotional_state"),
                 "financial_urgency": mood_analysis.get("indicators", {}).get("financial_urgency"),
@@ -1515,10 +1437,95 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
                 "overall_confidence": mood_analysis.get("overall_confidence"),
                 "dimensions": _build_mood_dimensions(mood_analysis),
             }
-            ,
-            evaluation=evaluation,
-            wellness=wellness_snapshot,
-            conversation_state=conversation_state.to_dict(),
+
+            # Save assistant message with mood data
+            assistant_message_obj = save_message(
+                db, conversation.id, MessageRole.ASSISTANT, assistant_text, mood=mood_to_store
+            )
+            logger.info(f"Assistant message saved: {assistant_message_obj.id}")
+
+            if not conversation.title:
+                conversation.title = _generate_conversation_title(request.message)
+            conversation_title = conversation.title
+
+            conversation.summary = _generate_conversation_summary(request.message, assistant_text)
+
+            persist_mood_snapshot(
+                user_id=request.user_id,
+                conversation_id=conversation.id,
+                user_message_id=user_message_obj.id,
+                assistant_message_id=assistant_message_obj.id,
+                user_message=request.message,
+                assistant_response=assistant_text,
+                mood_analysis=mood_analysis,
+                conversation_depth=conversation_depth,
+                model_name="gemini-3-flash-preview",
+            )
+            logger.info("Mood snapshot persisted for conversation %s", conversation.id)
+
+            current_wellness_snapshot = None
+            try:
+                current_wellness_snapshot = update_live_mood(db, user_id=request.user_id, mood_analysis=mood_analysis)
+                db.commit()
+            except Exception as exc:
+                db.rollback()
+                logger.warning("Wellness update failed for user %s: %s", request.user_id, str(exc), exc_info=True)
+
+            # Update conversation metadata
+            conversation.message_count += 2
+            conversation.updated_at = datetime.utcnow()
+            db.commit()
+
+            if experiment_enabled and experiment_assignment:
+                try:
+                    log_chat_experiment_assignment(
+                        user_id=request.user_id,
+                        conversation_id=conversation.id,
+                        message_id=assistant_message_obj.id,
+                        response_text=assistant_text,
+                        latency_seconds=time.perf_counter() - request_start,
+                        experiment_assignment=experiment_assignment,
+                    )
+                except Exception as exc:
+                    logger.warning("Experiment assignment logging failed: %s", str(exc), exc_info=True)
+
+            logger.info(f"Chat exchange completed for user {request.user_id} in conversation {conversation.id}")
+            logger.info(f"Response length: {len(assistant_text)} characters")
+            logger.info("Total chat request completed in %.2fs", time.perf_counter() - request_start)
+
+            experiment_response = None
+            if experiment_enabled and experiment_assignment:
+                experiment_response = {
+                    "enabled": True,
+                    "experiment_name": experiment_assignment.get("experiment_name"),
+                    "variant": experiment_assignment.get("variant"),
+                    "bucket": experiment_assignment.get("bucket"),
+                    "assignment_key": experiment_assignment.get("assignment_key"),
+                }
+
+            yield json.dumps({
+                "type": "metadata",
+                "response": assistant_text,
+                "user_id": request.user_id,
+                "conversation_id": conversation.id,
+                "message_id": assistant_message_obj.id,
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "title": conversation_title,
+                "experiment": experiment_response,
+                "mood": mood_to_store,
+                "evaluation": evaluation,
+                "wellness": current_wellness_snapshot,
+                "conversation_state": conversation_state.to_dict(),
+            }) + "\n"
+
+        return StreamingResponse(
+            main_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
         )
 
     except ValueError as e:
