@@ -430,3 +430,27 @@ def advisor_login(payload: AdvisorLoginRequest, db: Session = Depends(get_db)):
         is_guest=False,
         is_advisor=True
     )
+
+
+class ChangePasswordRequest(BaseModel):
+    user_id: str
+    current_password: str
+    new_password: str = Field(..., min_length=6)
+
+
+@router.put("/change-password")
+def change_password(payload: ChangePasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == payload.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not user.hashed_password:
+        raise HTTPException(status_code=400, detail="This account has no password set (guest account)")
+
+    if not verify_password(payload.current_password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+
+    user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    logger.info("Password changed for user: %s", user.id)
+    return {"status": "success", "message": "Password changed successfully"}
