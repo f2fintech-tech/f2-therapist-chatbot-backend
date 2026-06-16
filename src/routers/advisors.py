@@ -35,7 +35,9 @@ class NextSlotUpdate(BaseModel):
     next_slot: str
 
 class PasswordUpdate(BaseModel):
+    current_password: str
     new_password: str = Field(..., min_length=6)
+
 
 
 @router.get("", response_model=List[AdvisorCreate])
@@ -234,12 +236,22 @@ async def update_password(f2_fintech_id: str, payload: PasswordUpdate, db: Sessi
         if not advisor:
             raise HTTPException(status_code=404, detail="Advisor profile not found")
         
+        # Verify current password
+        if advisor.password_hash:
+            import bcrypt as _bcrypt
+            if not _bcrypt.checkpw(payload.current_password.encode(), advisor.password_hash.encode()):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Current password is incorrect"
+                )
+        
         import bcrypt as _bcrypt
         hashed = _bcrypt.hashpw(payload.new_password.encode(), _bcrypt.gensalt()).decode()
         advisor.password_hash = hashed
         db.commit()
         return {"status": "success", "message": "Password updated successfully"}
     except HTTPException as he:
+
         raise he
     except Exception as e:
         db.rollback()
