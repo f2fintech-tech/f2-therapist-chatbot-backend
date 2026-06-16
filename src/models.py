@@ -246,8 +246,8 @@ class Advisor(Base):
     expertise = Column(JSON, nullable=True)  # List of strings
     strength = Column(String(255), nullable=True)
     bio = Column(Text, nullable=True)
-    rating = Column(Float, default=4.8, nullable=False)
-    reviews_count = Column(Integer, default=15, nullable=False)
+    rating = Column(Float, default=0.0, nullable=False)
+    reviews_count = Column(Integer, default=0, nullable=False)
     next_slot = Column(String(255), nullable=True)
     category = Column(String(255), nullable=False)
     fee = Column(Integer, default=899, nullable=False)

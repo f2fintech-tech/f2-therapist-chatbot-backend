@@ -19,14 +19,16 @@ class AdvisorBase(BaseModel):
     expertise: Optional[List[str]] = None
     strength: Optional[str] = None
     bio: Optional[str] = None
-    rating: float = 4.8
-    reviews_count: int = 15
+    rating: float = 0.0
+    reviews_count: int = 0
     next_slot: Optional[str] = None
     category: str
     fee: int = 899
 
 class AdvisorCreate(AdvisorBase):
     f2_fintech_id: str
+    test_comment: Optional[str] = None
+    test_rating: Optional[int] = None
 
 class AvailabilityUpdate(BaseModel):
     availability: str
@@ -115,6 +117,58 @@ async def save_advisor(payload: AdvisorCreate, db: Session = Depends(get_db)):
             db.refresh(new_advisor)
             target = new_advisor
 
+        # Check if a test review comment is provided to generate a simulated completed appointment
+        if payload.test_comment and payload.test_comment.strip():
+            from datetime import datetime, timedelta
+            import uuid
+            from src.models import User
+            
+            # Prevent double-click duplicates: check if the last completed review is identical and within 10 seconds
+            last_appt = db.query(AdvisorAppointment).filter(
+                AdvisorAppointment.advisor_id == target.f2_fintech_id,
+                AdvisorAppointment.completed == True,
+                AdvisorAppointment.feedback == payload.test_comment.strip()
+            ).order_by(AdvisorAppointment.booked_at.desc()).first()
+
+            is_duplicate = False
+            if last_appt and (datetime.utcnow() - last_appt.booked_at) < timedelta(seconds=10):
+                is_duplicate = True
+
+            if not is_duplicate:
+                # Find a user to link the appointment
+                user = db.query(User).filter(User.email == "admin@f2finheal.com").first()
+                if not user:
+                    user = db.query(User).first()
+                user_id = user.id if user else "test-user-id"
+
+                # Determine mock rating to set
+                simulated_rating = payload.test_rating if payload.test_rating else 5
+                if simulated_rating < 1:
+                    simulated_rating = 1
+                elif simulated_rating > 5:
+                    simulated_rating = 5
+
+                new_appt = AdvisorAppointment(
+                    id=str(uuid.uuid4()),
+                    user_id=user_id,
+                    advisor_id=target.f2_fintech_id,
+                    advisor_name=target.name,
+                    date="Today",
+                    time="12:00 PM",
+                    notes="Simulated test review from Admin Portal",
+                    completed=True,
+                    cancelled=False,
+                    rating=simulated_rating,
+                    feedback=payload.test_comment.strip(),
+                    meet_url="https://meet.google.com/test-meet"
+                )
+                db.add(new_appt)
+                db.commit()
+
+                # Recalculate stats dynamically
+                update_advisor_rating_stats(target.f2_fintech_id, db)
+                db.refresh(target)
+
         return AdvisorCreate(
             f2_fintech_id=target.f2_fintech_id,
             name=target.name,
@@ -128,7 +182,9 @@ async def save_advisor(payload: AdvisorCreate, db: Session = Depends(get_db)):
             reviews_count=target.reviews_count,
             next_slot=target.next_slot,
             category=target.category,
-            fee=target.fee
+            fee=target.fee,
+            test_comment=payload.test_comment,
+            test_rating=payload.test_rating
         )
     except Exception as e:
         db.rollback()
@@ -467,6 +523,33 @@ async def get_all_appointments(db: Session = Depends(get_db)):
         logger.error(f"Error fetching all appointments: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch all appointments: {str(e)}")
 
+def update_advisor_rating_stats(advisor_id: str, db: Session):
+    """
+    Recalculates the advisor's average rating and review counts from completed appointments
+    and updates the advisor's record.
+    """
+    try:
+        ratings = db.query(AdvisorAppointment.rating).filter(
+            AdvisorAppointment.advisor_id == advisor_id,
+            AdvisorAppointment.completed == True,
+            AdvisorAppointment.rating.isnot(None)
+        ).all()
+        
+        advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == advisor_id).first()
+        if advisor:
+            if ratings:
+                rating_values = [r[0] for r in ratings]
+                advisor.rating = round(sum(rating_values) / len(rating_values), 1)
+                advisor.reviews_count = len(rating_values)
+            else:
+                advisor.rating = 0.0
+                advisor.reviews_count = 0
+            db.commit()
+            db.refresh(advisor)
+            logger.info(f"Updated advisor {advisor_id} stats: rating={advisor.rating}, reviews={advisor.reviews_count}")
+    except Exception as e:
+        logger.error(f"Error updating advisor {advisor_id} stats: {e}", exc_info=True)
+
 @router.put("/appointments/{appt_id}/status", response_model=AppointmentResponse)
 async def update_appointment_status(appt_id: str, payload: AppointmentStatusUpdate, db: Session = Depends(get_db)):
     try:
@@ -485,6 +568,10 @@ async def update_appointment_status(appt_id: str, payload: AppointmentStatusUpda
             
         db.commit()
         db.refresh(appt)
+        
+        # Trigger recalculation of advisor stats
+        update_advisor_rating_stats(appt.advisor_id, db)
+        
         return AppointmentResponse(
             id=appt.id,
             user_id=appt.user_id,
