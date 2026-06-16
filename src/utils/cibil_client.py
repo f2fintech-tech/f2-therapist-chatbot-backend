@@ -181,6 +181,11 @@ def generate_mock_report(name: str, phone: str, pan: str, is_company: bool = Fal
         "pan": pan_upper,
         "name": name,
         "phone": phone,
+        "date_of_birth": "1999-12-28",
+        "age": 26,
+        "gender": "Male",
+        "address": "123, Block C, Green Park, New Delhi, Delhi 110016",
+        "email": "customer@example.com",
         "metrics": {
             "payment_on_time_pct": payment_on_time,
             "credit_utilization_pct": utilization,
@@ -587,6 +592,57 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                 if _safe_int(tradeline.get("writtenOffAmtTotal")) > 0 or _safe_int(tradeline.get("writtenOffPrincipal")) > 0:
                     write_offs_count += 1
             
+            # Extract gender, address, email, DOB, and age
+            gender = borrower.get("Gender") or "-"
+            
+            address = "-"
+            addr_node = borrower.get("BorrowerAddress", {})
+            if isinstance(addr_node, dict):
+                credit_addr = addr_node.get("CreditAddress", {})
+                if isinstance(credit_addr, dict):
+                    address = credit_addr.get("StreetAddress") or "-"
+
+            dob = "-"
+            age = "-"
+            birth_node = borrower.get("Birth", {})
+            if isinstance(birth_node, dict):
+                dob_raw = birth_node.get("date") or ""
+                if dob_raw:
+                    dob = dob_raw.split("+")[0].strip()
+                else:
+                    birth_date_node = birth_node.get("BirthDate", {})
+                    if birth_date_node:
+                        day = birth_date_node.get("day")
+                        month = birth_date_node.get("month")
+                        year = birth_date_node.get("year")
+                        if day and month and year:
+                            try:
+                                dob = f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
+                            except (ValueError, TypeError):
+                                pass
+                
+                if dob != "-":
+                    try:
+                        birth_date = datetime.strptime(dob, "%Y-%m-%d")
+                        ref_dt = datetime.utcnow()
+                        age = ref_dt.year - birth_date.year - ((ref_dt.month, ref_dt.day) < (birth_date.month, birth_date.day))
+                    except Exception:
+                        pass
+
+            email = "-"
+            email_node = borrower.get("BorrowerEmail", {})
+            if isinstance(email_node, dict):
+                email = email_node.get("EmailAddress") or "-"
+            elif isinstance(email_node, list) and email_node:
+                email = email_node[0].get("EmailAddress") or "-"
+            
+            if email == "-":
+                email_val = borrower.get("email") or borrower.get("Email")
+                if isinstance(email_val, list) and email_val:
+                    email = email_val[0].get("emailAddress") or email_val[0].get("EmailAddress") or "-"
+                elif isinstance(email_val, str):
+                    email = email_val
+
             metrics = {
                 "payment_on_time_pct": on_time_pct,
                 "credit_utilization_pct": utilization,
@@ -614,6 +670,11 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                 "pan": report_pan,
                 "name": report_name,
                 "phone": phone,
+                "date_of_birth": dob,
+                "age": age,
+                "gender": gender,
+                "address": address,
+                "email": email,
                 "metrics": metrics,
                 "accounts": accounts,
                 "tips": tips,
@@ -795,12 +856,51 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
             pdf_url = val
             break
 
+    # General parser fallbacks for gender, address, email, DOB, and age
+    gender = data.get("gender", data.get("Gender", "-"))
+    dob = data.get("date_of_birth", data.get("dateOfBirth", data.get("dob", "-")))
+    if dob == "-" and "BirthDate" in data:
+        bd = data["BirthDate"]
+        if isinstance(bd, dict):
+            day = bd.get("day")
+            month = bd.get("month")
+            year = bd.get("year")
+            if day and month and year:
+                try:
+                    dob = f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
+                except Exception:
+                    pass
+
+    age = data.get("age", data.get("Age", "-"))
+    if age == "-" and dob != "-":
+        try:
+            birth_date = datetime.strptime(dob, "%Y-%m-%d")
+            ref_dt = datetime.utcnow()
+            age = ref_dt.year - birth_date.year - ((ref_dt.month, ref_dt.day) < (birth_date.month, birth_date.day))
+        except Exception:
+            pass
+
+    address = data.get("address", data.get("Address", data.get("borrower_address", "-")))
+    if address == "-" and "BorrowerAddress" in data:
+        ba = data["BorrowerAddress"]
+        if isinstance(ba, dict):
+            credit_addr = ba.get("CreditAddress", {})
+            if isinstance(credit_addr, dict):
+                address = credit_addr.get("StreetAddress") or "-"
+
+    email = data.get("email", data.get("Email", data.get("email_id", "-")))
+
     return {
         "score": score,
         "band": band,
         "pan": report_pan,
         "name": report_name,
         "phone": phone,
+        "date_of_birth": dob,
+        "age": age,
+        "gender": gender,
+        "address": address,
+        "email": email,
         "metrics": metrics,
         "accounts": accounts,
         "tips": tips,

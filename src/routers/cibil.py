@@ -408,3 +408,74 @@ def get_cibil_report(user_id: str, db: Session = Depends(get_db)):
             detail="No CIBIL report found. Please fetch your credit report first."
         )
     return profile.data["cibil_report"]
+
+
+from fastapi.responses import StreamingResponse
+import io
+
+@router.get("/cam/generate/{user_id}")
+def generate_cam_report(user_id: str, db: Session = Depends(get_db)):
+    """
+    Generate and stream the CAM Excel report for the specified user.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User session not found in the database."
+        )
+
+    # Fetch latest credit report row
+    credit_report_row = (
+        db.query(UserCreditReport)
+        .filter(UserCreditReport.user_id == user_id)
+        .order_by(UserCreditReport.fetched_at.desc())
+        .first()
+    )
+
+    report_data = None
+    if credit_report_row:
+        # Re-parse from raw JSON if available, or fallback to report_data
+        if credit_report_row.raw_bureau_json:
+            report_data = normalize_cibil_report_from_raw(
+                credit_report_row.raw_bureau_json,
+                name=credit_report_row.report_data.get("name", "") if credit_report_row.report_data else "",
+                phone=credit_report_row.report_data.get("phone", "") if credit_report_row.report_data else "",
+                pan=credit_report_row.report_data.get("pan", "") if credit_report_row.report_data else ""
+            )
+        else:
+            report_data = credit_report_row.report_data
+
+    # Fallback to consolidated profile if no report row is found
+    if not report_data:
+        profile = db.query(UserConsolidatedProfile).filter(UserConsolidatedProfile.user_id == user_id).first()
+        if profile and profile.data and "cibil_report" in profile.data:
+            report_data = profile.data["cibil_report"]
+
+    if not report_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No CIBIL report found. Please fetch your credit report first."
+        )
+
+    # Generate CAM Excel bytes
+    try:
+        from src.utils.cam_generator import generate_cam_xlsx
+        cam_bytes = generate_cam_xlsx(report_data, user.email or "")
+    except Exception as e:
+        logger.error(f"Error generating CAM report: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate CAM Excel report: {str(e)}"
+        )
+
+    # Stream the Excel file back
+    filename = f"CAM_Report_{re.sub(r'[^a-zA-Z0-9_]', '_', user.name or 'User')}.xlsx"
+    return StreamingResponse(
+        io.BytesIO(cam_bytes),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
+
