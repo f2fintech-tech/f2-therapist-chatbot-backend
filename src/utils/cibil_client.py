@@ -316,7 +316,7 @@ async def fetch_actual_cibil_report(name: str, phone: str, pan: str, is_company:
         raise  # Do NOT silently fall back to mock when API is configured
 
 
-def normalize_cibil_report_from_raw(raw_bureau_json: Dict[str, Any], name: str = "", phone: str = "", pan: str = "") -> Dict[str, Any]:
+def normalize_cibil_report_from_raw(raw_bureau_json: Dict[str, Any], name: str = "", phone: str = "", pan: str = "", fetched_at: str = None) -> Dict[str, Any]:
     """
     Re-parse a raw bureau JSON response (as stored in DB) using the current normalization logic.
     Called by the GET /cibil/report endpoint so every retrieval always reflects the latest parser.
@@ -332,7 +332,7 @@ def normalize_cibil_report_from_raw(raw_bureau_json: Dict[str, Any], name: str =
             actual_data = raw_bureau_json[wrapper_key]
             break
 
-    normalized = _normalize_bureau_response(actual_data, name, phone, pan, raw_data=raw_bureau_json)
+    normalized = _normalize_bureau_response(actual_data, name, phone, pan, raw_data=raw_bureau_json, fetched_at=fetched_at)
     # Ensure no internal keys leak out
     normalized.pop("_raw_bureau_json", None)
     logger.info(f"[CIBIL] Re-parsed stored raw JSON. Score: {normalized.get('score')}, Accounts: {len(normalized.get('accounts', []))}")
@@ -418,7 +418,7 @@ async def fetch_actual_experian_report(name: str, phone: str, pan: str, is_compa
         raise  # Do NOT silently fall back to mock when API is configured
 
 
-def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan: str, raw_data: Dict[str, Any] = None) -> Dict[str, Any]:
+def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan: str, raw_data: Dict[str, Any] = None, fetched_at: str = None) -> Dict[str, Any]:
     """
     Normalize a real bureau API response into our standard schema.
     Handles many possible key naming conventions from different providers.
@@ -679,7 +679,7 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                 "accounts": accounts,
                 "tips": tips,
                 "pdf_url": pdf_url,
-                "fetched_at": datetime.utcnow().isoformat()
+                "fetched_at": fetched_at or datetime.utcnow().isoformat()
             }
 
     # Extract score — try many possible key names
@@ -905,7 +905,7 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
         "accounts": accounts,
         "tips": tips,
         "pdf_url": pdf_url,
-        "fetched_at": datetime.utcnow().isoformat()
+        "fetched_at": fetched_at or datetime.utcnow().isoformat()
     }
 
 

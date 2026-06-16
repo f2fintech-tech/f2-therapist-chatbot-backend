@@ -296,7 +296,8 @@ def backfill_raw_json(user_id: str, db: Session = Depends(get_db)):
         raw_data,
         name=stored_report.get("name", ""),
         phone=stored_report.get("phone", ""),
-        pan=stored_report.get("pan", "")
+        pan=stored_report.get("pan", ""),
+        fetched_at=credit_report_row.fetched_at.isoformat() if credit_report_row.fetched_at else None
     )
     if reparsed:
         if not reparsed.get("pdf_url") and stored_report.get("pdf_url"):
@@ -376,7 +377,8 @@ def get_cibil_report(user_id: str, db: Session = Depends(get_db)):
             credit_report_row.raw_bureau_json,
             name=stored_report.get("name", ""),
             phone=stored_report.get("phone", ""),
-            pan=stored_report.get("pan", "")
+            pan=stored_report.get("pan", ""),
+            fetched_at=credit_report_row.fetched_at.isoformat() if credit_report_row.fetched_at else None
         )
         if reparsed:
             # Preserve pdf_url from original
@@ -441,7 +443,8 @@ def generate_cam_report(user_id: str, db: Session = Depends(get_db)):
                 credit_report_row.raw_bureau_json,
                 name=credit_report_row.report_data.get("name", "") if credit_report_row.report_data else "",
                 phone=credit_report_row.report_data.get("phone", "") if credit_report_row.report_data else "",
-                pan=credit_report_row.report_data.get("pan", "") if credit_report_row.report_data else ""
+                pan=credit_report_row.report_data.get("pan", "") if credit_report_row.report_data else "",
+                fetched_at=credit_report_row.fetched_at.isoformat() if credit_report_row.fetched_at else None
             )
         else:
             report_data = credit_report_row.report_data
