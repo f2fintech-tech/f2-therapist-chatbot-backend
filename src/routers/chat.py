@@ -55,7 +55,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.models import (
     get_db, Conversation, ConversationMessage, MessageRole, User, get_or_create_user,
-    TestResult, UserConsolidatedProfile
+    TestResult, UserConsolidatedProfile, Advisor
 )
 from src.utils.validators import (
     sanitize_message, sanitize_string, validate_and_sanitize,
@@ -112,10 +112,13 @@ class ChatRequest(BaseModel):
 
     @validator('user_id')
     def validate_user_id(cls, v):
-        """Validate user_id is a valid UUID format."""
-        if not UUID_PATTERN.match(v):
-            raise ValueError("Invalid user_id format. Must be a valid UUID.")
-        return v.lower()
+        """Validate user_id is a valid UUID format or advisor ID."""
+        if UUID_PATTERN.match(v):
+            return v.lower()
+        elif v.lower().startswith("f2-"):
+            return v
+        raise ValueError("Invalid user_id format. Must be a valid UUID or advisor ID.")
+
 
     @validator('user_tier', pre=True, always=True)
     def validate_user_tier(cls, v):
@@ -189,11 +192,20 @@ class ChatExperimentFeedbackRequest(BaseModel):
     outcome: str | None = Field(None, max_length=100)
     notes: str | None = Field(None, max_length=1000)
 
-    @validator('user_id', 'conversation_id', 'message_id')
-    def validate_ids(cls, v):
+    @validator('conversation_id', 'message_id')
+    def validate_uuids(cls, v):
         if not UUID_PATTERN.match(v):
             raise ValueError("Invalid UUID format")
         return v.lower()
+
+    @validator('user_id')
+    def validate_user_id(cls, v):
+        if UUID_PATTERN.match(v):
+            return v.lower()
+        elif v.lower().startswith("f2-"):
+            return v
+        raise ValueError("Invalid user_id format. Must be a valid UUID or advisor ID.")
+
 
     @validator('experiment_variant')
     def validate_variant(cls, v):
@@ -1042,6 +1054,24 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
         # Ensure user exists
         user = get_or_create_user(db, request.user_id)
         logger.info(f"User authenticated: {request.user_id}")
+
+        # Advisor monthly limit check (10 messages per month limit only in advisor portal/workspace)
+        advisor_profile = db.query(Advisor).filter(Advisor.f2_fintech_id.ilike(request.user_id)).first()
+        if advisor_profile:
+            now = datetime.utcnow()
+            start_of_month = datetime(now.year, now.month, 1)
+            msg_count = db.query(ConversationMessage).join(Conversation).filter(
+                Conversation.user_id == request.user_id,
+                ConversationMessage.role == MessageRole.USER,
+                ConversationMessage.created_at >= start_of_month
+            ).count()
+            
+            if msg_count >= 10:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Advisor monthly message limit reached (10 messages/month)."
+                )
+
 
         # Hearts are only consumed for guest sessions.
         HEARTS_PER_MESSAGE = 10

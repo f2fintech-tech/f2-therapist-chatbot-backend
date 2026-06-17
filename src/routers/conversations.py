@@ -42,10 +42,13 @@ class ConversationCreate(BaseModel):
 
     @validator('user_id')
     def validate_user_id(cls, v):
-        """Validate user_id is a valid UUID format."""
-        if not UUID_PATTERN.match(v):
-            raise ValueError("Invalid user_id format. Must be a valid UUID.")
-        return v.lower()
+        """Validate user_id is a valid UUID format or advisor ID."""
+        if UUID_PATTERN.match(v):
+            return v.lower()
+        elif v.lower().startswith("f2-"):
+            return v
+        raise ValueError("Invalid user_id format. Must be a valid UUID or advisor ID.")
+
 
     @validator('title')
     def validate_title(cls, v):
@@ -170,11 +173,12 @@ def verify_conversation_ownership(db: Session, conversation_id: str, user_id: st
     Verify that a conversation belongs to the user.
     Raises HTTPException if not found or user doesn't own it.
     """
-    if not validate_uuid(conversation_id) or not validate_uuid(user_id):
+    if not validate_uuid(conversation_id) or not (validate_uuid(user_id) or user_id.lower().startswith("f2-")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid ID format"
         )
+
 
     conversation = db.query(Conversation).filter(
         and_(
@@ -267,11 +271,12 @@ async def list_conversations(
     """
     try:
         # Validate user_id format
-        if not validate_uuid(user_id):
+        if not (validate_uuid(user_id) or user_id.lower().startswith("f2-")):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid user_id format"
             )
+
 
         conversations = db.query(Conversation).filter(
             Conversation.user_id == user_id
