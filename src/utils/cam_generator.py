@@ -135,96 +135,146 @@ def generate_cam_xlsx(report_data: dict, user_email: str) -> bytes:
 
                     new_rows_dict = {}
                     
-                    # Rows 1 to 6 remain untouched in terms of row index
-                    for r in range(1, 7):
-                        if r in existing_rows_by_num:
-                            new_rows_dict[r] = existing_rows_by_num[r]
+                    def _get_column_letter(cell_ref):
+                        match = re.match(r'([A-Z]+)', cell_ref)
+                        return match.group(1) if match else ''
 
-                    # Insert new rows if shift_amt > 0
-                    base_row_elem = existing_rows_by_num.get(6)
-                    for i in range(shift_amt):
-                        new_r_num = 7 + i
-                        if base_row_elem is not None:
-                            new_row_str = ET.tostring(base_row_elem)
-                            new_row_elem = ET.fromstring(new_row_str)
-                            new_row_elem.set('r', str(new_r_num))
-                            # Reset cells inside new row to target row index
-                            for c in new_row_elem.findall('ns:c', ns):
-                                ref = c.attrib.get('r', '')
-                                match = re.match(r'([A-Z]+)([0-9]+)', ref)
-                                if match:
-                                    col_letter = match.group(1)
-                                    c.set('r', f"{col_letter}{new_r_num}")
-                            new_rows_dict[new_r_num] = new_row_elem
-                        else:
-                            new_row_elem = ET.Element(f'{{{main_ns}}}row')
-                            new_row_elem.set('r', str(new_r_num))
-                            new_rows_dict[new_r_num] = new_row_elem
-
-                    # Shift subsequent original rows (7 and above)
                     max_original_row = max(existing_rows_by_num.keys()) if existing_rows_by_num else 64
-                    for orig_r in range(7, max_original_row + 1):
-                        if orig_r in existing_rows_by_num:
-                            orig_elem = existing_rows_by_num[orig_r]
-                            new_r_num = orig_r + shift_amt
-                            orig_elem.set('r', str(new_r_num))
-                            
-                            for c in orig_elem.findall('ns:c', ns):
-                                ref = c.attrib.get('r', '')
-                                match = re.match(r'([A-Z]+)([0-9]+)', ref)
-                                if match:
-                                    col_letter = match.group(1)
-                                    c.set('r', f"{col_letter}{new_r_num}")
-                                    
-                                # Shift formulas referencing ranges
-                                f_elem = c.find('ns:f', ns)
-                                if f_elem is not None and f_elem.text:
-                                    orig_f = f_elem.text
-                                    # Update formulas summing ranges dynamically: e.g. SUM(G2:G6) -> SUM(G2:G8)
-                                    updated_f = re.sub(r'([A-Z])6\b', r'\g<1>' + str(6 + shift_amt), orig_f)
-                                    if orig_f != updated_f:
-                                        f_elem.text = updated_f
-                                        
-                            new_rows_dict[new_r_num] = orig_elem
+                    max_new_row = max_original_row + shift_amt
 
-                    # C. Populate profile data (Column B) - dynamically shifted by shift_amt for rows 7+
+                    for R in range(1, max_new_row + 1):
+                        base_r = None
+                        if R == 1:
+                            # Keep row 1 completely unchanged
+                            if 1 in existing_rows_by_num:
+                                base_r = ET.fromstring(ET.tostring(existing_rows_by_num[1]))
+                            else:
+                                base_r = ET.Element(f'{{{main_ns}}}row')
+                                base_r.set('r', '1')
+                            new_rows_dict[1] = base_r
+                            continue
+
+                        # Determine base row for R >= 2
+                        if R <= max_original_row and R in existing_rows_by_num:
+                            # Start with original row R (preserves columns A-D layout/height)
+                            base_r = ET.fromstring(ET.tostring(existing_rows_by_num[R]))
+                            # Remove columns E and beyond, as they will be remapped
+                            for c in list(base_r.findall('ns:c', ns)):
+                                ref = c.attrib.get('r', '')
+                                col = _get_column_letter(ref)
+                                if col not in ['A', 'B', 'C', 'D']:
+                                    base_r.remove(c)
+                        elif (R - shift_amt) in existing_rows_by_num:
+                            # Start with original row R - shift_amt (preserves columns E-Z layout/height)
+                            base_r = ET.fromstring(ET.tostring(existing_rows_by_num[R - shift_amt]))
+                            base_r.set('r', str(R))
+                            # Remove columns A-D, as they are not shifted to this row
+                            for c in list(base_r.findall('ns:c', ns)):
+                                ref = c.attrib.get('r', '')
+                                col = _get_column_letter(ref)
+                                if col in ['A', 'B', 'C', 'D']:
+                                    base_r.remove(c)
+                                else:
+                                    # Update cell coordinate row index
+                                    c.set('r', f"{col}{R}")
+                                    
+                                    # Shift formula reference inside the cell
+                                    f_elem = c.find('ns:f', ns)
+                                    if f_elem is not None and f_elem.text:
+                                        orig_f = f_elem.text
+                                        updated_f = re.sub(r'([A-Z])6\b', r'\g<1>' + str(6 + shift_amt), orig_f)
+                                        if orig_f != updated_f:
+                                            f_elem.text = updated_f
+                        else:
+                            base_r = ET.Element(f'{{{main_ns}}}row')
+                            base_r.set('r', str(R))
+
+                        # Populate columns E and beyond
+                        # Case A: Accounts rows (2 <= R <= 6 + shift_amt)
+                        if 2 <= R <= 6 + shift_amt:
+                            idx = R - 2
+                            if idx < num_accounts:
+                                acc = accounts[idx]
+                                _set_cell_text(base_r, f"E{R}", acc.get("type") or "-", ns, main_ns)
+                                _set_cell_text(base_r, f"F{R}", acc.get("lender") or "-", ns, main_ns)
+                                _set_cell_num(base_r, f"G{R}", int(float(acc.get("sanctioned_amount") or 0)), ns, main_ns)
+                                _set_cell_num(base_r, f"H{R}", int(float(acc.get("outstanding_balance") or 0)), ns, main_ns)
+                                _set_cell_num(base_r, f"I{R}", int(float(acc.get("emi") or 0)), ns, main_ns)
+                                _set_cell_text(base_r, f"J{R}", acc.get("open_date") or "-", ns, main_ns)
+                                _set_cell_text(base_r, f"K{R}", "-", ns, main_ns)
+                            elif R <= 6:
+                                # Clear padding template slots
+                                for col in ["E", "F", "G", "H", "I", "J", "K"]:
+                                    _set_cell_text(base_r, f"{col}{R}", "-", ns, main_ns)
+
+                        # Case B: Shifted template cells (R > 6 + shift_amt)
+                        else:
+                            r_orig = R - shift_amt
+                            if r_orig in existing_rows_by_num:
+                                orig_row_elem = existing_rows_by_num[r_orig]
+                                for c in orig_row_elem.findall('ns:c', ns):
+                                    ref = c.attrib.get('r', '')
+                                    col = _get_column_letter(ref)
+                                    if col not in ['A', 'B', 'C', 'D']:
+                                        c_clone = ET.fromstring(ET.tostring(c))
+                                        c_clone.set('r', f"{col}{R}")
+                                        
+                                        f_elem = c_clone.find('ns:f', ns)
+                                        if f_elem is not None and f_elem.text:
+                                            orig_f = f_elem.text
+                                            updated_f = re.sub(r'([A-Z])6\b', r'\g<1>' + str(6 + shift_amt), orig_f)
+                                            if orig_f != updated_f:
+                                                f_elem.text = updated_f
+                                                
+                                        # Deduplicate cell
+                                        existing_c = None
+                                        for ec in base_r.findall('ns:c', ns):
+                                            if ec.attrib.get('r') == f"{col}{R}":
+                                                existing_c = ec
+                                                break
+                                        if existing_c is not None:
+                                            base_r.remove(existing_c)
+                                        base_r.append(c_clone)
+
+                        new_rows_dict[R] = base_r
+
+                    # C. Populate profile data (Column B) - static row coordinates (non-shifting)
                     _set_cell_text(new_rows_dict[2], f"B2", customer_name, ns, main_ns)
                     _set_cell_text(new_rows_dict[4], f"B4", gender, ns, main_ns)
                     _set_cell_text(new_rows_dict[5], f"B5", "-", ns, main_ns)          # Marital Status
                     _set_cell_text(new_rows_dict[6], f"B6", "-", ns, main_ns)          # Mother Name
-                    
-                    _set_cell_text(new_rows_dict[7 + shift_amt], f"B{7 + shift_amt}", "-", ns, main_ns)          # Father Name
-                    _set_cell_text(new_rows_dict[8 + shift_amt], f"B{8 + shift_amt}", "-", ns, main_ns)          # Employment Type
-                    _set_cell_text(new_rows_dict[14 + shift_amt], f"B{14 + shift_amt}", dob, ns, main_ns)        # DOB
-                    _set_cell_text(new_rows_dict[15 + shift_amt], f"B{15 + shift_amt}", f"{age} YEARS OLD" if age and age != '-' else "-", ns, main_ns)
-                    _set_cell_text(new_rows_dict[16 + shift_amt], f"B{16 + shift_amt}", mobile, ns, main_ns)
-                    _set_cell_text(new_rows_dict[17 + shift_amt], f"B{17 + shift_amt}", email, ns, main_ns)
-                    _set_cell_text(new_rows_dict[19 + shift_amt], f"B{19 + shift_amt}", address, ns, main_ns)    # Current Address
-                    _set_cell_text(new_rows_dict[22 + shift_amt], f"B{22 + shift_amt}", "-", ns, main_ns)        # Working Address
-                    _set_cell_text(new_rows_dict[23 + shift_amt], f"B{23 + shift_amt}", address, ns, main_ns)    # Permanent Address
-                    _set_cell_text(new_rows_dict[25 + shift_amt], f"B{25 + shift_amt}", "-", ns, main_ns)        # Profession Details
-                    _set_cell_text(new_rows_dict[26 + shift_amt], f"B{26 + shift_amt}", "-", ns, main_ns)        # Highest Degree
-                    _set_cell_text(new_rows_dict[27 + shift_amt], f"B{27 + shift_amt}", "-", ns, main_ns)        # Registration Year
-                    _set_cell_text(new_rows_dict[28 + shift_amt], f"B{28 + shift_amt}", "-", ns, main_ns)        # Experience
-                    _set_cell_text(new_rows_dict[29 + shift_amt], f"B{29 + shift_amt}", "-", ns, main_ns)        # PG Pursuing
-                    _set_cell_num(new_rows_dict[32 + shift_amt], f"B{32 + shift_amt}", cibil_score, ns, main_ns)
+                    _set_cell_text(new_rows_dict[7], f"B7", "-", ns, main_ns)          # Father Name
+                    _set_cell_text(new_rows_dict[8], f"B8", "-", ns, main_ns)          # Employment Type
+                    _set_cell_text(new_rows_dict[14], f"B14", dob, ns, main_ns)        # DOB
+                    _set_cell_text(new_rows_dict[15], f"B15", f"{age} YEARS OLD" if age and age != '-' else "-", ns, main_ns)
+                    _set_cell_text(new_rows_dict[16], f"B16", mobile, ns, main_ns)
+                    _set_cell_text(new_rows_dict[17], f"B17", email, ns, main_ns)
+                    _set_cell_text(new_rows_dict[19], f"B19", address, ns, main_ns)    # Current Address
+                    _set_cell_text(new_rows_dict[22], f"B22", "-", ns, main_ns)        # Working Address
+                    _set_cell_text(new_rows_dict[23], f"B23", address, ns, main_ns)    # Permanent Address
+                    _set_cell_text(new_rows_dict[25], f"B25", "-", ns, main_ns)        # Profession Details
+                    _set_cell_text(new_rows_dict[26], f"B26", "-", ns, main_ns)        # Highest Degree
+                    _set_cell_text(new_rows_dict[27], f"B27", "-", ns, main_ns)        # Registration Year
+                    _set_cell_text(new_rows_dict[28], f"B28", "-", ns, main_ns)        # Experience
+                    _set_cell_text(new_rows_dict[29], f"B29", "-", ns, main_ns)        # PG Pursuing
+                    _set_cell_num(new_rows_dict[32], f"B32", cibil_score, ns, main_ns)
                     
                     # Clear monthly income cells to empty them
-                    _set_cell_text(new_rows_dict[9 + shift_amt], f"B{9 + shift_amt}", "-", ns, main_ns)          # Total Monthly Income
-                    _set_cell_text(new_rows_dict[10 + shift_amt], f"B{10 + shift_amt}", "-", ns, main_ns)        # Monthly Salary
-                    _set_cell_text(new_rows_dict[11 + shift_amt], f"B{11 + shift_amt}", "-", ns, main_ns)        # Additional Income
-                    _set_cell_text(new_rows_dict[12 + shift_amt], f"B{12 + shift_amt}", "-", ns, main_ns)        # Consultancy
-                    _set_cell_text(new_rows_dict[12 + shift_amt], f"F{12 + shift_amt}", "-", ns, main_ns)        # Monthly Income F12
-                    _set_cell_text(new_rows_dict[13 + shift_amt], f"B{13 + shift_amt}", "-", ns, main_ns)        # ITR Details
+                    _set_cell_text(new_rows_dict[9], f"B9", "-", ns, main_ns)          # Total Monthly Income
+                    _set_cell_text(new_rows_dict[10], f"B10", "-", ns, main_ns)        # Monthly Salary
+                    _set_cell_text(new_rows_dict[11], f"B11", "-", ns, main_ns)        # Additional Income
+                    _set_cell_text(new_rows_dict[12], f"B12", "-", ns, main_ns)        # Consultancy
+                    _set_cell_text(new_rows_dict[12 + shift_amt], f"F{12 + shift_amt}", "-", ns, main_ns)        # Monthly Income F12 (shifted)
+                    _set_cell_text(new_rows_dict[13], f"B13", "-", ns, main_ns)        # ITR Details
                     
-                    _set_cell_text(new_rows_dict[34 + shift_amt], f"B{34 + shift_amt}", "-", ns, main_ns)        # Average Monthly Credit
-                    _set_cell_text(new_rows_dict[35 + shift_amt], f"B{35 + shift_amt}", f"{num_accounts} | LOANS", ns, main_ns)
-                    _set_cell_text(new_rows_dict[36 + shift_amt], f"B{36 + shift_amt}", lenders_joined, ns, main_ns)
-                    _set_cell_num(new_rows_dict[37 + shift_amt], f"B{37 + shift_amt}", int(total_emi), ns, main_ns)
-                    _set_cell_text(new_rows_dict[38 + shift_amt], f"B{38 + shift_amt}", "-", ns, main_ns)        # ABB Last 6 Month
-                    _set_cell_text(new_rows_dict[39 + shift_amt], f"B{39 + shift_amt}", "-", ns, main_ns)        # Total Bouncing
-                    _set_cell_text(new_rows_dict[40 + shift_amt], f"B{40 + shift_amt}", "-", ns, main_ns)        # Enquiry 3M
-                    _set_cell_num(new_rows_dict[41 + shift_amt], f"B{41 + shift_amt}", report_data.get("metrics", {}).get("enquiries_l6m", 0), ns, main_ns)
+                    _set_cell_text(new_rows_dict[34], f"B34", "-", ns, main_ns)        # Average Monthly Credit
+                    _set_cell_text(new_rows_dict[35], f"B35", f"{num_accounts} | LOANS", ns, main_ns)
+                    _set_cell_text(new_rows_dict[36], f"B36", lenders_joined, ns, main_ns)
+                    _set_cell_num(new_rows_dict[37], f"B37", int(total_emi), ns, main_ns)
+                    _set_cell_text(new_rows_dict[38], f"B38", "-", ns, main_ns)        # ABB Last 6 Month
+                    _set_cell_text(new_rows_dict[39], f"B39", "-", ns, main_ns)        # Total Bouncing
+                    _set_cell_text(new_rows_dict[40], f"B40", "-", ns, main_ns)        # Enquiry 3M
+                    _set_cell_num(new_rows_dict[41], f"B41", report_data.get("metrics", {}).get("enquiries_l6m", 0), ns, main_ns)
 
                     # D. Populate tradelines columns (E to K) - overwrite up to 5 slots to clear dummy loans
                     for idx in range(max(5, num_accounts)):
@@ -296,6 +346,36 @@ def generate_cam_xlsx(report_data: dict, user_email: str) -> bytes:
                             for col in ["F", "G"]:
                                 _set_cell_text(r_elem, f"{col}{r_num}", "-", ns, main_ns)
 
+                    # 4. FOIR (%) cell (originally F13, now F13 + shift_amt)
+                    foir_row_num = 13 + shift_amt
+                    foir_row = new_rows_dict.get(foir_row_num)
+                    if foir_row is not None:
+                        _set_cell_text(foir_row, f"F{foir_row_num}", "-", ns, main_ns)
+
+                    # 5. Bank name in Current Address row (originally E19, now E19 + shift_amt)
+                    bank_row_num = 19 + shift_amt
+                    bank_row = new_rows_dict.get(bank_row_num)
+                    if bank_row is not None:
+                        _set_cell_text(bank_row, f"E{bank_row_num}", "-", ns, main_ns)
+
+                    # 6. Monthly Credit Report dummy '0' counts (originally F32-K32, now F32-K32 + shift_amt)
+                    credit_row_num = 32 + shift_amt
+                    credit_row = new_rows_dict.get(credit_row_num)
+                    if credit_row is not None:
+                        for col in ["F", "G", "H", "I", "J", "K"]:
+                             _set_cell_text(credit_row, f"{col}{credit_row_num}", "-", ns, main_ns)
+
+                    # 7. TVR Status and Date details (originally B53 and C53, now static)
+                    _set_cell_text(new_rows_dict[53], f"B53", "-", ns, main_ns)
+                    _set_cell_text(new_rows_dict[53], f"C53", "-", ns, main_ns)
+
+                    # 8. Income Head Amount dummy values (originally F54-F59, now shifted)
+                    for r in range(54, 60):
+                        r_num = r + shift_amt
+                        income_row = new_rows_dict.get(r_num)
+                        if income_row is not None:
+                            _set_cell_text(income_row, f"F{r_num}", "-", ns, main_ns)
+
                     # Ensure cells in each row are sorted alphabetically by column index (A, B, C, ...)
                     # to prevent Excel parsing errors (XML validation failures)
                     for r_elem in new_rows_dict.values():
@@ -320,6 +400,18 @@ def generate_cam_xlsx(report_data: dict, user_email: str) -> bytes:
                     if missing_decls:
                         decls_str = b' ' + b' '.join(missing_decls)
                         file_bytes = file_bytes.replace(b'<worksheet', b'<worksheet' + decls_str, 1)
+                elif item.filename == 'xl/tables/table1.xml':
+                    root = ET.fromstring(file_bytes)
+                    root.set('ref', f"E1:K{10 + shift_amt}")
+                    file_bytes = ET.tostring(root, encoding='utf-8', xml_declaration=True)
+                elif item.filename == 'xl/tables/table2.xml':
+                    root = ET.fromstring(file_bytes)
+                    new_ref = f"E{44 + shift_amt}:F{50 + shift_amt}"
+                    root.set('ref', new_ref)
+                    auto_filter = root.find('ns:autoFilter', ns)
+                    if auto_filter is not None:
+                        auto_filter.set('ref', new_ref)
+                    file_bytes = ET.tostring(root, encoding='utf-8', xml_declaration=True)
 
                 zout.writestr(item, file_bytes)
                 
@@ -350,11 +442,15 @@ def _set_cell_text(row_elem, cell_ref, text, ns, main_ns):
     
     # Remove any existing is or v elements inside cell
     for child in list(c):
-        if child.tag in [f'{{{main_ns}}}is', f'{{{main_ns}}}v', f'ns:is', f'ns:v']:
+        if child.tag.endswith('}is') or child.tag == 'is' or child.tag.endswith('}v') or child.tag == 'v':
             c.remove(child)
 
     if text is None or text == "" or text == "-":
         c.attrib.pop('t', None)
+        # Strip formula element if setting to empty/None/"-"
+        for child in list(c):
+            if child.tag.endswith('}f') or child.tag == 'f':
+                c.remove(child)
     else:
         c.set('t', 'inlineStr')
         is_elem = ET.Element(f'{{{main_ns}}}is')
@@ -369,10 +465,15 @@ def _set_cell_num(row_elem, cell_ref, number, ns, main_ns):
     
     # Remove any existing is or v elements inside cell
     for child in list(c):
-        if child.tag in [f'{{{main_ns}}}is', f'{{{main_ns}}}v', f'ns:is', f'ns:v']:
+        if child.tag.endswith('}is') or child.tag == 'is' or child.tag.endswith('}v') or child.tag == 'v':
             c.remove(child)
 
-    if number is not None and number != "" and number != "-":
+    if number is None or number == "" or number == "-":
+        # Strip formula element if setting to empty/None/"-"
+        for child in list(c):
+            if child.tag.endswith('}f') or child.tag == 'f':
+                c.remove(child)
+    else:
         v_elem = ET.Element(f'{{{main_ns}}}v')
         v_elem.text = str(number)
         c.append(v_elem)
