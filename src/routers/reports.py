@@ -1,0 +1,95 @@
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
+from typing import List, Optional
+from datetime import datetime
+import logging
+
+from src.models import get_db, UserSessionReport
+from src.utils.api_security import require_api_key
+from src.utils.report_worker import generate_report_for_user, run_scheduled_reports
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/chat/reports", tags=["Reports"], dependencies=[Depends(require_api_key)])
+
+@router.get("/{user_id}")
+async def get_user_reports(user_id: str, db: Session = Depends(get_db)):
+    """
+    Fetch all pre-generated financial therapy and activity reports for a specific user.
+    """
+    try:
+        reports = db.query(UserSessionReport).filter(
+            UserSessionReport.user_id == user_id
+        ).order_by(UserSessionReport.created_at.desc()).all()
+        
+        return [
+            {
+                "id": r.id,
+                "user_id": r.user_id,
+                "report_type": r.report_type,
+                "start_date": r.start_date.isoformat(),
+                "end_date": r.end_date.isoformat(),
+                "summary": r.summary,
+                "key_takeaways": r.key_takeaways or [],
+                "mood_trend": r.mood_trend or {},
+                "activity_summary": r.activity_summary or {},
+                "created_at": r.created_at.isoformat()
+            } for r in reports
+        ]
+    except Exception as e:
+        logger.error(f"Error fetching reports for user {user_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch reports: {str(e)}"
+        )
+
+@router.post("/{user_id}/trigger")
+async def trigger_report_generation(
+    user_id: str, 
+    report_type: str = Query(..., pattern="^(daily|fortnightly|monthly)$"), 
+    db: Session = Depends(get_db)
+):
+    """
+    Developer/Admin endpoint to manually trigger report generation for testing.
+    """
+    try:
+        report = generate_report_for_user(db, user_id, report_type)
+        if not report:
+            return {"status": "skipped", "message": "No activity found or failed to generate report."}
+        
+        return {
+            "status": "success",
+            "report": {
+                "id": report.id,
+                "user_id": report.user_id,
+                "report_type": report.report_type,
+                "start_date": report.start_date.isoformat(),
+                "end_date": report.end_date.isoformat(),
+                "summary": report.summary,
+                "key_takeaways": report.key_takeaways or [],
+                "mood_trend": report.mood_trend or {},
+                "activity_summary": report.activity_summary or {},
+                "created_at": report.created_at.isoformat()
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error triggering report generation for user {user_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger report generation: {str(e)}"
+        )
+
+@router.post("/trigger-all")
+async def trigger_all_reports(db: Session = Depends(get_db)):
+    """
+    Developer/Admin endpoint to manually run the scheduled worker for all users.
+    """
+    try:
+        run_scheduled_reports(db)
+        return {"status": "success", "message": "Triggered reports generation for all users."}
+    except Exception as e:
+        logger.error(f"Error triggering all reports: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger all reports: {str(e)}"
+        )

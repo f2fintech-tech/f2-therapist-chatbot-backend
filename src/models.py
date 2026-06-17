@@ -282,6 +282,25 @@ class AdvisorAppointment(Base):
         return f"<AdvisorAppointment(id={self.id}, user_id={self.user_id}, advisor_id={self.advisor_id})>"
 
 
+class UserSessionReport(Base):
+    """UserSessionReport model representing pre-generated summaries and analytics reports for users."""
+    __tablename__ = "user_session_reports"
+
+    id = Column(String(36), primary_key=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    report_type = Column(String(16), nullable=False)  # "daily", "fortnightly", "monthly"
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+    summary = Column(Text, nullable=False)
+    key_takeaways = Column(JSON, nullable=True)  # List of strings
+    mood_trend = Column(JSON, nullable=True)  # JSON dictionary of average metrics
+    activity_summary = Column(JSON, nullable=True)  # JSON list of CIBIL score checks, calculator runs, test scores, etc.
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<UserSessionReport(id={self.id}, user_id={self.user_id}, type={self.report_type})>"
+
+
 # ==================== Database Initialization ====================
 def init_db():
     """Initialize the database by creating all tables."""
