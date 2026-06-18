@@ -133,11 +133,33 @@ def generate_cam_xlsx(report_data: dict, user_email: str) -> bytes:
                         existing_rows_by_num[r_num] = r_elem
                         sheet_data.remove(r_elem)
 
-                    new_rows_dict = {}
-                    
                     def _get_column_letter(cell_ref):
                         match = re.match(r'([A-Z]+)', cell_ref)
                         return match.group(1) if match else ''
+
+                    # Extract template styles from columns E to K in rows 2 to 6
+                    template_styles = {}
+                    for r_num in [2, 3, 4, 5, 6]:
+                        if r_num in existing_rows_by_num:
+                            r_elem = existing_rows_by_num[r_num]
+                            for c in r_elem.findall('ns:c', ns):
+                                ref = c.attrib.get('r', '')
+                                col = _get_column_letter(ref)
+                                if col in ['E', 'F', 'G', 'H', 'I', 'J', 'K']:
+                                    s_attr = c.attrib.get('s')
+                                    if s_attr:
+                                        template_styles[(col, r_num)] = s_attr
+
+                    def get_acc_style(col, r_num):
+                        if r_num == 2:
+                            style_row = 2
+                        elif r_num == 3:
+                            style_row = 3
+                        else:
+                            style_row = 4 if r_num % 2 == 0 else 5
+                        return template_styles.get((col, style_row))
+
+                    new_rows_dict = {}
 
                     max_original_row = max(existing_rows_by_num.keys()) if existing_rows_by_num else 64
                     max_new_row = max_original_row + shift_amt
@@ -181,10 +203,7 @@ def generate_cam_xlsx(report_data: dict, user_email: str) -> bytes:
                                     # Shift formula reference inside the cell
                                     f_elem = c.find('ns:f', ns)
                                     if f_elem is not None and f_elem.text:
-                                        orig_f = f_elem.text
-                                        updated_f = re.sub(r'([A-Z])6\b', r'\g<1>' + str(6 + shift_amt), orig_f)
-                                        if orig_f != updated_f:
-                                            f_elem.text = updated_f
+                                        f_elem.text = _update_formula_rows(f_elem.text, shift_amt)
                         else:
                             base_r = ET.Element(f'{{{main_ns}}}row')
                             base_r.set('r', str(R))
@@ -195,17 +214,17 @@ def generate_cam_xlsx(report_data: dict, user_email: str) -> bytes:
                             idx = R - 2
                             if idx < num_accounts:
                                 acc = accounts[idx]
-                                _set_cell_text(base_r, f"E{R}", acc.get("type") or "-", ns, main_ns)
-                                _set_cell_text(base_r, f"F{R}", acc.get("lender") or "-", ns, main_ns)
-                                _set_cell_num(base_r, f"G{R}", int(float(acc.get("sanctioned_amount") or 0)), ns, main_ns)
-                                _set_cell_num(base_r, f"H{R}", int(float(acc.get("outstanding_balance") or 0)), ns, main_ns)
-                                _set_cell_num(base_r, f"I{R}", int(float(acc.get("emi") or 0)), ns, main_ns)
-                                _set_cell_text(base_r, f"J{R}", acc.get("open_date") or "-", ns, main_ns)
-                                _set_cell_text(base_r, f"K{R}", "-", ns, main_ns)
+                                _set_cell_text(base_r, f"E{R}", acc.get("type") or "-", ns, main_ns, get_acc_style("E", R))
+                                _set_cell_text(base_r, f"F{R}", acc.get("lender") or "-", ns, main_ns, get_acc_style("F", R))
+                                _set_cell_num(base_r, f"G{R}", int(float(acc.get("sanctioned_amount") or 0)), ns, main_ns, get_acc_style("G", R))
+                                _set_cell_num(base_r, f"H{R}", int(float(acc.get("outstanding_balance") or 0)), ns, main_ns, get_acc_style("H", R))
+                                _set_cell_num(base_r, f"I{R}", int(float(acc.get("emi") or 0)), ns, main_ns, get_acc_style("I", R))
+                                _set_cell_text(base_r, f"J{R}", acc.get("open_date") or "-", ns, main_ns, get_acc_style("J", R))
+                                _set_cell_text(base_r, f"K{R}", "-", ns, main_ns, get_acc_style("K", R))
                             elif R <= 6:
                                 # Clear padding template slots
                                 for col in ["E", "F", "G", "H", "I", "J", "K"]:
-                                    _set_cell_text(base_r, f"{col}{R}", "-", ns, main_ns)
+                                    _set_cell_text(base_r, f"{col}{R}", "-", ns, main_ns, get_acc_style(col, R))
 
                         # Case B: Shifted template cells (R > 6 + shift_amt)
                         else:
@@ -221,10 +240,7 @@ def generate_cam_xlsx(report_data: dict, user_email: str) -> bytes:
                                         
                                         f_elem = c_clone.find('ns:f', ns)
                                         if f_elem is not None and f_elem.text:
-                                            orig_f = f_elem.text
-                                            updated_f = re.sub(r'([A-Z])6\b', r'\g<1>' + str(6 + shift_amt), orig_f)
-                                            if orig_f != updated_f:
-                                                f_elem.text = updated_f
+                                            f_elem.text = _update_formula_rows(f_elem.text, shift_amt)
                                                 
                                         # Deduplicate cell
                                         existing_c = None
@@ -271,6 +287,37 @@ def generate_cam_xlsx(report_data: dict, user_email: str) -> bytes:
                     _set_cell_text(new_rows_dict[35], f"B35", f"{num_accounts} | LOANS", ns, main_ns)
                     _set_cell_text(new_rows_dict[36], f"B36", lenders_joined, ns, main_ns)
                     _set_cell_num(new_rows_dict[37], f"B37", int(total_emi), ns, main_ns)
+                    
+                    # Update dynamic Excel formulas in column B to target the correct row range F2:F{6+shift_amt}
+                    max_loan_row = 6 + shift_amt
+                    
+                    c35 = _get_or_create_cell(new_rows_dict[35], "B35", ns, main_ns)
+                    f35 = c35.find('ns:f', ns)
+                    if f35 is not None:
+                        f35.text = f"COUNTA(F2:F{max_loan_row})&\" | LOANS\""
+                    else:
+                        f_elem = ET.Element(f'{{{main_ns}}}f')
+                        f_elem.text = f"COUNTA(F2:F{max_loan_row})&\" | LOANS\""
+                        c35.append(f_elem)
+
+                    c36 = _get_or_create_cell(new_rows_dict[36], "B36", ns, main_ns)
+                    f36 = c36.find('ns:f', ns)
+                    if f36 is not None:
+                        f36.text = f"_xlfn.TEXTJOIN(\" | \",TRUE,F2:F{max_loan_row})"
+                    else:
+                        f_elem = ET.Element(f'{{{main_ns}}}f')
+                        f_elem.text = f"_xlfn.TEXTJOIN(\" | \",TRUE,F2:F{max_loan_row})"
+                        c36.append(f_elem)
+
+                    c37 = _get_or_create_cell(new_rows_dict[37], "B37", ns, main_ns)
+                    f37 = c37.find('ns:f', ns)
+                    if f37 is not None:
+                        f37.text = f"SUM(I2:I{max_loan_row})"
+                    else:
+                        f_elem = ET.Element(f'{{{main_ns}}}f')
+                        f_elem.text = f"SUM(I2:I{max_loan_row})"
+                        c37.append(f_elem)
+
                     _set_cell_text(new_rows_dict[38], f"B38", "-", ns, main_ns)        # ABB Last 6 Month
                     _set_cell_text(new_rows_dict[39], f"B39", "-", ns, main_ns)        # Total Bouncing
                     _set_cell_text(new_rows_dict[40], f"B40", "-", ns, main_ns)        # Enquiry 3M
@@ -283,17 +330,17 @@ def generate_cam_xlsx(report_data: dict, user_email: str) -> bytes:
                         if row_elem is not None:
                             if idx < num_accounts:
                                 acc = accounts[idx]
-                                _set_cell_text(row_elem, f"E{row_num}", acc.get("type") or "-", ns, main_ns)
-                                _set_cell_text(row_elem, f"F{row_num}", acc.get("lender") or "-", ns, main_ns)
-                                _set_cell_num(row_elem, f"G{row_num}", int(float(acc.get("sanctioned_amount") or 0)), ns, main_ns)
-                                _set_cell_num(row_elem, f"H{row_num}", int(float(acc.get("outstanding_balance") or 0)), ns, main_ns)
-                                _set_cell_num(row_elem, f"I{row_num}", int(float(acc.get("emi") or 0)), ns, main_ns)
-                                _set_cell_text(row_elem, f"J{row_num}", acc.get("open_date") or "-", ns, main_ns)
-                                _set_cell_text(row_elem, f"K{row_num}", "-", ns, main_ns)
+                                _set_cell_text(row_elem, f"E{row_num}", acc.get("type") or "-", ns, main_ns, get_acc_style("E", row_num))
+                                _set_cell_text(row_elem, f"F{row_num}", acc.get("lender") or "-", ns, main_ns, get_acc_style("F", row_num))
+                                _set_cell_num(row_elem, f"G{row_num}", int(float(acc.get("sanctioned_amount") or 0)), ns, main_ns, get_acc_style("G", row_num))
+                                _set_cell_num(row_elem, f"H{row_num}", int(float(acc.get("outstanding_balance") or 0)), ns, main_ns, get_acc_style("H", row_num))
+                                _set_cell_num(row_elem, f"I{row_num}", int(float(acc.get("emi") or 0)), ns, main_ns, get_acc_style("I", row_num))
+                                _set_cell_text(row_elem, f"J{row_num}", acc.get("open_date") or "-", ns, main_ns, get_acc_style("J", row_num))
+                                _set_cell_text(row_elem, f"K{row_num}", "-", ns, main_ns, get_acc_style("K", row_num))
                             else:
                                 # Clear any template sample data in remaining slots
                                 for col in ["E", "F", "G", "H", "I", "J", "K"]:
-                                    _set_cell_text(row_elem, f"{col}{row_num}", "-", ns, main_ns)
+                                    _set_cell_text(row_elem, f"{col}{row_num}", "-", ns, main_ns, get_acc_style(col, row_num))
 
                     # E. Fill totals row (now row 10 + shift_amt)
                     tot_row_num = 10 + shift_amt
@@ -437,8 +484,26 @@ def _sort_row_cells(row_elem, ns):
     for c in cells:
         row_elem.append(c)
 
-def _set_cell_text(row_elem, cell_ref, text, ns, main_ns):
-    c = _get_or_create_cell(row_elem, cell_ref, ns, main_ns)
+def _update_formula_rows(formula_text, shift_amt):
+    if not formula_text or shift_amt == 0:
+        return formula_text
+    
+    def repl(match):
+        col = match.group(1)
+        row_str = match.group(2)
+        r = int(row_str)
+        if col in ['A', 'B', 'C', 'D']:
+            return f"{col}{r}"
+        if r == 9:
+            return f"{col}{9 + shift_amt}"
+        elif r >= 10:
+            return f"{col}{r + shift_amt}"
+        return f"{col}{r}"
+
+    return re.sub(r'\b([A-Z]+)([0-9]+)\b', repl, formula_text)
+
+def _set_cell_text(row_elem, cell_ref, text, ns, main_ns, style_id=None):
+    c = _get_or_create_cell(row_elem, cell_ref, ns, main_ns, style_id)
     
     # Remove any existing is or v elements inside cell
     for child in list(c):
@@ -459,8 +524,8 @@ def _set_cell_text(row_elem, cell_ref, text, ns, main_ns):
         is_elem.append(t_elem)
         c.append(is_elem)
 
-def _set_cell_num(row_elem, cell_ref, number, ns, main_ns):
-    c = _get_or_create_cell(row_elem, cell_ref, ns, main_ns)
+def _set_cell_num(row_elem, cell_ref, number, ns, main_ns, style_id=None):
+    c = _get_or_create_cell(row_elem, cell_ref, ns, main_ns, style_id)
     c.attrib.pop('t', None)
     
     # Remove any existing is or v elements inside cell
@@ -478,11 +543,15 @@ def _set_cell_num(row_elem, cell_ref, number, ns, main_ns):
         v_elem.text = str(number)
         c.append(v_elem)
 
-def _get_or_create_cell(row_elem, cell_ref, ns, main_ns):
+def _get_or_create_cell(row_elem, cell_ref, ns, main_ns, style_id=None):
     for c in row_elem.findall('ns:c', ns):
         if c.attrib.get('r') == cell_ref:
+            if style_id is not None:
+                c.set('s', style_id)
             return c
     c = ET.Element(f'{{{main_ns}}}c')
     c.set('r', cell_ref)
+    if style_id is not None:
+        c.set('s', style_id)
     row_elem.append(c)
     return c
