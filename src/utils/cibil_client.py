@@ -7,14 +7,15 @@ from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
-def generate_mock_report(name: str, phone: str, pan: str, is_company: bool = False) -> Dict[str, Any]:
+def generate_mock_report(name: str, phone: str, pan: Optional[str] = None, is_company: bool = False) -> Dict[str, Any]:
     """
     Generate a highly realistic and deterministic CIBIL report based on the PAN card.
     Using hashing ensures that the same PAN will always retrieve the same credit score and history.
     """
-    pan_upper = pan.upper().strip()
+    pan_upper = pan.upper().strip() if pan else ""
+    hash_source = pan_upper if pan_upper else f"MOCK_{phone}"
     # Simple hash to get a deterministic number
-    hash_object = hashlib.sha256(pan_upper.encode('utf-8'))
+    hash_object = hashlib.sha256(hash_source.encode('utf-8'))
     hash_hex = hash_object.hexdigest()
     hash_int = int(hash_hex[:8], 16)
 
@@ -339,7 +340,7 @@ def normalize_cibil_report_from_raw(raw_bureau_json: Dict[str, Any], name: str =
     return normalized
 
 
-async def fetch_actual_experian_report(name: str, phone: str, pan: str, is_company: bool = False) -> Dict[str, Any]:
+async def fetch_actual_experian_report(name: str, phone: str, pan: Optional[str] = None, is_company: bool = False) -> Dict[str, Any]:
     """
     Core API client function for Experian (Digitap). Attempts to query the real Experian API if configured.
     Raises CibilNoRecordError if the bureau explicitly says no records were found.
@@ -369,9 +370,10 @@ async def fetch_actual_experian_report(name: str, phone: str, pan: str, is_compa
             payload = {
                 "client_ref_num": str(uuid.uuid4()),
                 "name": name,
-                "phone": phone,
-                "pan": pan.upper().strip()
+                "phone": phone
             }
+            if pan:
+                payload["pan"] = pan.upper().strip()
             logger.info(f"[EXPERIAN] Request headers: {headers}")
             logger.info(f"[EXPERIAN] Request payload: {payload}")
 
@@ -392,7 +394,7 @@ async def fetch_actual_experian_report(name: str, phone: str, pan: str, is_compa
                                         "nhit", "no_record", "record_not_found", "no credit"]
                 combined_text = f"{status_val} {result_code} {message}"
                 if any(indicator in combined_text for indicator in no_record_indicators):
-                    logger.warning(f"[EXPERIAN] Bureau returned NO RECORD for PAN {pan[:5]}*****: {message}")
+                    logger.warning(f"[EXPERIAN] Bureau returned NO RECORD for PAN {(pan[:5] if pan else '')}*****: {message}")
                     raise CibilNoRecordError(
                         f"No credit record found for this PAN in Experian bureau. "
                         f"This may mean the individual has no credit history. "
@@ -421,7 +423,7 @@ async def fetch_actual_experian_report(name: str, phone: str, pan: str, is_compa
         raise  # Do NOT silently fall back to mock when API is configured
 
 
-def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan: str, raw_data: Dict[str, Any] = None, fetched_at: str = None) -> Dict[str, Any]:
+def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan: Optional[str] = None, raw_data: Dict[str, Any] = None, fetched_at: str = None) -> Dict[str, Any]:
     """
     Normalize a real bureau API response into our standard schema.
     Handles many possible key naming conventions from different providers.
@@ -723,7 +725,7 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
         else: band = "Unknown"
 
     # Extract PAN
-    report_pan = data.get("pan", data.get("PAN", data.get("panNumber", pan)))
+    report_pan = data.get("pan", data.get("PAN", data.get("panNumber", pan or "")))
 
     # Extract name
     report_name = data.get("name", data.get("full_name", data.get("consumerName", name)))

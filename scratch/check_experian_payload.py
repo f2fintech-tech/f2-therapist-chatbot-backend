@@ -18,43 +18,17 @@ headers = {
     "Content-Type": "application/json"
 }
 
-# Test different payloads
-payloads = [
-    # Payload A: including client_ref_num
-    {
-        "client_ref_num": str(uuid.uuid4())[:20],
-        "name": "Rahul Sharma",
-        "phone": "9876543210",
-        "pan": "ABCDE1234F"
-    },
-    # Payload B: including client_ref_num and mobile instead of phone
-    {
-        "client_ref_num": str(uuid.uuid4())[:20],
-        "name": "Rahul Sharma",
-        "mobile": "9876543210",
-        "pan": "ABCDE1234F"
-    },
-    # Payload C: using client_ref_no
-    {
-        "client_ref_no": str(uuid.uuid4())[:20],
-        "name": "Rahul Sharma",
-        "phone": "9876543210",
-        "pan": "ABCDE1234F"
-    },
-    # Payload D: basic payload with only client_ref_num and pan and phone
-    {
-        "client_ref_num": str(uuid.uuid4())[:20],
-        "pan": "ABCDE1234F",
-        "phone": "9876543210"
-    }
-]
+# Test payload without PAN (only client_ref_num, name, phone)
+payload = {
+    "client_ref_num": str(uuid.uuid4()),
+    "name": "Ranjit Kumar Singh",
+    "phone": "8271987892"
+}
 
-for idx, payload in enumerate(payloads):
-    print(f"\n--- Testing Payload {idx + 1} ---")
-    print("Payload:", payload)
-    try:
-        response = httpx.post(api_url, json=payload, headers=headers, timeout=10.0)
-        print("Status:", response.status_code)
-        print("Response:", response.text)
-    except Exception as e:
-        print("Error:", e)
+print("Payload without PAN:", payload)
+try:
+    response = httpx.post(api_url, json=payload, headers=headers, timeout=15.0)
+    print("Status:", response.status_code)
+    print("Response:", response.text)
+except Exception as e:
+    print("Error:", e)

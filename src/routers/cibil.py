@@ -24,14 +24,14 @@ class CibilFetchRequest(BaseModel):
     user_id: str = Field(..., description="ID of the user requesting CIBIL fetch")
     name: str = Field(..., min_length=2, max_length=100, description="Full Name of the user")
     phone: str = Field(..., description="10-digit mobile number")
-    pan: str = Field(..., description="10-character PAN Card number")
+    pan: Optional[str] = Field(None, description="10-character PAN Card number")
     bureau: str = Field("cibil", description="Bureau to fetch: 'cibil' or 'experian'")
     report_type: Optional[str] = Field("individual", description="Type of report: 'individual' or 'company'")
 
 class CibilReportResponse(BaseModel):
     score: int
     band: str
-    pan: str
+    pan: Optional[str] = ""
     name: str
     phone: str
     metrics: Dict[str, Any]
@@ -113,7 +113,8 @@ async def fetch_cibil(payload: CibilFetchRequest, db: Session = Depends(get_db))
     user_id = payload.user_id
     name = payload.name.strip()
     phone = payload.phone.strip()
-    pan = payload.pan.upper().strip()
+    pan = payload.pan.upper().strip() if payload.pan else ""
+    bureau_str = payload.bureau.lower().strip()
 
     # 1. Input Validations
     user = db.query(User).filter(User.id == user_id).first()
@@ -155,12 +156,13 @@ async def fetch_cibil(payload: CibilFetchRequest, db: Session = Depends(get_db))
     # Get last 10 digits
     clean_phone = clean_phone[-10:]
 
-    # Validate PAN (5 letters, 4 digits, 1 letter)
-    if not re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", pan):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Invalid PAN Card format. Standard format is ABCDE1234F."
-        )
+    # Validate PAN (5 letters, 4 digits, 1 letter) only if not Experian
+    if "experian" not in bureau_str:
+        if not pan or not re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", pan):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid PAN Card format. Standard format is ABCDE1234F."
+            )
 
     # 2. Fetch Report from CIBIL or Experian
     try:

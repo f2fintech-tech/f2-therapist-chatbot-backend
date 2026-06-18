@@ -140,6 +140,20 @@ def test_cibil_rate_limiting_flow(monkeypatch):
         response_adm_2 = client.post("/api/v1/cibil/fetch", json=payload_admin, headers=auth_headers if 'auth_headers' in locals() else None)
         assert response_adm_2.status_code == 200
 
+        # 7. Experian fetch without PAN card - should succeed (using mock / fallback fetch)
+        payload_experian = {
+            "user_id": admin_user_id,
+            "name": "John Client",
+            "phone": "9876543210",
+            "bureau": "experian",
+            "report_type": "individual"
+        }
+        response_exp = client.post("/api/v1/cibil/fetch", json=payload_experian, headers=auth_headers if 'auth_headers' in locals() else None)
+        assert response_exp.status_code == 200, f"Expected 200 for Experian fetch, got {response_exp.status_code}: {response_exp.text}"
+        data_exp = response_exp.json()
+        assert "score" in data_exp
+        assert data_exp["pan"] == ""  # pan should default to empty string
+
     finally:
         # Cleanup
         db.query(UserCreditReport).filter(UserCreditReport.user_id.in_([standard_user_id, advisor_user_id, admin_user_id])).delete(synchronize_session=False)
