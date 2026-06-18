@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any
 import bcrypt as _bcrypt
 from jose import jwt
-from src.models import get_db, User, Conversation, Advisor
+from src.models import get_db, User, Conversation, Advisor, UserCreditReport, UserConsolidatedProfile, UserLoanCalculatorActivity, TestResult, UserSessionReport
 from src.utils.api_security import require_api_key
 import os
 import uuid
@@ -167,6 +167,39 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
             db.query(Conversation).filter(
                 Conversation.user_id == payload.guest_user_id
             ).update({"user_id": new_id})
+            
+            db.query(UserCreditReport).filter(
+                UserCreditReport.user_id == payload.guest_user_id
+            ).update({"user_id": new_id})
+            
+            db.query(UserLoanCalculatorActivity).filter(
+                UserLoanCalculatorActivity.user_id == payload.guest_user_id
+            ).update({"user_id": new_id})
+            
+            db.query(TestResult).filter(
+                TestResult.user_id == payload.guest_user_id
+            ).update({"user_id": new_id})
+            
+            db.query(UserSessionReport).filter(
+                UserSessionReport.user_id == payload.guest_user_id
+            ).update({"user_id": new_id})
+            
+            # Migrate/merge consolidated profile
+            guest_profile = db.query(UserConsolidatedProfile).filter(UserConsolidatedProfile.user_id == payload.guest_user_id).first()
+            if guest_profile:
+                dest_profile = db.query(UserConsolidatedProfile).filter(UserConsolidatedProfile.user_id == new_id).first()
+                if not dest_profile:
+                    guest_profile.user_id = new_id
+                else:
+                    if dest_profile.data is None:
+                        dest_profile.data = {}
+                    if guest_profile.data:
+                        for k, v in guest_profile.data.items():
+                            if k not in dest_profile.data:
+                                dest_profile.data[k] = v
+                        flag_modified(dest_profile, "data")
+                    db.delete(guest_profile)
+                    
             db.delete(guest)
             db.commit()
             logger.info("Merged guest %s into new user %s", payload.guest_user_id, new_id)

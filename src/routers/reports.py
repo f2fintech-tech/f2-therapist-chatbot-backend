@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 from src.models import get_db, UserSessionReport
@@ -15,9 +15,26 @@ router = APIRouter(prefix="/chat/reports", tags=["Reports"], dependencies=[Depen
 @router.get("/{user_id}")
 async def get_user_reports(user_id: str, db: Session = Depends(get_db)):
     """
-    Fetch all pre-generated financial therapy and activity reports for a specific user.
+    Fetch all financial therapy and activity reports for a specific user.
+    Generates missing or outdated reports on-the-fly if the user has activity.
     """
     try:
+        now = datetime.utcnow()
+        for report_type in ["daily", "fortnightly", "monthly"]:
+            # Check if there is an existing report generated within the last 12 hours
+            existing = db.query(UserSessionReport).filter(
+                UserSessionReport.user_id == user_id,
+                UserSessionReport.report_type == report_type,
+                UserSessionReport.created_at >= now - timedelta(hours=12)
+            ).first()
+            
+            if not existing:
+                try:
+                    # Generate report if user has activity in the timeframe
+                    generate_report_for_user(db, user_id, report_type)
+                except Exception as ex:
+                    logger.error(f"Failed to generate {report_type} report on-the-fly: {str(ex)}", exc_info=True)
+
         reports = db.query(UserSessionReport).filter(
             UserSessionReport.user_id == user_id
         ).order_by(UserSessionReport.created_at.desc()).all()

@@ -77,6 +77,15 @@ def test_user_reports_pipeline():
         )
         db.add(user_msg)
 
+        user_msg_past = ConversationMessage(
+            id=str(uuid.uuid4()),
+            conversation_id=conv.id,
+            role=MessageRole.USER,
+            content="I am worried about my debts",
+            created_at=datetime.utcnow() - timedelta(days=2)
+        )
+        db.add(user_msg_past)
+
         assistant_msg = ConversationMessage(
             id=str(uuid.uuid4()),
             conversation_id=conv.id,
@@ -143,13 +152,13 @@ def test_user_reports_pipeline():
             assert data["report"]["activity_summary"]["cibil_checks"] == 1
             assert data["report"]["activity_summary"]["calculator_runs"] == 1
 
-        # 5. Verify the report is saved and retrieved by the GET endpoint
-        resp_list = client.get(f"/api/v1/chat/reports/{user_id}", headers=headers)
-        assert resp_list.status_code == 200
-        reports = resp_list.json()
-        assert len(reports) == 1
-        assert reports[0]["report_type"] == "daily"
-        assert reports[0]["key_takeaways"][0].startswith("🎯")
+            # 5. Verify the report is saved and retrieved by the GET endpoint
+            resp_list = client.get(f"/api/v1/chat/reports/{user_id}", headers=headers)
+            assert resp_list.status_code == 200
+            reports = resp_list.json()
+            assert len(reports) == 3
+            daily_report = next(r for r in reports if r["report_type"] == "daily")
+            assert daily_report["key_takeaways"][0].startswith("🎯")
 
     finally:
         cleanup()

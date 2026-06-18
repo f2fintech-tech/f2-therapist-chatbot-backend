@@ -27,6 +27,18 @@ def get_report_llm():
         google_api_key=api_key
     )
 
+def _extract_text(content) -> str:
+    """Helper to safely extract string text from potentially list-formatted LLM responses."""
+    if isinstance(content, list):
+        text_parts = []
+        for item in content:
+            if isinstance(item, dict) and "text" in item:
+                text_parts.append(item["text"])
+            elif isinstance(item, str):
+                text_parts.append(item)
+        return "".join(text_parts)
+    return content if isinstance(content, str) else str(content)
+
 def aggregate_user_activity(db: Session, user_id: str, start_date: datetime, end_date: datetime) -> dict:
     """Queries and compiles all user activities and telemetry within the timeframe."""
     
@@ -131,10 +143,13 @@ def generate_report_for_user(db: Session, user_id: str, report_type: str) -> Use
     
     if report_type == "daily":
         start_date = now - timedelta(days=1)
+        end_date = now
     elif report_type == "fortnightly":
         start_date = now - timedelta(days=15)
+        end_date = now - timedelta(days=1)
     elif report_type == "monthly":
         start_date = now - timedelta(days=30)
+        end_date = now - timedelta(days=1)
     else:
         logger.error(f"Invalid report type specified: {report_type}")
         return None
@@ -145,7 +160,7 @@ def generate_report_for_user(db: Session, user_id: str, report_type: str) -> Use
         return None
 
     # Step 1: Gather Activity Log
-    activity = aggregate_user_activity(db, user_id, start_date, now)
+    activity = aggregate_user_activity(db, user_id, start_date, end_date)
     
     # Check if there is any activity in the timeframe
     has_activity = (
@@ -165,7 +180,7 @@ def generate_report_for_user(db: Session, user_id: str, report_type: str) -> Use
         
         prompt = f"""
         You are an expert, empathetic Financial Therapist and Counselor. 
-        Analyze the user's financial wellness activity logs and chat history for the period {start_date.strftime('%Y-%m-%d')} to {now.strftime('%Y-%m-%d')} and compile a structured financial therapy report.
+        Analyze the user's financial wellness activity logs and chat history for the period {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')} and compile a structured financial therapy report.
 
         Here is the User profile:
         - Name: {user.name or 'N/A'}
@@ -200,7 +215,7 @@ def generate_report_for_user(db: Session, user_id: str, report_type: str) -> Use
         """
         
         response = llm.invoke(prompt)
-        content = response.content.strip()
+        content = _extract_text(response.content).strip()
         
         # Clean markdown code blocks if Gemini returns them
         if content.startswith("```"):
@@ -231,7 +246,7 @@ def generate_report_for_user(db: Session, user_id: str, report_type: str) -> Use
             user_id=user_id,
             report_type=report_type,
             start_date=start_date,
-            end_date=now,
+            end_date=end_date,
             summary=summary,
             key_takeaways=takeaways,
             mood_trend=activity["avg_mood"],
