@@ -358,13 +358,16 @@ async def fetch_actual_experian_report(name: str, phone: str, pan: str, is_compa
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            # Digitap typically uses Authorization Bearer + Client-ID
+            import base64
+            import uuid
+            auth_str = f"{client_id}:{api_key}"
+            auth_b64 = base64.b64encode(auth_str.encode("utf-8")).decode("utf-8")
             headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Client-ID": client_id or "",
+                "Authorization": f"Basic {auth_b64}",
                 "Content-Type": "application/json"
             }
             payload = {
+                "client_ref_num": str(uuid.uuid4()),
                 "name": name,
                 "phone": phone,
                 "pan": pan.upper().strip()
