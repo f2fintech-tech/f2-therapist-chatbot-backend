@@ -41,10 +41,12 @@ report_data = {
     "fetched_at": "2026-06-15T12:00:00Z"
 }
 
-import tempfile
 excel_bytes = generate_cam_xlsx(report_data, "test_email@example.com")
-out_path = os.path.join(tempfile.gettempdir(), "verify_generated_cam_new.xlsx")
-os.makedirs(os.path.dirname(out_path), exist_ok=True)
+out_path = r"C:\Users\MohdAdnan\.gemini\antigravity-ide\scratch\verify_generated_cam_test_2.xlsx"
+try:
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+except Exception:
+    pass
 with open(out_path, "wb") as f:
     f.write(excel_bytes)
 print(f"Generated report at: {out_path}")

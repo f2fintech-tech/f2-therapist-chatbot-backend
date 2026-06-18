@@ -340,7 +340,7 @@ def normalize_cibil_report_from_raw(raw_bureau_json: Dict[str, Any], name: str =
     return normalized
 
 
-async def fetch_actual_experian_report(name: str, phone: str, pan: Optional[str] = None, is_company: bool = False) -> Dict[str, Any]:
+async def fetch_actual_experian_report(name: str, phone: str, pan: Optional[str] = None, is_company: bool = False, device_ip: str = "127.0.0.1") -> Dict[str, Any]:
     """
     Core API client function for Experian (Digitap). Attempts to query the real Experian API if configured.
     Raises CibilNoRecordError if the bureau explicitly says no records were found.
@@ -360,27 +360,61 @@ async def fetch_actual_experian_report(name: str, phone: str, pan: Optional[str]
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             import base64
-            import uuid
-            auth_str = f"{client_id}:{api_key}"
-            auth_b64 = base64.b64encode(auth_str.encode("utf-8")).decode("utf-8")
+            from datetime import datetime
+
+            # ✅ CONFIRMED: Basic auth (client_id:api_key) is correct for Digitap
+            auth_b64 = base64.b64encode(f"{client_id}:{api_key}".encode()).decode()
             headers = {
                 "Authorization": f"Basic {auth_b64}",
                 "Content-Type": "application/json"
             }
-            payload = {
-                "client_ref_num": str(uuid.uuid4()),
-                "name": name,
-                "phone": phone
+
+            # ✅ ROOT CAUSE FIX: Exact payload format from working Postman request
+            name_parts = name.strip().split()
+            first_name = name_parts[0].upper() if name_parts else name.upper()
+            last_name = " ".join(name_parts[1:]).upper() if len(name_parts) > 1 else ""
+
+            # Timestamp format: DDMMYYYY-HH:MM:SS (as confirmed from Postman)
+            timestamp = datetime.now().strftime("%d%m%Y-%H:%M:%S")
+
+            # Make OTP configurable, default to the working test OTP
+            experian_otp = os.getenv("EXPERIAN_OTP", "234567")
+            
+            import uuid
+            unique_ref_num = str(uuid.uuid4())
+
+            payload: dict = {
+                "otp": experian_otp,
+                "device_ip": device_ip,
+                "mobile_no": phone,
+                "timestamp": timestamp,
+                "device_type": "web",
+                "name_lookup": 0,
+                "first_name": first_name,
+                "last_name": last_name,
+                "report_type": "3",
+                "client_ref_num": unique_ref_num,
+                "consent_message": "I hereby authorize Experian to pull my credit report for test purpose.",
+                "consent_acceptance": "Yes"
             }
             if pan:
                 payload["pan"] = pan.upper().strip()
-            logger.info(f"[EXPERIAN] Request headers: {headers}")
-            logger.info(f"[EXPERIAN] Request payload: {payload}")
 
+            logger.info(f"[EXPERIAN] Request payload: {payload}")
             response = await client.post(api_url, json=payload, headers=headers)
-            
+
+
             logger.info(f"[EXPERIAN] Response status: {response.status_code}")
             logger.info(f"[EXPERIAN] Response body (first 2000 chars): {response.text[:2000]}")
+
+            # Save the full raw response to a file for the user to inspect
+            try:
+                import json
+                with open("experian_raw_response.json", "w") as f:
+                    json.dump(response.json(), f, indent=2)
+                logger.info("[EXPERIAN] Full raw response saved to experian_raw_response.json")
+            except Exception as e:
+                logger.warning(f"[EXPERIAN] Could not save raw response to file: {e}")
 
             if response.status_code == 200:
                 data = response.json()
@@ -401,16 +435,32 @@ async def fetch_actual_experian_report(name: str, phone: str, pan: Optional[str]
                         f"Bureau response: {message or status_val}"
                     )
 
-                actual_data = data
-                for wrapper_key in ["data", "result", "report", "response", "credit_report"]:
-                    if wrapper_key in data and isinstance(data[wrapper_key], dict):
-                        actual_data = data[wrapper_key]
-                        logger.info(f"[EXPERIAN] Found nested data under key '{wrapper_key}'")
-                        break
+                # --- Experian (Digitap) specific unwrapping ---
+                # Response structure: data → result → result_json → INProfileResponse
+                in_profile = None
+                result_obj = data.get("result", {})
+                if isinstance(result_obj, dict):
+                    result_json = result_obj.get("result_json", {})
+                    if isinstance(result_json, dict):
+                        in_profile = result_json.get("INProfileResponse")
+                        if in_profile:
+                            logger.info("[EXPERIAN] Found INProfileResponse in result.result_json")
+
+                if in_profile:
+                    actual_data = in_profile
+                else:
+                    # Fallback: generic unwrap
+                    actual_data = data
+                    for wrapper_key in ["data", "result", "report", "response", "credit_report"]:
+                        if wrapper_key in data and isinstance(data[wrapper_key], dict):
+                            actual_data = data[wrapper_key]
+                            logger.info(f"[EXPERIAN] Found nested data under key '{wrapper_key}'")
+                            break
 
                 normalized = _normalize_bureau_response(actual_data, name, phone, pan, raw_data=data)
                 logger.info(f"[EXPERIAN] Successfully fetched real report. Score: {normalized.get('score')}, Band: {normalized.get('band')}")
                 return normalized
+
 
             else:
                 logger.error(f"[EXPERIAN] API returned status {response.status_code}: {response.text[:1000]}")
@@ -430,6 +480,55 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
     """
     if raw_data is None:
         raw_data = data
+
+    # Standard Bureau Account Type Mapping
+    ACCOUNT_TYPES = {
+        "01": "Auto Loan",
+        "02": "Housing Loan",
+        "03": "Property Loan",
+        "04": "Loan Against Shares/Securities",
+        "05": "Personal Loan",
+        "06": "Consumer Loan",
+        "07": "Gold Loan",
+        "08": "Education Loan",
+        "09": "Professional Loan",
+        "10": "Credit Card",
+        "12": "Overdraft",
+        "13": "Two-Wheeler Loan",
+        "14": "Non-Funded Credit Facility",
+        "15": "Loan Against Bank Deposits",
+        "17": "Commercial Vehicle Loan",
+        "18": "Professional Loan",
+        "31": "Secured Credit Card",
+        "32": "Used Car Loan",
+        "33": "Construction Equipment Loan",
+        "34": "Tractor Loan",
+        "35": "Corporate Credit Card",
+        "36": "Credit Card",
+        "37": "Professional Loan",
+        "38": "Professional Loan",
+        "41": "Business Loan - General",
+        "42": "Business Loan - Priority Sector (Agri)",
+        "43": "Business Loan - Priority Sector (Small Bus)",
+        "44": "Business Loan - Priority Sector (Prof)",
+        "51": "Business Loan - Secured",
+        "52": "Business Loan - Unsecured",
+        "53": "Microfinance Business Loan",
+        "54": "Microfinance Personal Loan",
+        "57": "Microfinance Other",
+        "61": "Business Loan",
+        "99": "Other",
+        # Sometimes returned without leading zero
+        "1": "Auto Loan",
+        "2": "Housing Loan",
+        "3": "Property Loan",
+        "4": "Loan Against Shares/Securities",
+        "5": "Personal Loan",
+        "6": "Consumer Loan",
+        "7": "Gold Loan",
+        "8": "Education Loan",
+        "9": "Professional Loan",
+    }
 
     # --- Timble Glance Specific Parser ---
     cibil_data = None
@@ -502,25 +601,6 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                     lender = tradeline.get("creditorName") or "Unknown"
                     
                     symbol = part_val.get("accountTypeSymbol") or ""
-                    ACCOUNT_TYPES = {
-                        "01": "Auto Loan",
-                        "02": "Housing Loan",
-                        "03": "Property Loan",
-                        "04": "Loan Against Shares or Securities",
-                        "05": "Credit Card",
-                        "06": "Consumer Loan",
-                        "07": "Gold Loan",
-                        "08": "Education Loan",
-                        "09": "Professional Loan",
-                        "10": "Credit Card",
-                        "12": "Overdraft",
-                        "18": "Professional Loan",
-                        "31": "Business Loan",
-                        "37": "Professional Loan",
-                        "38": "Professional Loan",
-                        "51": "Business Loan",
-                        "61": "Business Loan",
-                    }
                     acc_type = ACCOUNT_TYPES.get(symbol, part_val.get("accountTypeDescription") or "Other Loan")
                     
                     sanctioned = _safe_int(tradeline.get("highBalance") or granted_trade.get("CreditLimit"))
@@ -693,6 +773,11 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                  "CibilScore", "Score", "SCORE", "cibilScore"]:
         val = data.get(key)
         if val is not None:
+            if isinstance(val, dict):
+                # Handle nested SCORE objects (e.g. Experian INProfileResponse)
+                inner_val = val.get("BureauScore", val.get("riskScore", val.get("score")))
+                if inner_val is not None:
+                    val = inner_val
             try:
                 score = int(float(str(val)))
                 break
@@ -734,18 +819,37 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
     accounts_raw = data.get("accounts", data.get("account_details", data.get("credit_accounts",
                    data.get("tradeLines", data.get("AccountDetails", [])))))
     
+    if not accounts_raw and "CAIS_Account" in data and isinstance(data["CAIS_Account"], dict):
+        accounts_raw = data["CAIS_Account"].get("CAIS_Account_DETAILS", [])
+
     accounts = []
     if isinstance(accounts_raw, list):
         for acc in accounts_raw:
             if isinstance(acc, dict):
+                # Map Experian CAIS account fields if present
+                is_active = acc.get("is_active", acc.get("isActive"))
+                if is_active is None:
+                    # Experian: Date_Closed being null means active. Other bureaus use accountStatus.
+                    date_closed = acc.get("Date_Closed")
+                    acc_status = acc.get("accountStatus", "").lower()
+                    is_active = not bool(date_closed) and acc_status not in ["closed", "written-off"]
+
+                payment_status = acc.get("payment_status", acc.get("paymentStatus", acc.get("PaymentStatus")))
+                if payment_status is None:
+                    amt_past_due = _safe_int(acc.get("Amount_Past_Due"))
+                    payment_status = "Current" if amt_past_due == 0 else f"Past Due (₹{amt_past_due})"
+
+                raw_type = acc.get("type", acc.get("account_type", acc.get("Account_Type", acc.get("AccountType", "Unknown"))))
+                mapped_type = ACCOUNT_TYPES.get(str(raw_type), raw_type) if raw_type else "Unknown"
+                
                 accounts.append({
-                    "lender": acc.get("lender", acc.get("lender_name", acc.get("institution", acc.get("MemberShortName", "Unknown")))),
-                    "type": acc.get("type", acc.get("account_type", acc.get("AccountType", "Unknown"))),
-                    "sanctioned_amount": _safe_int(acc.get("sanctioned_amount", acc.get("highCredit", acc.get("SanctionAmount", acc.get("credit_limit", 0))))),
-                    "outstanding_balance": _safe_int(acc.get("outstanding_balance", acc.get("currentBalance", acc.get("CurrentBalance", acc.get("balance", 0))))),
-                    "payment_status": acc.get("payment_status", acc.get("paymentStatus", acc.get("PaymentStatus", acc.get("status", "Unknown")))),
-                    "open_date": acc.get("open_date", acc.get("openDate", acc.get("DateOpened", acc.get("dateOpened", "")))),
-                    "is_active": acc.get("is_active", acc.get("isActive", acc.get("accountStatus", "").lower() not in ["closed", "written-off"]))
+                    "lender": acc.get("lender", acc.get("lender_name", acc.get("institution", acc.get("Subscriber_Name", acc.get("MemberShortName", "Unknown"))))),
+                    "type": mapped_type,
+                    "sanctioned_amount": _safe_int(acc.get("sanctioned_amount", acc.get("Highest_Credit_or_Original_Loan_Amount", acc.get("highCredit", acc.get("SanctionAmount", acc.get("credit_limit", 0)))))),
+                    "outstanding_balance": _safe_int(acc.get("outstanding_balance", acc.get("Current_Balance", acc.get("currentBalance", acc.get("CurrentBalance", acc.get("balance", 0)))))),
+                    "payment_status": payment_status,
+                    "open_date": acc.get("open_date", acc.get("Open_Date", acc.get("openDate", acc.get("DateOpened", acc.get("dateOpened", ""))))),
+                    "is_active": is_active
                 })
 
     # Extract metrics
@@ -852,11 +956,15 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
     if not isinstance(tips, list) or not tips:
         tips = _generate_tips_from_metrics(metrics, score)
 
-    # Normalize PDF URL
+    # Extract PDF URL
     pdf_url = None
-    for key in ["pdf_url", "pdf_link", "report_url", "download_link", "html_link",
-                 "reportLink", "pdfUrl", "downloadUrl", "report_download_url"]:
+    for key in ["pdf_url", "pdfUrl", "report_pdf", "pdf", "htmlUrl", "result_pdf"]:
         val = data.get(key) or raw_data.get(key)
+        
+        # Check inside result wrapper if present (Experian Digitap puts it here)
+        if not val and isinstance(raw_data.get("result"), dict):
+            val = raw_data["result"].get(key)
+            
         if val and isinstance(val, str) and val.startswith("http"):
             pdf_url = val
             break

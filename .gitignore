@@ -104,3 +104,5 @@ forget_PW_flow
 
 # Temporary API response cache
 _last_cibil_raw_response.json
+*raw_response.json
+_last_cibil_raw_response.json

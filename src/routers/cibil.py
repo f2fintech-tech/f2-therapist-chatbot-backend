@@ -2,7 +2,7 @@ import re
 import logging
 import uuid
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from pydantic import BaseModel, Field
@@ -105,7 +105,7 @@ def is_user_exempt_from_rate_limit(user: User, db: Session) -> bool:
 # ==================== Router Endpoints ====================
 
 @router.post("/fetch", response_model=CibilReportResponse)
-async def fetch_cibil(payload: CibilFetchRequest, db: Session = Depends(get_db)):
+async def fetch_cibil(payload: CibilFetchRequest, request: Request, db: Session = Depends(get_db)):
     """
     Fetch the user's CIBIL credit report from the external API (or fallback simulation).
     Saves the report to Amazon RDS PostgreSQL and records a credit health test result to update the wellness score.
@@ -172,7 +172,9 @@ async def fetch_cibil(payload: CibilFetchRequest, db: Session = Depends(get_db))
             is_company = True
 
         if "experian" in bureau_str:
-            report = await fetch_actual_experian_report(name=name, phone=clean_phone, pan=pan, is_company=is_company)
+            # Get client IP for Digitap's device_ip field
+            device_ip = request.client.host if request.client else "127.0.0.1"
+            report = await fetch_actual_experian_report(name=name, phone=clean_phone, pan=pan, is_company=is_company, device_ip=device_ip)
         else:
             report = await fetch_actual_cibil_report(name=name, phone=clean_phone, pan=pan, is_company=is_company)
     except CibilNoRecordError as e:
