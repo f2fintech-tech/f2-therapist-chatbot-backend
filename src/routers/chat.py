@@ -109,6 +109,7 @@ class ChatRequest(BaseModel):
     conversation_id: str | None = Field(None, min_length=36, max_length=36, description="Optional conversation ID")
     user_tier: str | None = Field(None, min_length=1, max_length=20, description="Optional quiz tier for model guidance")
     user_tier_score: int | None = Field(None, ge=0, le=5, description="Optional quiz score for model guidance")
+    message_id: str | None = Field(None, min_length=1, max_length=50, description="Optional user message ID being edited")
 
     @validator('user_id')
     def validate_user_id(cls, v):
@@ -1096,11 +1097,57 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
             db, request.user_id, request.conversation_id
         )
 
-        # Save user message (already validated by ChatRequest model)
-        user_message_obj = save_message(
-            db, conversation.id, MessageRole.USER, request.message
-        )
-        logger.info(f"User message saved: {user_message_obj.id}")
+        # Save user message or edit existing message
+        if hasattr(request, "message_id") and request.message_id:
+            # Find the user message to edit
+            user_message_obj = db.query(ConversationMessage).filter(
+                ConversationMessage.id == request.message_id,
+                ConversationMessage.conversation_id == conversation.id,
+                ConversationMessage.role == MessageRole.USER
+            ).first()
+            if not user_message_obj:
+                logger.error(f"Message to edit not found: {request.message_id}")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Message to edit not found"
+                )
+            
+            # Sanitize and validate message
+            try:
+                validated_content = sanitize_message(request.message)
+            except ValueError as e:
+                logger.error(f"Message validation failed: {str(e)}")
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Invalid message content: {str(e)}"
+                )
+            
+            user_message_obj.content = validated_content
+            db.commit()
+            logger.info(f"User message updated: {user_message_obj.id}")
+            
+            # Delete subsequent messages
+            deleted_count = db.query(ConversationMessage).filter(
+                ConversationMessage.conversation_id == conversation.id,
+                ConversationMessage.created_at > user_message_obj.created_at
+            ).delete(synchronize_session=False)
+            db.commit()
+            logger.info(f"Deleted {deleted_count} subsequent messages after edited user message")
+            
+            # Reset conversation message count
+            remaining_count = db.query(ConversationMessage).filter(
+                ConversationMessage.conversation_id == conversation.id
+            ).count()
+            # Set to remaining_count - 1 because we want to offset the message count logic correctly
+            # (which will add + 2 at the end of the streaming generator)
+            conversation.message_count = remaining_count - 1
+            db.commit()
+        else:
+            # Save user message (already validated by ChatRequest model)
+            user_message_obj = save_message(
+                db, conversation.id, MessageRole.USER, request.message
+            )
+            logger.info(f"User message saved: {user_message_obj.id}")
 
         # Analyze user's mood and emotional state
         conversation_depth = conversation.message_count // 2  # Each exchange = 2 messages
