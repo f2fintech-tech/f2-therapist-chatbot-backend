@@ -106,3 +106,7 @@ forget_PW_flow
 _last_cibil_raw_response.json
 *raw_response.json
 _last_cibil_raw_response.json
+
+# Scratchpad and temporary scripts
+scratch/
+scripts/
