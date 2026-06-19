@@ -16,12 +16,14 @@ logger = logging.getLogger(__name__)
 def get_report_llm():
     """Instantiate a local LLM client for generating summaries."""
     api_key = os.getenv("GEMINI_API_KEY")
+    model_name = os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash")
     if not api_key:
         logger.error("GEMINI_API_KEY not found in environment")
         raise ValueError("GEMINI_API_KEY is not configured")
     
+    logger.info(f"Initializing Report ChatGoogleGenerativeAI with model: {model_name}")
     return ChatGoogleGenerativeAI(
-        model="gemini-3-flash-preview",
+        model=model_name,
         temperature=0.4,
         max_output_tokens=3072,
         google_api_key=api_key

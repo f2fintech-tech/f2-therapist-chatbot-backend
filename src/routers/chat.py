@@ -255,16 +255,18 @@ class ChatExperimentSummaryResponse(BaseModel):
 # ==================== LLM Configuration ====================
 @lru_cache(maxsize=1)
 def get_llm():
-    """Initialize and return the Google Gemini 3 flash preview LLM instance."""
+    """Initialize and return the Google Gemini LLM instance."""
 
     api_key = os.getenv("GEMINI_API_KEY")
+    model_name = os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash")
 
     if not api_key:
         logger.error("GEMINI_API_KEY not found in environment variables")
         raise ValueError("GEMINI_API_KEY not configured")
 
+    logger.info(f"Initializing ChatGoogleGenerativeAI with model: {model_name}")
     return ChatGoogleGenerativeAI(
-        model="gemini-3-flash-preview",
+        model=model_name,
         temperature=0.7,
         max_output_tokens=3072,
         google_api_key=api_key
@@ -1141,7 +1143,7 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
                 assistant_response=safety_response,
                 mood_analysis=mood_analysis,
                 conversation_depth=conversation_depth,
-                model_name="gemini-3-flash-preview",
+                model_name=os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash"),
             )
 
             conversation.message_count += 2
@@ -1489,7 +1491,7 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
                 assistant_response=assistant_text,
                 mood_analysis=mood_analysis,
                 conversation_depth=conversation_depth,
-                model_name="gemini-3-flash-preview",
+                model_name=os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash"),
             )
             logger.info("Mood snapshot persisted for conversation %s", conversation.id)
 
