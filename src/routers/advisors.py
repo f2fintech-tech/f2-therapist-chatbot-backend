@@ -28,6 +28,7 @@ class AdvisorBase(BaseModel):
     category: str
     fee: int = 899
     original_fee: Optional[int] = None
+    discount_expires_at: Optional[str] = None
 
 class AdvisorCreate(AdvisorBase):
     f2_fintech_id: str
@@ -56,18 +57,24 @@ async def get_advisors(user_id: Optional[str] = Query(None), db: Session = Depen
         advisors = db.query(Advisor).all()
         
         user_is_referred = False
+        discount_expires_at = None
         if user_id:
             ref = db.query(ReferralCode).filter(ReferralCode.referred_user_id == user_id).first()
-            if ref:
-                user_is_referred = True
+            if ref and ref.used_at:
+                expires_date = ref.used_at + timedelta(days=15)
+                if datetime.utcnow() < expires_date:
+                    user_is_referred = True
+                    discount_expires_at = expires_date.isoformat() + "Z"
 
         result = []
         for a in advisors:
             fee = a.fee
             original_fee = None
+            adv_discount_expires = None
             if user_is_referred:
                 original_fee = fee
                 fee = int(fee * 0.5)
+                adv_discount_expires = discount_expires_at
 
             result.append(
                 AdvisorCreate(
@@ -84,7 +91,8 @@ async def get_advisors(user_id: Optional[str] = Query(None), db: Session = Depen
                     next_slot=a.next_slot,
                     category=a.category,
                     fee=fee,
-                    original_fee=original_fee
+                    original_fee=original_fee,
+                    discount_expires_at=adv_discount_expires
                 )
             )
         return result
