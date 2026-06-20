@@ -1,6 +1,6 @@
 """
 Financial Therapist Chatbot Backend
-FastAPI application with Google Gemini 3 flash preview API integration
+FastAPI application with Google Gemini 3 Flash API integration
 """
 
 from fastapi import FastAPI, Request, HTTPException as FastAPIHTTPException
