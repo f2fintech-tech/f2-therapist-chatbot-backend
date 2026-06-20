@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any
 import bcrypt as _bcrypt
 from jose import jwt
-from src.models import get_db, User, Conversation, Advisor, UserCreditReport, UserConsolidatedProfile, UserLoanCalculatorActivity, TestResult, UserSessionReport
+from src.models import get_db, User, Conversation, Advisor, UserCreditReport, UserConsolidatedProfile, UserLoanCalculatorActivity, TestResult, UserSessionReport, ReferralCode
 from src.utils.api_security import require_api_key
 import os
 import uuid
@@ -32,6 +32,7 @@ class SignupRequest(BaseModel):
     password: str = Field(..., min_length=6)
     name: str = Field(..., min_length=1, max_length=100)
     guest_user_id: str | None = None
+    referral_code: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -141,6 +142,13 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    referred_by_advisor_id = None
+    if payload.referral_code:
+        ref = db.query(ReferralCode).filter(ReferralCode.code == payload.referral_code, ReferralCode.status == "pending").first()
+        if not ref or ref.expires_at < datetime.utcnow():
+            raise HTTPException(status_code=400, detail="Invalid or expired referral code")
+        referred_by_advisor_id = ref.advisor_id
+
     new_id = str(uuid.uuid4())
     user = User(
         id=new_id,
@@ -149,8 +157,15 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
         hashed_password=hash_password(payload.password),
         hearts=INITIAL_HEARTS,
         is_guest="false",
+        referred_by_advisor_id=referred_by_advisor_id,
     )
     db.add(user)
+
+    if payload.referral_code and referred_by_advisor_id:
+        ref.status = "used"
+        ref.used_at = datetime.utcnow()
+        ref.referred_user_id = new_id
+
     db.commit()
 
     if payload.guest_user_id:

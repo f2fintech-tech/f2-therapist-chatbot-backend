@@ -79,6 +79,7 @@ class User(Base):
     monthly_income = Column(String(255), nullable=True)
     therapy_style = Column(String(255), nullable=True)
     goals = Column(JSON, nullable=True)
+    referred_by_advisor_id = Column(String(255), ForeignKey("advisors.f2_fintech_id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -282,6 +283,23 @@ class AdvisorAppointment(Base):
         return f"<AdvisorAppointment(id={self.id}, user_id={self.user_id}, advisor_id={self.advisor_id})>"
 
 
+class ReferralCode(Base):
+    """ReferralCode model for tracking advisor invitations."""
+    __tablename__ = "referral_codes"
+
+    id = Column(String(36), primary_key=True, index=True)
+    advisor_id = Column(String(255), ForeignKey("advisors.f2_fintech_id"), nullable=False, index=True)
+    code = Column(String(32), unique=True, index=True, nullable=False)
+    status = Column(String(32), default="pending", nullable=False) # "pending", "used", "expired"
+    referred_user_id = Column(String(36), ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+
+    def __repr__(self):
+        return f"<ReferralCode(id={self.id}, code={self.code}, status={self.status})>"
+
+
 class UserSessionReport(Base):
     """UserSessionReport model representing pre-generated summaries and analytics reports for users."""
     __tablename__ = "user_session_reports"
@@ -352,6 +370,8 @@ def _ensure_users_columns():
         alter_statements.append("ALTER TABLE users ADD COLUMN therapy_style VARCHAR(255)")
     if "goals" not in columns:
         alter_statements.append("ALTER TABLE users ADD COLUMN goals JSON")
+    if "referred_by_advisor_id" not in columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN referred_by_advisor_id VARCHAR(255)")
     if "created_at" not in columns:
         alter_statements.append("ALTER TABLE users ADD COLUMN created_at DATETIME")
     if "updated_at" not in columns:
