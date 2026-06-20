@@ -86,7 +86,73 @@ LIMIT 10;
 
 ---
 
-## 💬 5. Chat History & Mood Telemetry
+## 📈 5. User Activity Analytics & Insights (New)
+
+### Count calculator runs by type and user:
+```sql
+SELECT user_id, calculator_type, COUNT(*) AS run_count
+FROM user_loan_calculator_activities
+GROUP BY user_id, calculator_type
+ORDER BY run_count DESC;
+```
+
+### Retrieve most active users (combining calculator and test/quiz activities):
+```sql
+SELECT u.id, u.name, u.email,
+       COALESCE(c.calc_count, 0) AS calculator_runs,
+       COALESCE(t.test_count, 0) AS tests_completed
+FROM users u
+LEFT JOIN (
+    SELECT user_id, COUNT(*) AS calc_count 
+    FROM user_loan_calculator_activities 
+    GROUP BY user_id
+) c ON u.id = c.user_id
+LEFT JOIN (
+    SELECT user_id, COUNT(*) AS test_count 
+    FROM test_results 
+    GROUP BY user_id
+) t ON u.id = t.user_id
+WHERE c.calc_count > 0 OR t.test_count > 0
+ORDER BY (COALESCE(c.calc_count, 0) + COALESCE(t.test_count, 0)) DESC;
+```
+
+### Extract educational video/article consumption counts from profile JSON:
+```sql
+SELECT 
+    u.id, 
+    u.name,
+    COALESCE(jsonb_array_length(ucp.data->'financial_education'->'videos_seen'), 0) AS videos_watched,
+    COALESCE(jsonb_array_length(ucp.data->'financial_education'->'articles_seen'), 0) AS articles_read
+FROM users u
+JOIN user_consolidated_profiles ucp ON u.id = ucp.user_id
+ORDER BY videos_watched DESC, articles_read DESC;
+```
+
+### Get average score and total attempts by test type:
+```sql
+SELECT test_type, 
+       COUNT(*) AS total_attempts, 
+       ROUND(AVG(raw_score), 2) AS avg_raw_score, 
+       ROUND(AVG(normalized_score), 2) AS avg_normalized_score
+FROM test_results
+GROUP BY test_type
+ORDER BY total_attempts DESC;
+```
+
+### Calculate monthly calculator activity trends:
+```sql
+SELECT 
+    TO_CHAR(created_at, 'YYYY-MM') AS month,
+    COUNT(DISTINCT user_id) AS active_users,
+    COUNT(*) AS total_calculator_runs
+FROM user_loan_calculator_activities
+GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+ORDER BY month DESC;
+```
+
+---
+
+## 💬 6. Chat History & Mood Telemetry
 
 ### View the latest conversation sessions:
 ```sql
@@ -113,7 +179,7 @@ WHERE user_id = 'YOUR_USER_ID_HERE';
 
 ---
 
-## 📊 6. Assessments & Scores
+## 📊 7. Assessments & Scores
 
 ### View all financial health test results for a user:
 ```sql
@@ -131,7 +197,7 @@ WHERE user_id = 'YOUR_USER_ID_HERE';
 
 ---
 
-## 🐍 7. Python Helper Scripts
+## 🐍 8. Python Helper Scripts
 
 Run these diagnostic commands directly from the backend project folder:
 
@@ -157,7 +223,7 @@ python migrate_sqlite_to_postgres.py
 
 ---
 
-## ⚠️ 8. Reset Database Tables
+## ⚠️ 9. Reset Database Tables
 
 ### Clear user data only (keeps schema):
 ```sql
