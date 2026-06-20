@@ -27,6 +27,7 @@ class AdvisorBase(BaseModel):
     next_slot: Optional[str] = None
     category: str
     fee: int = 899
+    original_fee: Optional[int] = None
 
 class AdvisorCreate(AdvisorBase):
     f2_fintech_id: str
@@ -56,14 +57,16 @@ async def get_advisors(user_id: Optional[str] = Query(None), db: Session = Depen
         
         user_is_referred = False
         if user_id:
-            user = db.query(User).filter(User.id == user_id).first()
-            if user and user.referred_by_advisor_id:
+            ref = db.query(ReferralCode).filter(ReferralCode.referred_user_id == user_id).first()
+            if ref:
                 user_is_referred = True
 
         result = []
         for a in advisors:
             fee = a.fee
+            original_fee = None
             if user_is_referred:
+                original_fee = fee
                 fee = int(fee * 0.5)
 
             result.append(
@@ -80,7 +83,8 @@ async def get_advisors(user_id: Optional[str] = Query(None), db: Session = Depen
                     reviews_count=a.reviews_count,
                     next_slot=a.next_slot,
                     category=a.category,
-                    fee=fee
+                    fee=fee,
+                    original_fee=original_fee
                 )
             )
         return result
