@@ -1,11 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Request
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Request, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
 import logging
 import os
 import shutil
-from src.models import Advisor, AdvisorAppointment, User, get_db
+import uuid
+from datetime import datetime, timedelta
+import secrets
+from src.models import Advisor, AdvisorAppointment, User, get_db, ReferralCode
 
 logger = logging.getLogger(__name__)
 
@@ -43,33 +46,99 @@ class PasswordUpdate(BaseModel):
 
 
 @router.get("", response_model=List[AdvisorCreate])
-async def get_advisors(db: Session = Depends(get_db)):
+async def get_advisors(user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
     """
     Fetch the list of all active advisor profiles from the database.
+    Applies a 50% discount if the user was referred.
     """
     try:
         advisors = db.query(Advisor).all()
-        # Map objects to matching schema output
-        return [
-            AdvisorCreate(
-                f2_fintech_id=a.f2_fintech_id,
-                name=a.name,
-                designation=a.designation,
-                avatar_url=a.avatar_url,
-                availability=a.availability,
-                expertise=a.expertise or [],
-                strength=a.strength,
-                bio=a.bio,
-                rating=a.rating,
-                reviews_count=a.reviews_count,
-                next_slot=a.next_slot,
-                category=a.category,
-                fee=a.fee
-            ) for a in advisors
-        ]
+        
+        user_is_referred = False
+        if user_id:
+            user = db.query(User).filter(User.id == user_id).first()
+            if user and user.referred_by_advisor_id:
+                user_is_referred = True
+
+        result = []
+        for a in advisors:
+            fee = a.fee
+            if user_is_referred:
+                fee = int(fee * 0.5)
+
+            result.append(
+                AdvisorCreate(
+                    f2_fintech_id=a.f2_fintech_id,
+                    name=a.name,
+                    designation=a.designation,
+                    avatar_url=a.avatar_url,
+                    availability=a.availability,
+                    expertise=a.expertise or [],
+                    strength=a.strength,
+                    bio=a.bio,
+                    rating=a.rating,
+                    reviews_count=a.reviews_count,
+                    next_slot=a.next_slot,
+                    category=a.category,
+                    fee=fee
+                )
+            )
+        return result
     except Exception as e:
         logger.error(f"Error fetching advisors: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch advisors: {str(e)}")
+
+# ==================== Referral Endpoints ====================
+
+class ReferralCodeResponse(BaseModel):
+    id: str
+    code: str
+    status: str
+    expires_at: str
+    created_at: str
+    used_at: Optional[str] = None
+
+@router.post("/{f2_fintech_id}/referrals", response_model=ReferralCodeResponse)
+async def generate_referral(f2_fintech_id: str, db: Session = Depends(get_db)):
+    advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == f2_fintech_id).first()
+    if not advisor:
+        raise HTTPException(status_code=404, detail="Advisor profile not found")
+        
+    code = secrets.token_hex(4).upper() # 8 char code
+    ref = ReferralCode(
+        id=str(uuid.uuid4()),
+        advisor_id=f2_fintech_id,
+        code=code,
+        status="pending",
+        expires_at=datetime.utcnow() + timedelta(days=30)
+    )
+    db.add(ref)
+    db.commit()
+    db.refresh(ref)
+    
+    return ReferralCodeResponse(
+        id=ref.id,
+        code=ref.code,
+        status=ref.status,
+        expires_at=ref.expires_at.isoformat(),
+        created_at=ref.created_at.isoformat(),
+        used_at=ref.used_at.isoformat() if ref.used_at else None
+    )
+
+@router.get("/{f2_fintech_id}/referrals", response_model=List[ReferralCodeResponse])
+async def list_referrals(f2_fintech_id: str, db: Session = Depends(get_db)):
+    refs = db.query(ReferralCode).filter(ReferralCode.advisor_id == f2_fintech_id).order_by(ReferralCode.created_at.desc()).all()
+    return [
+        ReferralCodeResponse(
+            id=r.id,
+            code=r.code,
+            status=r.status,
+            expires_at=r.expires_at.isoformat(),
+            created_at=r.created_at.isoformat(),
+            used_at=r.used_at.isoformat() if r.used_at else None
+        ) for r in refs
+    ]
+
 
 @router.post("", response_model=AdvisorCreate)
 async def save_advisor(payload: AdvisorCreate, db: Session = Depends(get_db)):
