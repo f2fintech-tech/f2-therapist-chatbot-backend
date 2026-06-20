@@ -32,7 +32,7 @@ class SignupRequest(BaseModel):
     password: str = Field(..., min_length=6)
     name: str = Field(..., min_length=1, max_length=100)
     guest_user_id: str | None = None
-    referral_code: str | None = None
+    invite_token: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -143,11 +143,19 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered")
 
     referred_by_advisor_id = None
-    if payload.referral_code:
-        ref = db.query(ReferralCode).filter(ReferralCode.code == payload.referral_code, ReferralCode.status == "pending").first()
-        if not ref or ref.expires_at < datetime.utcnow():
-            raise HTTPException(status_code=400, detail="Invalid or expired referral code")
-        referred_by_advisor_id = ref.advisor_id
+    if payload.invite_token:
+        try:
+            ref = db.query(ReferralCode).filter(ReferralCode.code == payload.invite_token, ReferralCode.status == "pending").first()
+            if not ref or ref.expires_at < datetime.utcnow():
+                raise HTTPException(status_code=400, detail="Invalid or expired referral code")
+            referred_by_advisor_id = ref.advisor_id
+            ref.status = "used"
+            ref.used_at = datetime.utcnow()
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error querying referral code: {e}")
+            raise HTTPException(status_code=400, detail="Referral code system is currently unavailable.")
 
     new_id = str(uuid.uuid4())
     user = User(
@@ -159,8 +167,9 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
         is_guest="false"
     )
     db.add(user)
+    db.flush()
 
-    if payload.referral_code and referred_by_advisor_id:
+    if payload.invite_token and referred_by_advisor_id:
         ref.status = "used"
         ref.used_at = datetime.utcnow()
         ref.referred_user_id = new_id
