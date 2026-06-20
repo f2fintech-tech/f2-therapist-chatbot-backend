@@ -79,7 +79,6 @@ class User(Base):
     monthly_income = Column(String(255), nullable=True)
     therapy_style = Column(String(255), nullable=True)
     goals = Column(JSON, nullable=True)
-    referred_by_advisor_id = Column(String(255), ForeignKey("advisors.f2_fintech_id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

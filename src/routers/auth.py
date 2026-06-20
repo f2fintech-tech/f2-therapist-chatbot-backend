@@ -156,8 +156,7 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
         name=payload.name,
         hashed_password=hash_password(payload.password),
         hearts=INITIAL_HEARTS,
-        is_guest="false",
-        referred_by_advisor_id=referred_by_advisor_id,
+        is_guest="false"
     )
     db.add(user)
 
