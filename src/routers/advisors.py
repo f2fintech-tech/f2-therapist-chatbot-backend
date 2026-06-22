@@ -469,6 +469,7 @@ class AppointmentResponse(BaseModel):
     meet_url: Optional[str] = None
     joined: bool
     client_email: Optional[str] = None
+    client_name: Optional[str] = None
 
 class AppointmentStatusUpdate(BaseModel):
     completed: Optional[bool] = None
@@ -506,6 +507,7 @@ async def book_appointment(payload: AppointmentCreate, db: Session = Depends(get
         db.refresh(new_appt)
         user = db.query(User).filter(User.id == new_appt.user_id).first()
         client_email = user.email if user else None
+        client_name = user.name if user else None
         return AppointmentResponse(
             id=new_appt.id,
             user_id=new_appt.user_id,
@@ -521,7 +523,8 @@ async def book_appointment(payload: AppointmentCreate, db: Session = Depends(get
             feedback=new_appt.feedback,
             meet_url=new_appt.meet_url,
             joined=new_appt.joined,
-            client_email=client_email
+            client_email=client_email,
+            client_name=client_name
         )
     except HTTPException as he:
         raise he
@@ -533,7 +536,7 @@ async def book_appointment(payload: AppointmentCreate, db: Session = Depends(get
 @router.get("/appointments/user/{user_id}", response_model=List[AppointmentResponse])
 async def get_user_appointments(user_id: str, db: Session = Depends(get_db)):
     try:
-        appts = db.query(AdvisorAppointment, User.email).outerjoin(
+        appts = db.query(AdvisorAppointment, User.email, User.name).outerjoin(
             User, AdvisorAppointment.user_id == User.id
         ).filter(AdvisorAppointment.user_id == user_id).order_by(AdvisorAppointment.booked_at.desc()).all()
         return [
@@ -552,8 +555,9 @@ async def get_user_appointments(user_id: str, db: Session = Depends(get_db)):
                 feedback=a.feedback,
                 meet_url=a.meet_url,
                 joined=a.joined,
-                client_email=email
-            ) for a, email in appts
+                client_email=email,
+                client_name=name
+            ) for a, email, name in appts
         ]
     except Exception as e:
         logger.error(f"Error fetching user appointments: {e}", exc_info=True)
@@ -562,7 +566,7 @@ async def get_user_appointments(user_id: str, db: Session = Depends(get_db)):
 @router.get("/appointments/advisor/{advisor_id}", response_model=List[AppointmentResponse])
 async def get_advisor_appointments(advisor_id: str, db: Session = Depends(get_db)):
     try:
-        appts = db.query(AdvisorAppointment, User.email).outerjoin(
+        appts = db.query(AdvisorAppointment, User.email, User.name).outerjoin(
             User, AdvisorAppointment.user_id == User.id
         ).filter(AdvisorAppointment.advisor_id == advisor_id).order_by(AdvisorAppointment.booked_at.desc()).all()
         return [
@@ -581,8 +585,9 @@ async def get_advisor_appointments(advisor_id: str, db: Session = Depends(get_db
                 feedback=a.feedback,
                 meet_url=a.meet_url,
                 joined=a.joined,
-                client_email=email
-            ) for a, email in appts
+                client_email=email,
+                client_name=name
+            ) for a, email, name in appts
         ]
     except Exception as e:
         logger.error(f"Error fetching advisor appointments: {e}", exc_info=True)
@@ -591,7 +596,7 @@ async def get_advisor_appointments(advisor_id: str, db: Session = Depends(get_db
 @router.get("/appointments/all", response_model=List[AppointmentResponse])
 async def get_all_appointments(db: Session = Depends(get_db)):
     try:
-        appts = db.query(AdvisorAppointment, User.email).outerjoin(
+        appts = db.query(AdvisorAppointment, User.email, User.name).outerjoin(
             User, AdvisorAppointment.user_id == User.id
         ).order_by(AdvisorAppointment.booked_at.desc()).all()
         return [
@@ -610,8 +615,9 @@ async def get_all_appointments(db: Session = Depends(get_db)):
                 feedback=a.feedback,
                 meet_url=a.meet_url,
                 joined=a.joined,
-                client_email=email
-            ) for a, email in appts
+                client_email=email,
+                client_name=name
+            ) for a, email, name in appts
         ]
     except Exception as e:
         logger.error(f"Error fetching all appointments: {e}", exc_info=True)
@@ -668,6 +674,7 @@ async def update_appointment_status(appt_id: str, payload: AppointmentStatusUpda
         
         user = db.query(User).filter(User.id == appt.user_id).first()
         client_email = user.email if user else None
+        client_name = user.name if user else None
         return AppointmentResponse(
             id=appt.id,
             user_id=appt.user_id,
@@ -683,7 +690,8 @@ async def update_appointment_status(appt_id: str, payload: AppointmentStatusUpda
             feedback=appt.feedback,
             meet_url=appt.meet_url,
             joined=appt.joined,
-            client_email=client_email
+            client_email=client_email,
+            client_name=client_name
         )
     except HTTPException as he:
         raise he
@@ -704,6 +712,7 @@ async def join_appointment(appt_id: str, db: Session = Depends(get_db)):
         db.refresh(appt)
         user = db.query(User).filter(User.id == appt.user_id).first()
         client_email = user.email if user else None
+        client_name = user.name if user else None
         return AppointmentResponse(
             id=appt.id,
             user_id=appt.user_id,
@@ -719,7 +728,8 @@ async def join_appointment(appt_id: str, db: Session = Depends(get_db)):
             feedback=appt.feedback,
             meet_url=appt.meet_url,
             joined=appt.joined,
-            client_email=client_email
+            client_email=client_email,
+            client_name=client_name
         )
     except HTTPException as he:
         raise he
@@ -749,6 +759,7 @@ async def reschedule_appointment(appt_id: str, payload: AppointmentReschedule, d
         db.refresh(appt)
         user = db.query(User).filter(User.id == appt.user_id).first()
         client_email = user.email if user else None
+        client_name = user.name if user else None
         return AppointmentResponse(
             id=appt.id,
             user_id=appt.user_id,
@@ -764,7 +775,8 @@ async def reschedule_appointment(appt_id: str, payload: AppointmentReschedule, d
             feedback=appt.feedback,
             meet_url=appt.meet_url,
             joined=appt.joined,
-            client_email=client_email
+            client_email=client_email,
+            client_name=client_name
         )
     except HTTPException as he:
         raise he
