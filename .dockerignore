@@ -80,6 +80,24 @@ docs/
 .pytest_cache/
 .coverage
 htmlcov/
+tests/
+
+# Temporary and Scratch Files
+scratch/
+test_rename_temp.py
+*.db
+*_response.json
+src/model/*_results.json
+src/monitoring/health_check_results.json
+
+# Developer/Evaluation utility scripts
+src/model/diagnose_api.py
+src/model/model_evaluate.py
+src/model/model_finetune.py
+src/model/model_test.py
+src/model/quick_demo.py
+src/model/rag_evaluator.py
+src/model/model_train.py
 
 # Docker
 docker-compose.yml
