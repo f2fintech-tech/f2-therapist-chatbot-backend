@@ -330,7 +330,7 @@ def evaluate_rag_response(
         prompt = _build_judge_prompt(user_query, retrieved_chunks, assistant_response)
 
         gemini_response = client.models.generate_content(
-            model=os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash"),
+            model=os.getenv("GEMINI_CHAT_MODEL", "gemini-3-flash-preview"),
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.1,
@@ -345,7 +345,7 @@ def evaluate_rag_response(
             # Retry with a simpler output format that is easier to parse deterministically.
             retry_prompt = _build_plain_retry_prompt(user_query, retrieved_chunks, assistant_response)
             retry_response = client.models.generate_content(
-                model=os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash"),
+                model=os.getenv("GEMINI_CHAT_MODEL", "gemini-3-flash-preview"),
                 contents=retry_prompt,
                 config=types.GenerateContentConfig(
                     temperature=0.0,
@@ -433,7 +433,7 @@ def evaluate_chat_session(
         prompt = _build_session_judge_prompt(chat_session, conversation_id)
 
         gemini_response = client.models.generate_content(
-            model=os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash"),
+            model=os.getenv("GEMINI_CHAT_MODEL", "gemini-3-flash-preview"),
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.1,

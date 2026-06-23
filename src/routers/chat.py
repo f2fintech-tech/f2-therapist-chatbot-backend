@@ -259,7 +259,7 @@ def get_llm():
     """Initialize and return the Google Gemini LLM instance."""
 
     api_key = os.getenv("GEMINI_API_KEY")
-    model_name = os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash")
+    model_name = os.getenv("GEMINI_CHAT_MODEL", "gemini-3-flash-preview")
 
     if not api_key:
         logger.error("GEMINI_API_KEY not found in environment variables")
@@ -1190,7 +1190,7 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
                 assistant_response=safety_response,
                 mood_analysis=mood_analysis,
                 conversation_depth=conversation_depth,
-                model_name=os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash"),
+                model_name=os.getenv("GEMINI_CHAT_MODEL", "gemini-3-flash-preview"),
             )
 
             conversation.message_count += 2
@@ -1538,7 +1538,7 @@ async def chat(request: ChatRequest, http_request: Request, db: Session = Depend
                 assistant_response=assistant_text,
                 mood_analysis=mood_analysis,
                 conversation_depth=conversation_depth,
-                model_name=os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash"),
+                model_name=os.getenv("GEMINI_CHAT_MODEL", "gemini-3-flash-preview"),
             )
             logger.info("Mood snapshot persisted for conversation %s", conversation.id)
 

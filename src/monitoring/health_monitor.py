@@ -163,7 +163,7 @@ class HealthMonitor:
             start = time.time()
 
             response = client.models.generate_content(
-                model=os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash"),
+                model=os.getenv("GEMINI_CHAT_MODEL", "gemini-3-flash-preview"),
                 contents=test_prompt,
             )
 

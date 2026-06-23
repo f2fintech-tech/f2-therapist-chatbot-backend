@@ -12,6 +12,9 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import os
+# Load environment variables first before importing any local modules
+load_dotenv(override=True)
+
 import logging
 from urllib.parse import urlparse
 
@@ -29,8 +32,6 @@ from src.middleware.security import (
     SecurityHeadersMiddleware,
 )
 
-# Load environment variables
-load_dotenv()
 
 # Configure logging
 logging.basicConfig(

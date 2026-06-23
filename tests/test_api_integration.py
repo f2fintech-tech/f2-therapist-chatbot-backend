@@ -17,12 +17,20 @@ def test_analyze_mood_endpoint():
 def test_chat_endpoint_includes_mood():
     # Chat endpoint requires additional fields; include a valid UUID for user_id
     import uuid
+    import json
     resp = client.post(
         "/api/v1/chat/",
         json={"message": "I need help, I'm anxious about money.", "user_id": str(uuid.uuid4())},
     )
     assert resp.status_code == 200
-    data = resp.json()
-    assert isinstance(data, dict)
-    # response should include mood info in some form
-    assert any(k in data for k in ("mood", "mood_analysis", "mood_snapshot", "latest_mood_snapshot"))
+    
+    # The response is a newline-delimited JSON stream
+    lines = [json.loads(line) for line in resp.text.strip().split("\n") if line.strip()]
+    assert len(lines) > 0
+    
+    # Find the metadata or final response chunk
+    metadata = next((item for item in lines if item.get("type") == "metadata"), {})
+    
+    # Verify that mood analysis is present in the metadata object
+    assert "mood_analysis" in metadata or any(k in metadata for k in ("mood", "mood_snapshot", "latest_mood_snapshot"))
+
