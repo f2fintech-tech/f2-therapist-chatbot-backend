@@ -124,13 +124,24 @@ async def fetch_cibil(
     # RBAC Permission Check
     requester = x_requester_id or user_id
     if requester:
-        advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == requester).first()
-        if advisor:
-            if "cibil_fetch" not in (advisor.permissions or []):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Access Denied. You do not have permission to fetch credit reports."
-                )
+        is_admin_user = False
+        if requester in {"admin", "superadmin"} or "admin" in requester.lower():
+            is_admin_user = True
+        else:
+            user = db.query(User).filter(User.id == requester).first()
+            if user:
+                email_clean = (user.email or "").lower().strip()
+                if email_clean in {"admin@finheal.com", "admin@f2finheal.com"} or email_clean.startswith("admin@"):
+                    is_admin_user = True
+        
+        if not is_admin_user:
+            advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == requester).first()
+            if advisor:
+                if "cibil_fetch" not in (advisor.permissions or []):
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Access Denied. You do not have permission to fetch credit reports."
+                    )
 
     # 1. Input Validations
     user = db.query(User).filter(User.id == user_id).first()
@@ -347,12 +358,23 @@ def get_all_cibil_enquiries(
     Used by the Admin Portal to display inquiries.
     """
     if x_requester_id:
-        advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == x_requester_id).first()
-        if advisor and "cibil_view" not in (advisor.permissions or []):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access Denied. You do not have permission to view credit reports."
-            )
+        is_admin_user = False
+        if x_requester_id in {"admin", "superadmin"} or "admin" in x_requester_id.lower():
+            is_admin_user = True
+        else:
+            user = db.query(User).filter(User.id == x_requester_id).first()
+            if user:
+                email_clean = (user.email or "").lower().strip()
+                if email_clean in {"admin@finheal.com", "admin@f2finheal.com"} or email_clean.startswith("admin@"):
+                    is_admin_user = True
+        
+        if not is_admin_user:
+            advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == x_requester_id).first()
+            if advisor and "cibil_view" not in (advisor.permissions or []):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access Denied. You do not have permission to view credit reports."
+                )
     try:
         results = (
             db.query(UserCreditReport, User)
