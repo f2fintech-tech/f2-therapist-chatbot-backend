@@ -12,7 +12,7 @@ router = APIRouter(prefix="/lenders", tags=["Lenders"])
 CATALOG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "lenders_catalog.json")
 
 @router.get("", response_model=List[Dict[str, Any]])
-async def get_lenders():
+def get_lenders():
     """
     Fetch the list of lender products from the JSON catalog.
     """
@@ -28,7 +28,7 @@ async def get_lenders():
         raise HTTPException(status_code=500, detail=f"Failed to read lenders catalog: {str(e)}")
 
 @router.post("", response_model=Dict[str, str])
-async def save_lenders(lenders: List[Dict[str, Any]]):
+def save_lenders(lenders: List[Dict[str, Any]]):
     """
     Overwrite the lenders catalog JSON file with updated data.
     """

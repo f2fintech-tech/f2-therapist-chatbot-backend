@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat/reports", tags=["Reports"], dependencies=[Depends(require_api_key)])
 
 @router.get("/{user_id}")
-async def get_user_reports(user_id: str, db: Session = Depends(get_db)):
+def get_user_reports(user_id: str, db: Session = Depends(get_db)):
     """
     Fetch all financial therapy and activity reports for a specific user.
     Generates missing or outdated reports on-the-fly if the user has activity.
@@ -61,7 +61,7 @@ async def get_user_reports(user_id: str, db: Session = Depends(get_db)):
         )
 
 @router.post("/{user_id}/trigger")
-async def trigger_report_generation(
+def trigger_report_generation(
     user_id: str, 
     report_type: str = Query(..., pattern="^(daily|fortnightly|monthly)$"), 
     db: Session = Depends(get_db)
@@ -97,7 +97,7 @@ async def trigger_report_generation(
         )
 
 @router.post("/trigger-all")
-async def trigger_all_reports(db: Session = Depends(get_db)):
+def trigger_all_reports(db: Session = Depends(get_db)):
     """
     Developer/Admin endpoint to manually run the scheduled worker for all users.
     """

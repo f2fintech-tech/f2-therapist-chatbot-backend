@@ -197,7 +197,7 @@ def verify_conversation_ownership(db: Session, conversation_id: str, user_id: st
 
 # ==================== Routes ====================
 @router.post("/", response_model=ConversationDetail, status_code=status.HTTP_201_CREATED)
-async def create_conversation(
+def create_conversation(
     request: ConversationCreate,
     db: Session = Depends(get_db)
 ):
@@ -248,7 +248,7 @@ async def create_conversation(
         )
 
 @router.get("", response_model=list[ConversationList])
-async def list_conversations(
+def list_conversations(
     user_id: str = Query(..., min_length=1, max_length=36, description="User ID"),
     limit: int = Query(20, ge=MIN_CONVERSATIONS_PER_REQUEST, le=MAX_CONVERSATIONS_PER_REQUEST, description="Number of conversations to return"),
     offset: int = Query(0, ge=0, le=MAX_OFFSET, description="Number of conversations to skip"),
@@ -296,7 +296,7 @@ async def list_conversations(
         )
 
 @router.get("/{conversation_id}", response_model=ConversationDetail)
-async def get_conversation(
+def get_conversation(
     conversation_id: str = Path(..., min_length=36, max_length=36),
     user_id: str = Query(..., min_length=1, max_length=36),
     db: Session = Depends(get_db)
@@ -329,7 +329,7 @@ async def get_conversation(
         )
 
 @router.put("/{conversation_id}", response_model=ConversationDetail)
-async def update_conversation(
+def update_conversation(
     conversation_id: str = Path(..., min_length=36, max_length=36),
     request: ConversationUpdate = None,
     user_id: str = Query(..., min_length=1, max_length=36),
@@ -381,7 +381,7 @@ async def update_conversation(
         )
 
 @router.delete("/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_conversation(
+def delete_conversation(
     conversation_id: str = Path(..., min_length=36, max_length=36),
     user_id: str = Query(..., min_length=1, max_length=36, description="User ID for verification"),
     db: Session = Depends(get_db)
@@ -417,7 +417,7 @@ async def delete_conversation(
         )
 
 @router.get("/{conversation_id}/messages", response_model=list[MessageDetail])
-async def get_conversation_messages(
+def get_conversation_messages(
     conversation_id: str = Path(..., min_length=36, max_length=36),
     user_id: str = Query(..., min_length=1, max_length=36, description="User ID for verification"),
     limit: int = Query(50, ge=MIN_MESSAGES_PER_REQUEST, le=MAX_MESSAGES_PER_REQUEST, description="Number of messages to return"),
@@ -463,7 +463,7 @@ async def get_conversation_messages(
 
 
 @router.get("/{conversation_id}/resume", response_model=ConversationResumeResponse)
-async def resume_conversation(
+def resume_conversation(
     conversation_id: str = Path(..., min_length=36, max_length=36),
     user_id: str = Query(..., min_length=1, max_length=36, description="User ID for verification"),
     limit: int = Query(50, ge=MIN_MESSAGES_PER_REQUEST, le=MAX_MESSAGES_PER_REQUEST, description="Number of messages to return"),

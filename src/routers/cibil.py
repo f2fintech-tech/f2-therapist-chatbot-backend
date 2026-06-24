@@ -323,13 +323,12 @@ def backfill_raw_json(user_id: str, db: Session = Depends(get_db)):
 
 @router.get("/enquiries", response_model=List[Dict[str, Any]])
 def get_all_cibil_enquiries(db: Session = Depends(get_db)):
-    """
-    Retrieve all CIBIL/Experian credit reports fetched across the platform.
-    Used by the Admin Portal to display inquiries.
-    """
+    from sqlalchemy.orm import defer
+
     try:
         results = (
             db.query(UserCreditReport, User)
+            .options(defer(UserCreditReport.raw_bureau_json))
             .join(User, UserCreditReport.user_id == User.id)
             .order_by(UserCreditReport.fetched_at.desc())
             .all()

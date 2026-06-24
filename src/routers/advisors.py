@@ -48,7 +48,7 @@ class PasswordUpdate(BaseModel):
 
 
 @router.get("", response_model=List[AdvisorCreate])
-async def get_advisors(user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
+def get_advisors(user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
     """
     Fetch the list of all active advisor profiles from the database.
     Applies a 50% discount if the user was referred.
@@ -111,7 +111,7 @@ class ReferralCodeResponse(BaseModel):
     used_at: Optional[str] = None
 
 @router.post("/{f2_fintech_id}/referrals", response_model=ReferralCodeResponse)
-async def generate_referral(f2_fintech_id: str, db: Session = Depends(get_db)):
+def generate_referral(f2_fintech_id: str, db: Session = Depends(get_db)):
     advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == f2_fintech_id).first()
     if not advisor:
         raise HTTPException(status_code=404, detail="Advisor profile not found")
@@ -138,7 +138,7 @@ async def generate_referral(f2_fintech_id: str, db: Session = Depends(get_db)):
     )
 
 @router.get("/{f2_fintech_id}/referrals", response_model=List[ReferralCodeResponse])
-async def list_referrals(f2_fintech_id: str, db: Session = Depends(get_db)):
+def list_referrals(f2_fintech_id: str, db: Session = Depends(get_db)):
     refs = db.query(ReferralCode).filter(ReferralCode.advisor_id == f2_fintech_id).order_by(ReferralCode.created_at.desc()).all()
     return [
         ReferralCodeResponse(
@@ -153,7 +153,7 @@ async def list_referrals(f2_fintech_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=AdvisorCreate)
-async def save_advisor(payload: AdvisorCreate, db: Session = Depends(get_db)):
+def save_advisor(payload: AdvisorCreate, db: Session = Depends(get_db)):
     """
     Create a new advisor profile, or update it if f2_fintech_id already exists.
     """
@@ -273,7 +273,7 @@ async def save_advisor(payload: AdvisorCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to save advisor: {str(e)}")
 
 @router.delete("/{f2_fintech_id}", status_code=status.HTTP_200_OK)
-async def delete_advisor(f2_fintech_id: str, db: Session = Depends(get_db)):
+def delete_advisor(f2_fintech_id: str, db: Session = Depends(get_db)):
     """
     Remove an advisor profile from the database.
     """
@@ -292,7 +292,7 @@ async def delete_advisor(f2_fintech_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to delete advisor: {str(e)}")
 
 @router.put("/{f2_fintech_id}/availability", response_model=AdvisorCreate)
-async def update_availability(f2_fintech_id: str, payload: AvailabilityUpdate, db: Session = Depends(get_db)):
+def update_availability(f2_fintech_id: str, payload: AvailabilityUpdate, db: Session = Depends(get_db)):
     """
     Update live availability status for a specific advisor.
     """
@@ -328,7 +328,7 @@ async def update_availability(f2_fintech_id: str, payload: AvailabilityUpdate, d
         raise HTTPException(status_code=500, detail=f"Failed to update availability: {str(e)}")
 
 @router.put("/{f2_fintech_id}/next-slot", response_model=AdvisorCreate)
-async def update_next_slot(f2_fintech_id: str, payload: NextSlotUpdate, db: Session = Depends(get_db)):
+def update_next_slot(f2_fintech_id: str, payload: NextSlotUpdate, db: Session = Depends(get_db)):
     """
     Update the next available booking slot for a specific advisor.
     """
@@ -364,7 +364,7 @@ async def update_next_slot(f2_fintech_id: str, payload: NextSlotUpdate, db: Sess
         raise HTTPException(status_code=500, detail=f"Failed to update next-slot: {str(e)}")
 
 @router.put("/{f2_fintech_id}/password", status_code=status.HTTP_200_OK)
-async def update_password(f2_fintech_id: str, payload: PasswordUpdate, db: Session = Depends(get_db)):
+def update_password(f2_fintech_id: str, payload: PasswordUpdate, db: Session = Depends(get_db)):
     """
     Update the login password for an advisor.
     """
@@ -397,7 +397,7 @@ async def update_password(f2_fintech_id: str, payload: PasswordUpdate, db: Sessi
 
 
 @router.post("/{f2_fintech_id}/upload-avatar")
-async def upload_avatar(
+def upload_avatar(
     f2_fintech_id: str,
     request: Request,
     file: UploadFile = File(...),
@@ -478,7 +478,7 @@ class AppointmentStatusUpdate(BaseModel):
     feedback: Optional[str] = None
 
 @router.post("/appointments", response_model=AppointmentResponse)
-async def book_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)):
+def book_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)):
     import uuid
     from datetime import datetime
     try:
@@ -534,7 +534,7 @@ async def book_appointment(payload: AppointmentCreate, db: Session = Depends(get
         raise HTTPException(status_code=500, detail=f"Failed to book appointment: {str(e)}")
 
 @router.get("/appointments/user/{user_id}", response_model=List[AppointmentResponse])
-async def get_user_appointments(user_id: str, db: Session = Depends(get_db)):
+def get_user_appointments(user_id: str, db: Session = Depends(get_db)):
     try:
         appts = db.query(AdvisorAppointment, User.email, User.name).outerjoin(
             User, AdvisorAppointment.user_id == User.id
@@ -564,7 +564,7 @@ async def get_user_appointments(user_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to fetch user appointments: {str(e)}")
 
 @router.get("/appointments/advisor/{advisor_id}", response_model=List[AppointmentResponse])
-async def get_advisor_appointments(advisor_id: str, db: Session = Depends(get_db)):
+def get_advisor_appointments(advisor_id: str, db: Session = Depends(get_db)):
     try:
         appts = db.query(AdvisorAppointment, User.email, User.name).outerjoin(
             User, AdvisorAppointment.user_id == User.id
@@ -594,7 +594,7 @@ async def get_advisor_appointments(advisor_id: str, db: Session = Depends(get_db
         raise HTTPException(status_code=500, detail=f"Failed to fetch advisor appointments: {str(e)}")
 
 @router.get("/appointments/all", response_model=List[AppointmentResponse])
-async def get_all_appointments(db: Session = Depends(get_db)):
+def get_all_appointments(db: Session = Depends(get_db)):
     try:
         appts = db.query(AdvisorAppointment, User.email, User.name).outerjoin(
             User, AdvisorAppointment.user_id == User.id
@@ -651,7 +651,7 @@ def update_advisor_rating_stats(advisor_id: str, db: Session):
         logger.error(f"Error updating advisor {advisor_id} stats: {e}", exc_info=True)
 
 @router.put("/appointments/{appt_id}/status", response_model=AppointmentResponse)
-async def update_appointment_status(appt_id: str, payload: AppointmentStatusUpdate, db: Session = Depends(get_db)):
+def update_appointment_status(appt_id: str, payload: AppointmentStatusUpdate, db: Session = Depends(get_db)):
     try:
         appt = db.query(AdvisorAppointment).filter(AdvisorAppointment.id == appt_id).first()
         if not appt:
@@ -701,7 +701,7 @@ async def update_appointment_status(appt_id: str, payload: AppointmentStatusUpda
         raise HTTPException(status_code=500, detail=f"Failed to update appointment status: {str(e)}")
 
 @router.put("/appointments/{appt_id}/join", response_model=AppointmentResponse)
-async def join_appointment(appt_id: str, db: Session = Depends(get_db)):
+def join_appointment(appt_id: str, db: Session = Depends(get_db)):
     try:
         appt = db.query(AdvisorAppointment).filter(AdvisorAppointment.id == appt_id).first()
         if not appt:
@@ -743,7 +743,7 @@ class AppointmentReschedule(BaseModel):
     time: str
 
 @router.put("/appointments/{appt_id}/reschedule", response_model=AppointmentResponse)
-async def reschedule_appointment(appt_id: str, payload: AppointmentReschedule, db: Session = Depends(get_db)):
+def reschedule_appointment(appt_id: str, payload: AppointmentReschedule, db: Session = Depends(get_db)):
     try:
         appt = db.query(AdvisorAppointment).filter(AdvisorAppointment.id == appt_id).first()
         if not appt:
