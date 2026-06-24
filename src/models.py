@@ -254,6 +254,9 @@ class Advisor(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     password_hash = Column(String(255), nullable=True)
+    department = Column(String(255), nullable=True, default="General")
+    is_advisor = Column(Boolean, default=False, nullable=False)
+    permissions = Column(JSON, nullable=True)
 
     def __repr__(self):
         return f"<Advisor(f2_fintech_id={self.f2_fintech_id}, name={self.name})>"
@@ -328,6 +331,9 @@ def init_db():
         _ensure_user_wellness_columns()
         _ensure_credit_report_columns()
         _ensure_advisor_password_column()
+        _ensure_advisor_department_column()
+        _ensure_advisor_is_advisor_column()
+        _ensure_advisor_permissions_column()
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
@@ -464,6 +470,54 @@ def _ensure_advisor_password_column():
     with engine.begin() as connection:
         connection.execute(text("ALTER TABLE advisors ADD COLUMN password_hash VARCHAR(255)"))
         logger.info("Added password_hash column to advisors")
+
+def _ensure_advisor_department_column():
+    """Add department column to advisors table if it is missing."""
+    inspector = inspect(engine)
+    if "advisors" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("advisors")}
+    if "department" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE advisors ADD COLUMN department VARCHAR(255) DEFAULT 'General'"))
+        logger.info("Added department column to advisors")
+
+def _ensure_advisor_is_advisor_column():
+    """Add is_advisor column to advisors table if it is missing."""
+    inspector = inspect(engine)
+    if "advisors" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("advisors")}
+    if "is_advisor" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE advisors ADD COLUMN is_advisor BOOLEAN NOT NULL DEFAULT TRUE"))
+        logger.info("Added is_advisor column to advisors")
+
+def _ensure_advisor_permissions_column():
+    """Add permissions column to advisors table if it is missing and initialize values."""
+    inspector = inspect(engine)
+    if "advisors" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("advisors")}
+    has_column = "permissions" in columns
+
+    with engine.begin() as connection:
+        if not has_column:
+            connection.execute(text("ALTER TABLE advisors ADD COLUMN permissions JSON"))
+            logger.info("Added permissions column to advisors")
+        
+        # Backfill default permissions for legacy rows where permissions column is NULL
+        connection.execute(text(
+            "UPDATE advisors SET permissions = '[\"cibil_fetch\", \"cibil_view\", \"scheduled_calls\", \"lenders_edit\", \"education_edit\"]' WHERE permissions IS NULL"
+        ))
+        logger.info("Backfilled advisor permissions with default permissions")
 
 def get_db():
     """Dependency for getting database session in FastAPI."""

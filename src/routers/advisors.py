@@ -25,10 +25,13 @@ class AdvisorBase(BaseModel):
     rating: float = 0.0
     reviews_count: int = 0
     next_slot: Optional[str] = None
-    category: str
+    category: Optional[str] = "General"
     fee: int = 899
     original_fee: Optional[int] = None
     discount_expires_at: Optional[str] = None
+    department: Optional[str] = "General"
+    is_advisor: bool = False
+    permissions: Optional[List[str]] = None
 
 class AdvisorCreate(AdvisorBase):
     f2_fintech_id: str
@@ -48,13 +51,20 @@ class PasswordUpdate(BaseModel):
 
 
 @router.get("", response_model=List[AdvisorCreate])
-async def get_advisors(user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
+async def get_advisors(
+    user_id: Optional[str] = Query(None),
+    all_employees: bool = Query(False),
+    db: Session = Depends(get_db)
+):
     """
     Fetch the list of all active advisor profiles from the database.
     Applies a 50% discount if the user was referred.
     """
     try:
-        advisors = db.query(Advisor).all()
+        if all_employees:
+            advisors = db.query(Advisor).order_by(Advisor.f2_fintech_id.asc()).all()
+        else:
+            advisors = db.query(Advisor).filter(Advisor.is_advisor == True).order_by(Advisor.f2_fintech_id.asc()).all()
         
         user_is_referred = False
         discount_expires_at = None
@@ -89,10 +99,13 @@ async def get_advisors(user_id: Optional[str] = Query(None), db: Session = Depen
                     rating=a.rating,
                     reviews_count=a.reviews_count,
                     next_slot=a.next_slot,
-                    category=a.category,
+                    category=a.category or "General",
                     fee=fee,
                     original_fee=original_fee,
-                    discount_expires_at=adv_discount_expires
+                    discount_expires_at=adv_discount_expires,
+                    department=a.department or "General",
+                    is_advisor=a.is_advisor,
+                    permissions=a.permissions
                 )
             )
         return result
@@ -171,8 +184,11 @@ async def save_advisor(payload: AdvisorCreate, db: Session = Depends(get_db)):
             existing.rating = payload.rating
             existing.reviews_count = payload.reviews_count
             existing.next_slot = payload.next_slot
-            existing.category = payload.category
+            existing.category = payload.category or "General"
             existing.fee = payload.fee
+            existing.department = payload.department or "General"
+            existing.is_advisor = payload.is_advisor
+            existing.permissions = payload.permissions
             db.commit()
             db.refresh(existing)
             target = existing
@@ -190,8 +206,11 @@ async def save_advisor(payload: AdvisorCreate, db: Session = Depends(get_db)):
                 rating=payload.rating,
                 reviews_count=payload.reviews_count,
                 next_slot=payload.next_slot,
-                category=payload.category,
-                fee=payload.fee
+                category=payload.category or "General",
+                fee=payload.fee,
+                department=payload.department or "General",
+                is_advisor=payload.is_advisor,
+                permissions=payload.permissions
             )
             db.add(new_advisor)
             db.commit()
@@ -265,12 +284,44 @@ async def save_advisor(payload: AdvisorCreate, db: Session = Depends(get_db)):
             category=target.category,
             fee=target.fee,
             test_comment=payload.test_comment,
-            test_rating=payload.test_rating
+            test_rating=payload.test_rating,
+            department=target.department or "General",
+            is_advisor=target.is_advisor,
+            permissions=target.permissions
         )
     except Exception as e:
         db.rollback()
         logger.error(f"Error saving advisor: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to save advisor: {str(e)}")
+
+class RoleUpdatePayload(BaseModel):
+    is_advisor: bool
+
+@router.put("/{f2_fintech_id}/role")
+async def update_advisor_role(f2_fintech_id: str, payload: RoleUpdatePayload, db: Session = Depends(get_db)):
+    """
+    Toggle or set whether an employee is an active advisor.
+    """
+    try:
+        advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == f2_fintech_id).first()
+        if not advisor:
+            raise HTTPException(status_code=404, detail="Employee profile not found")
+        
+        advisor.is_advisor = payload.is_advisor
+        db.commit()
+        db.refresh(advisor)
+        
+        return {
+            "f2_fintech_id": advisor.f2_fintech_id,
+            "name": advisor.name,
+            "is_advisor": advisor.is_advisor
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating advisor role: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to update role: {str(e)}")
 
 @router.delete("/{f2_fintech_id}", status_code=status.HTTP_200_OK)
 async def delete_advisor(f2_fintech_id: str, db: Session = Depends(get_db)):

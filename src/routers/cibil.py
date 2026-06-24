@@ -2,7 +2,7 @@ import re
 import logging
 import uuid
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from pydantic import BaseModel, Field
@@ -105,7 +105,12 @@ def is_user_exempt_from_rate_limit(user: User, db: Session) -> bool:
 # ==================== Router Endpoints ====================
 
 @router.post("/fetch", response_model=CibilReportResponse)
-async def fetch_cibil(payload: CibilFetchRequest, request: Request, db: Session = Depends(get_db)):
+async def fetch_cibil(
+    payload: CibilFetchRequest,
+    request: Request,
+    x_requester_id: Optional[str] = Header(None, alias="X-Requester-ID"),
+    db: Session = Depends(get_db)
+):
     """
     Fetch the user's CIBIL credit report from the external API (or fallback simulation).
     Saves the report to Amazon RDS PostgreSQL and records a credit health test result to update the wellness score.
@@ -115,6 +120,17 @@ async def fetch_cibil(payload: CibilFetchRequest, request: Request, db: Session 
     phone = payload.phone.strip()
     pan = payload.pan.upper().strip() if payload.pan else ""
     bureau_str = payload.bureau.lower().strip()
+
+    # RBAC Permission Check
+    requester = x_requester_id or user_id
+    if requester:
+        advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == requester).first()
+        if advisor:
+            if "cibil_fetch" not in (advisor.permissions or []):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access Denied. You do not have permission to fetch credit reports."
+                )
 
     # 1. Input Validations
     user = db.query(User).filter(User.id == user_id).first()
@@ -322,11 +338,21 @@ def backfill_raw_json(user_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/enquiries", response_model=List[Dict[str, Any]])
-def get_all_cibil_enquiries(db: Session = Depends(get_db)):
+def get_all_cibil_enquiries(
+    x_requester_id: Optional[str] = Header(None, alias="X-Requester-ID"),
+    db: Session = Depends(get_db)
+):
     """
     Retrieve all CIBIL/Experian credit reports fetched across the platform.
     Used by the Admin Portal to display inquiries.
     """
+    if x_requester_id:
+        advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == x_requester_id).first()
+        if advisor and "cibil_view" not in (advisor.permissions or []):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access Denied. You do not have permission to view credit reports."
+            )
     try:
         results = (
             db.query(UserCreditReport, User)

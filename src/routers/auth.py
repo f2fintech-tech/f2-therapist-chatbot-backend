@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import bcrypt as _bcrypt
 from jose import jwt
 from src.models import get_db, User, Conversation, Advisor, UserCreditReport, UserConsolidatedProfile, UserLoanCalculatorActivity, TestResult, UserSessionReport, ReferralCode
@@ -407,6 +407,7 @@ class AdvisorAuthResponse(BaseModel):
     hearts: int
     is_guest: bool
     is_advisor: bool = True
+    permissions: Optional[List[str]] = None
 
 @router.post("/advisor/signup", response_model=AdvisorAuthResponse)
 def advisor_signup(payload: AdvisorSignupRequest, db: Session = Depends(get_db)):
@@ -424,8 +425,8 @@ def advisor_signup(payload: AdvisorSignupRequest, db: Session = Depends(get_db))
     # Check designation matching case-insensitively
     if advisor.designation.lower().strip() != designation.lower().strip():
         raise HTTPException(
-            status_code=404, 
-            detail="Employer not found. Check your credentials again."
+            status_code=400, 
+            detail="Invalid designation for this employer profile."
         )
         
     if payload.password != payload.confirm_password:
@@ -454,7 +455,8 @@ def advisor_signup(payload: AdvisorSignupRequest, db: Session = Depends(get_db))
         name=advisor.name,
         hearts=99999,
         is_guest=False,
-        is_advisor=True
+        is_advisor=advisor.is_advisor,
+        permissions=advisor.permissions
     )
 
 @router.post("/advisor/login", response_model=AdvisorAuthResponse)
@@ -484,7 +486,8 @@ def advisor_login(payload: AdvisorLoginRequest, db: Session = Depends(get_db)):
         name=advisor.name,
         hearts=99999,
         is_guest=False,
-        is_advisor=True
+        is_advisor=advisor.is_advisor,
+        permissions=advisor.permissions
     )
 
 
