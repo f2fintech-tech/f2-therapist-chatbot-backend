@@ -62,7 +62,7 @@ ORDER BY booked_at DESC;
 
 ### Inspect appointment cancel reasons (check user vs manager cancel logs):
 ```sql
-SELECT id, advisor_name, date, time, cancelled, notes 
+SELECT id, advisor_name, date, time, cancelled, notes, feedback 
 FROM advisor_appointments 
 WHERE cancelled = true;
 ```
