@@ -191,7 +191,7 @@ app.add_middleware(
     allow_origin_regex=ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["Content-Type", "Authorization", "X-Requester-ID", "X-API-Key"],
 )
 
 # ==================== Database Initialization ====================
