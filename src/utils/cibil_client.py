@@ -473,6 +473,64 @@ async def fetch_actual_experian_report(name: str, phone: str, pan: Optional[str]
         raise  # Do NOT silently fall back to mock when API is configured
 
 
+def _is_secured_inquiry(purpose_code: str) -> bool:
+    code = str(purpose_code or "").strip().zfill(2)
+    if code in {"01", "02", "03", "04", "07", "14", "16", "33", "34", "35"}:
+        return True
+    purpose_lower = code.lower()
+    for kw in ["home", "housing", "auto", "car", "gold", "property", "vehicle", "lap", "two wheeler", "two-wheeler"]:
+        if kw in purpose_lower:
+            return True
+    return False
+
+
+def resolve_ownership_type(designator_node: dict, account_type_symbol: str = "", account_type_desc: str = "") -> str:
+    if not isinstance(designator_node, dict):
+        return "Individual"
+        
+    # 1. Try to resolve from description
+    desc = (designator_node.get("description") or "").strip().lower()
+    if desc:
+        if "individual" in desc or "single" in desc:
+            return "Individual"
+        if "joint" in desc:
+            return "Joint"
+        if "guarantor" in desc:
+            return "Guarantor"
+        if "authorized" in desc or "supplementary" in desc:
+            return "Authorized User"
+        return designator_node.get("description").strip()
+        
+    # 2. Try to resolve from abbreviation
+    abbr = (designator_node.get("abbreviation") or "").strip().upper()
+    if abbr:
+        if abbr in ["IND", "SG", "S"]:
+            return "Individual"
+        if abbr in ["JT", "J"]:
+            return "Joint"
+        if abbr in ["GT", "G", "GR"]:
+            return "Guarantor"
+        if abbr in ["SU", "A", "AU"]:
+            return "Authorized User"
+            
+    # 3. Fallback to symbol mapping
+    symbol = str(designator_node.get("symbol") or "").strip()
+    if symbol == "1":
+        return "Individual"
+    elif symbol in ["2", "7"]:
+        return "Joint"
+    elif symbol == "3":
+        if account_type_symbol == "08" or account_type_desc == "Education Loan":
+            return "Joint"
+        return "Authorized User"
+    elif symbol == "4":
+        if account_type_symbol == "08" or account_type_desc == "Education Loan":
+            return "Joint"
+        return "Guarantor"
+        
+    return "Individual"
+
+
 def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan: Optional[str] = None, raw_data: Dict[str, Any] = None, fetched_at: str = None) -> Dict[str, Any]:
     """
     Normalize a real bureau API response into our standard schema.
@@ -619,6 +677,33 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                     open_date_raw = tradeline.get("dateOpened") or ""
                     open_date = open_date_raw.split("+")[0].strip()
                     
+                    # Ownership indicator mapping
+                    designator_node = tradeline.get("AccountDesignator", {})
+                    ownership = resolve_ownership_type(designator_node, symbol, acc_type)
+
+                    # Tenure in months
+                    tenure_months = None
+                    term_months_val = granted_trade.get("termMonths") if isinstance(granted_trade, dict) else None
+                    if term_months_val is not None:
+                        try:
+                            tenure_months = int(float(str(term_months_val)))
+                        except (ValueError, TypeError):
+                            pass
+
+                    # Ending Date (Closed Date or Expected End Date)
+                    date_closed_raw = tradeline.get("dateClosed") or ""
+                    if date_closed_raw:
+                        end_date = date_closed_raw.split("+")[0].strip()
+                    else:
+                        end_date = "-"
+                        if open_date and open_date != "-" and tenure_months:
+                            try:
+                                base_dt = datetime.strptime(open_date, "%Y-%m-%d")
+                                end_dt = _add_months(base_dt, tenure_months)
+                                end_date = end_dt.strftime("%Y-%m-%d")
+                            except Exception:
+                                pass
+
                     accounts.append({
                         "lender": lender,
                         "type": acc_type,
@@ -626,7 +711,10 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                         "outstanding_balance": outstanding,
                         "payment_status": payment_status,
                         "open_date": open_date,
-                        "is_active": is_active
+                        "is_active": is_active,
+                        "ownership": ownership,
+                        "tenure_months": tenure_months,
+                        "end_date": end_date
                     })
 
             # Extract metrics
@@ -643,8 +731,11 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                 history_years = 3.0
                 on_time_pct = 100
                 
-            # Filter enquiries to show only the last 6 months count
+            # Filter enquiries to show only the last 6 months count and last 3 months counts
             inquiries_l6m_count = 0
+            inquiries_l3m_count = 0
+            inquiries_l3m_secured = 0
+            inquiries_l3m_unsecured = 0
             inquiry_partition = tl_report.get("InquiryPartition", {})
             if isinstance(inquiry_partition, dict) and inquiry_partition:
                 ref_dt = datetime.utcnow()
@@ -665,6 +756,13 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                                     days_diff = (ref_dt - inq_dt).days
                                     if 0 <= days_diff <= 180:
                                         inquiries_l6m_count += 1
+                                    if 0 <= days_diff <= 90:
+                                        inquiries_l3m_count += 1
+                                        purpose = str(inq.get("inquiryPurpose") or "").strip()
+                                        if _is_secured_inquiry(purpose):
+                                            inquiries_l3m_secured += 1
+                                        else:
+                                            inquiries_l3m_unsecured += 1
                 enquiries = inquiries_l6m_count
 
             secured_count = len([a for a in accounts if any(x in a["type"].lower() for x in ["housing", "home", "auto", "gold", "lap", "property", "vehicle", "two wheeler", "two-wheeler"])])
@@ -683,9 +781,24 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
             address = "-"
             addr_node = borrower.get("BorrowerAddress", {})
             if isinstance(addr_node, dict):
-                credit_addr = addr_node.get("CreditAddress", {})
-                if isinstance(credit_addr, dict):
-                    address = credit_addr.get("StreetAddress") or "-"
+                # Numbered nested keys check (CIBIL format: {"1": {...}, "2": {...}})
+                best_addr = None
+                latest_date = ""
+                for k, v in addr_node.items():
+                    if isinstance(v, dict):
+                        caddr = v.get("CreditAddress", {})
+                        if isinstance(caddr, dict) and caddr.get("StreetAddress"):
+                            dt = v.get("dateReported") or ""
+                            if not best_addr or (dt and dt > latest_date):
+                                best_addr = caddr.get("StreetAddress")
+                                latest_date = dt
+                if best_addr:
+                    address = best_addr
+                else:
+                    # Flat dictionary fallback
+                    credit_addr = addr_node.get("CreditAddress", {})
+                    if isinstance(credit_addr, dict):
+                        address = credit_addr.get("StreetAddress") or "-"
 
             dob = "-"
             age = "-"
@@ -715,11 +828,23 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                         pass
 
             email = "-"
-            email_node = borrower.get("BorrowerEmail", {})
+            email_node = borrower.get("EmailAddress", {})
             if isinstance(email_node, dict):
-                email = email_node.get("EmailAddress") or "-"
-            elif isinstance(email_node, list) and email_node:
-                email = email_node[0].get("EmailAddress") or "-"
+                # Try getting the email from "1" first, or loop
+                if "1" in email_node and isinstance(email_node["1"], dict):
+                    email = email_node["1"].get("Email") or "-"
+                if email == "-":
+                    for k, v in email_node.items():
+                        if isinstance(v, dict) and v.get("Email"):
+                            email = v.get("Email")
+                            break
+            
+            if email == "-":
+                b_email_node = borrower.get("BorrowerEmail", {})
+                if isinstance(b_email_node, dict):
+                    email = b_email_node.get("EmailAddress") or "-"
+                elif isinstance(b_email_node, list) and b_email_node:
+                    email = b_email_node[0].get("EmailAddress") or "-"
             
             if email == "-":
                 email_val = borrower.get("email") or borrower.get("Email")
@@ -728,11 +853,31 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                 elif isinstance(email_val, str):
                     email = email_val
 
+            # Extract employment type
+            employer_node = borrower.get("Employer", {})
+            employment_type = "-"
+            if isinstance(employer_node, dict):
+                employment_type = employer_node.get("OccupationCode", {}).get("description") or "-"
+            elif isinstance(employer_node, list) and employer_node:
+                first_emp = employer_node[0]
+                if isinstance(first_emp, dict):
+                    employment_type = first_emp.get("OccupationCode", {}).get("description") or "-"
+
+            if employment_type and isinstance(employment_type, str):
+                et_lower = employment_type.lower()
+                if "self" in et_lower:
+                    employment_type = "Self Employed"
+                elif "salaried" in et_lower or "salary" in et_lower:
+                    employment_type = "Salaried"
+
             metrics = {
                 "payment_on_time_pct": on_time_pct,
                 "credit_utilization_pct": utilization,
                 "credit_history_age_years": history_years,
                 "enquiries_l6m": enquiries,
+                "enquiries_l3m": inquiries_l3m_count,
+                "enquiries_l3m_secured": inquiries_l3m_secured,
+                "enquiries_l3m_unsecured": inquiries_l3m_unsecured,
                 "secured_loans_count": secured_count,
                 "unsecured_loans_count": unsecured_count,
                 "write_offs": write_offs_count,
@@ -760,6 +905,7 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                 "gender": gender,
                 "address": address,
                 "email": email,
+                "employment_type": employment_type,
                 "metrics": metrics,
                 "accounts": accounts,
                 "tips": tips,
@@ -842,14 +988,56 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                 raw_type = acc.get("type", acc.get("account_type", acc.get("Account_Type", acc.get("AccountType", "Unknown"))))
                 mapped_type = ACCOUNT_TYPES.get(str(raw_type), raw_type) if raw_type else "Unknown"
                 
+                open_date = acc.get("open_date", acc.get("Open_Date", acc.get("openDate", acc.get("DateOpened", acc.get("dateOpened", "")))))
+
+                # Try getting ownership from acc
+                ownership = acc.get("ownership") or acc.get("Ownership")
+                if not ownership:
+                    designator_node = acc.get("AccountDesignator", {})
+                    if isinstance(designator_node, dict) and designator_node:
+                        ownership = resolve_ownership_type(designator_node, str(raw_type), mapped_type)
+                    else:
+                        # Fallback for Experian
+                        ownership_val = acc.get("Ownership_Indicator") or acc.get("ownership_indicator")
+                        if ownership_val:
+                            ownership = str(ownership_val)
+                        else:
+                            ownership = "Individual"
+
+                # Tenure
+                tenure_months = acc.get("tenure_months") or acc.get("termMonths") or acc.get("Duration_of_Agreement")
+                if tenure_months is not None:
+                    try:
+                        tenure_months = int(float(str(tenure_months)))
+                    except (ValueError, TypeError):
+                        tenure_months = None
+
+                # Ending date
+                end_date = acc.get("end_date") or acc.get("Date_Closed") or acc.get("dateClosed") or ""
+                if end_date:
+                    if isinstance(end_date, str):
+                        end_date = end_date.split("+")[0].strip()
+                else:
+                    end_date = "-"
+                    if open_date and open_date != "-" and tenure_months:
+                        try:
+                            base_dt = datetime.strptime(str(open_date).split("+")[0].strip()[:10], "%Y-%m-%d")
+                            end_dt = _add_months(base_dt, tenure_months)
+                            end_date = end_dt.strftime("%Y-%m-%d")
+                        except Exception:
+                            pass
+
                 accounts.append({
                     "lender": acc.get("lender", acc.get("lender_name", acc.get("institution", acc.get("Subscriber_Name", acc.get("MemberShortName", "Unknown"))))),
                     "type": mapped_type,
                     "sanctioned_amount": _safe_int(acc.get("sanctioned_amount", acc.get("Highest_Credit_or_Original_Loan_Amount", acc.get("highCredit", acc.get("SanctionAmount", acc.get("credit_limit", 0)))))),
                     "outstanding_balance": _safe_int(acc.get("outstanding_balance", acc.get("Current_Balance", acc.get("currentBalance", acc.get("CurrentBalance", acc.get("balance", 0)))))),
                     "payment_status": payment_status,
-                    "open_date": acc.get("open_date", acc.get("Open_Date", acc.get("openDate", acc.get("DateOpened", acc.get("dateOpened", ""))))),
-                    "is_active": is_active
+                    "open_date": open_date,
+                    "is_active": is_active,
+                    "ownership": ownership,
+                    "tenure_months": tenure_months,
+                    "end_date": end_date
                 })
 
     # Extract metrics
@@ -860,6 +1048,9 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
             "credit_utilization_pct": _safe_int(metrics_raw.get("credit_utilization_pct", metrics_raw.get("utilizationPct", 0))),
             "credit_history_age_years": round(float(metrics_raw.get("credit_history_age_years", metrics_raw.get("historyAgeYears", 0))), 1),
             "enquiries_l6m": _safe_int(metrics_raw.get("enquiries_l6m", metrics_raw.get("recentEnquiries", 0))),
+            "enquiries_l3m": _safe_int(metrics_raw.get("enquiries_l3m", 0)),
+            "enquiries_l3m_secured": _safe_int(metrics_raw.get("enquiries_l3m_secured", 0)),
+            "enquiries_l3m_unsecured": _safe_int(metrics_raw.get("enquiries_l3m_unsecured", 0)),
             "secured_loans_count": _safe_int(metrics_raw.get("secured_loans_count", 0)),
             "unsecured_loans_count": _safe_int(metrics_raw.get("unsecured_loans_count", 0)),
             "write_offs": _safe_int(metrics_raw.get("write_offs", 0)),
@@ -876,6 +1067,9 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
             "credit_utilization_pct": utilization,
             "credit_history_age_years": 3.0,
             "enquiries_l6m": _safe_int(data.get("enquiries_l6m", data.get("recentEnquiries", 0))),
+            "enquiries_l3m": _safe_int(data.get("enquiries_l3m", 0)),
+            "enquiries_l3m_secured": _safe_int(data.get("enquiries_l3m_secured", 0)),
+            "enquiries_l3m_unsecured": _safe_int(data.get("enquiries_l3m_unsecured", 0)),
             "secured_loans_count": len([a for a in accounts if a.get("type", "").lower() in ["home loan", "car loan", "auto loan", "gold loan", "secured loan", "loan against property"]]),
             "unsecured_loans_count": len([a for a in accounts if a.get("type", "").lower() in ["personal loan", "credit card", "consumer durable", "consumer durable loan", "education loan"]]),
             "write_offs": 0,
@@ -906,7 +1100,7 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                 tl_report_node = asset_node.get("TrueLinkCreditReport", {})
                 inquiry_partition = tl_report_node.get("InquiryPartition")
 
-    # If we have inquiries, compute l6m count
+    # If we have inquiries, compute counts
     if inquiries_list or inquiry_partition:
         # Determine reference date
         ref_dt = datetime.utcnow()
@@ -924,6 +1118,9 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                 ref_dt = parsed_ref
         
         l6m_count = 0
+        l3m_count = 0
+        l3m_secured = 0
+        l3m_unsecured = 0
         if inquiry_partition and isinstance(inquiry_partition, dict):
             for key, val in inquiry_partition.items():
                 if isinstance(val, dict):
@@ -936,19 +1133,36 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                                 days_diff = (ref_dt - inq_dt).days
                                 if 0 <= days_diff <= 180:
                                     l6m_count += 1
+                                if 0 <= days_diff <= 90:
+                                    l3m_count += 1
+                                    purpose = str(inq.get("inquiryPurpose") or "").strip()
+                                    if _is_secured_inquiry(purpose):
+                                        l3m_secured += 1
+                                    else:
+                                        l3m_unsecured += 1
         else:
             for inq in inquiries_list:
                 if isinstance(inq, dict):
                     inq_date_str = inq.get("dateOfInquiry") or inq.get("inquiryDate") or inq.get("date") or inq.get("date_opened") or ""
                     if inq_date_str:
-                        inq_dt = _parse_date(inq_date_str)
-                        if inq_dt:
-                            days_diff = (ref_dt - inq_dt).days
-                            if 0 <= days_diff <= 180:
-                                l6m_count += 1
+                         inq_dt = _parse_date(inq_date_str)
+                         if inq_dt:
+                             days_diff = (ref_dt - inq_dt).days
+                             if 0 <= days_diff <= 180:
+                                 l6m_count += 1
+                             if 0 <= days_diff <= 90:
+                                 l3m_count += 1
+                                 purpose = str(inq.get("inquiryPurpose") or inq.get("purpose") or inq.get("InquiryPurpose") or "").strip()
+                                 if _is_secured_inquiry(purpose):
+                                     l3m_secured += 1
+                                 else:
+                                     l3m_unsecured += 1
         
-        # Override the metrics enquiries_l6m with the exact calculated figure
+        # Override the metrics with computed figures
         metrics["enquiries_l6m"] = l6m_count
+        metrics["enquiries_l3m"] = l3m_count
+        metrics["enquiries_l3m_secured"] = l3m_secured
+        metrics["enquiries_l3m_unsecured"] = l3m_unsecured
         logger.info(f"[NORMALIZE] Overrode enquiries_l6m with calculated value: {l6m_count}")
 
     # Extract tips if provided
@@ -997,11 +1211,108 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
     if address == "-" and "BorrowerAddress" in data:
         ba = data["BorrowerAddress"]
         if isinstance(ba, dict):
-            credit_addr = ba.get("CreditAddress", {})
-            if isinstance(credit_addr, dict):
-                address = credit_addr.get("StreetAddress") or "-"
+            # Check nested keys first
+            best_addr = None
+            latest_date = ""
+            for k, v in ba.items():
+                if isinstance(v, dict):
+                    caddr = v.get("CreditAddress", {})
+                    if isinstance(caddr, dict) and caddr.get("StreetAddress"):
+                        dt = v.get("dateReported") or ""
+                        if not best_addr or (dt and dt > latest_date):
+                            best_addr = caddr.get("StreetAddress")
+                            latest_date = dt
+            if best_addr:
+                address = best_addr
+            else:
+                credit_addr = ba.get("CreditAddress", {})
+                if isinstance(credit_addr, dict):
+                    address = credit_addr.get("StreetAddress") or "-"
+
+    # Fallback for Experian CAIS_Account_DETAILS -> CAIS_Holder_Address_Details
+    if address == "-":
+        accounts_raw = data.get("accounts", data.get("account_details", data.get("credit_accounts",
+                       data.get("tradeLines", data.get("AccountDetails", [])))))
+        if not accounts_raw and "CAIS_Account" in data and isinstance(data["CAIS_Account"], dict):
+            accounts_raw = data["CAIS_Account"].get("CAIS_Account_DETAILS", [])
+        
+        if isinstance(accounts_raw, list) and accounts_raw:
+            for acc in accounts_raw:
+                if isinstance(acc, dict) and "CAIS_Holder_Address_Details" in acc:
+                    h_addrs = acc["CAIS_Holder_Address_Details"]
+                    if isinstance(h_addrs, list) and h_addrs:
+                        h_addr = h_addrs[0]
+                        if isinstance(h_addr, dict):
+                            addr_parts = []
+                            for line in ["First_Line_Of_Address_non_normalized", "Second_Line_Of_Address_non_normalized", 
+                                         "Third_Line_Of_Address_non_normalized", "City_non_normalized", 
+                                         "Fifth_Line_Of_Address_non_normalized", "ZIP_Postal_Code_non_normalized"]:
+                                val = h_addr.get(line)
+                                if val and str(val).strip():
+                                    addr_parts.append(str(val).strip())
+                            if addr_parts:
+                                address = ", ".join(addr_parts)
+                                break
 
     email = data.get("email", data.get("Email", data.get("email_id", "-")))
+    if email == "-" and "EmailAddress" in data:
+        email_node = data["EmailAddress"]
+        if isinstance(email_node, dict):
+            if "1" in email_node and isinstance(email_node["1"], dict):
+                email = email_node["1"].get("Email") or "-"
+            if email == "-":
+                for k, v in email_node.items():
+                    if isinstance(v, dict) and v.get("Email"):
+                        email = v.get("Email")
+                        break
+
+    # Experian email extraction from CAIS accounts
+    if email == "-":
+        accounts_raw = data.get("accounts", data.get("account_details", data.get("credit_accounts",
+                       data.get("tradeLines", data.get("AccountDetails", [])))))
+        if not accounts_raw and "CAIS_Account" in data and isinstance(data["CAIS_Account"], dict):
+            accounts_raw = data["CAIS_Account"].get("CAIS_Account_DETAILS", [])
+        
+        if isinstance(accounts_raw, list) and accounts_raw:
+            for acc in accounts_raw:
+                if isinstance(acc, dict):
+                    # Try phone details first
+                    ph_details = acc.get("CAIS_Holder_Phone_Details", [])
+                    if isinstance(ph_details, list) and ph_details:
+                        for ph in ph_details:
+                             if isinstance(ph, dict) and ph.get("EMailId"):
+                                 email = ph.get("EMailId")
+                                 break
+                    if email != "-":
+                        break
+                    # Try ID details
+                    id_details = acc.get("CAIS_Holder_ID_Details", [])
+                    if isinstance(id_details, list) and id_details:
+                        for id_d in id_details:
+                             if isinstance(id_d, dict) and id_d.get("EMailId"):
+                                 email = id_d.get("EMailId")
+                                 break
+                    if email != "-":
+                        break
+
+    # Extract employment type
+    employment_type = data.get("employment_type", data.get("employmentType", "-"))
+    if employment_type == "-":
+        # Check Employer in data
+        employer_node = data.get("Employer", {})
+        if isinstance(employer_node, dict):
+            employment_type = employer_node.get("OccupationCode", {}).get("description") or "-"
+        elif isinstance(employer_node, list) and employer_node:
+            first_emp = employer_node[0]
+            if isinstance(first_emp, dict):
+                employment_type = first_emp.get("OccupationCode", {}).get("description") or "-"
+                
+    if employment_type and isinstance(employment_type, str):
+        et_lower = employment_type.lower()
+        if "self" in et_lower:
+            employment_type = "Self Employed"
+        elif "salaried" in et_lower or "salary" in et_lower:
+            employment_type = "Salaried"
 
     return {
         "score": score,
@@ -1014,6 +1325,7 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
         "gender": gender,
         "address": address,
         "email": email,
+        "employment_type": employment_type,
         "metrics": metrics,
         "accounts": accounts,
         "tips": tips,
@@ -1051,6 +1363,17 @@ def _safe_int(val) -> int:
         return int(float(str(val)))
     except (ValueError, TypeError):
         return 0
+
+
+def _add_months(sourcedate: datetime, months: int) -> datetime:
+    """Add months to a datetime object, handling calendar month rollover."""
+    month = sourcedate.month - 1 + months
+    year = sourcedate.year + month // 12
+    month = month % 12 + 1
+    day = min(sourcedate.day, [31,
+        29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28,
+        31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month-1])
+    return datetime(year, month, day, sourcedate.hour, sourcedate.minute, sourcedate.second)
 
 
 def _generate_tips_from_metrics(metrics: Dict[str, Any], score: int) -> list:
