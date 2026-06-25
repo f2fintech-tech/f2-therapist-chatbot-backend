@@ -170,3 +170,15 @@ This repository includes a pre-commit configuration in [`.pre-commit-config.yaml
 - `pre-commit run --files <path>` to test specific files
 
 > Tip: Secrets are masked in GitHub Actions logs. Variables are visible in workflow configuration, so only store non-sensitive values there.
+
+--
+
+## 🚀 CI/CD
+
+This repository uses GitHub Actions for automated backend deployment.
+
+Deployment is triggered automatically whenever changes are merged into the `main` branch.
+
+Workflow location:
+
+.github/workflows/backend-deploy.yml
