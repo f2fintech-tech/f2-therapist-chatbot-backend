@@ -1,0 +1,72 @@
+name: Backend Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "========================================"
+            echo "Starting Backend Deployment..."
+            echo "========================================"
+
+            cd ${{ secrets.PROJECT_PATH }}
+
+            echo "Current Directory:"
+            pwd
+
+            echo "Fetching latest code..."
+            git fetch origin
+
+            echo "Switching to main branch..."
+            git checkout main
+
+            echo "Pulling latest changes..."
+            git pull origin main
+
+            echo "Checking Python Virtual Environment..."
+            if [ ! -d "venv" ]; then
+              echo "ERROR: Virtual Environment not found!"
+              exit 1
+            fi
+
+            source venv/bin/activate
+
+            echo "Installing Dependencies..."
+            pip install -r requirements.txt
+
+            echo "Restarting PM2..."
+            pm2 restart therapist-backend
+
+            echo "Saving PM2..."
+            pm2 save
+
+            echo "PM2 Status"
+            pm2 status
+
+            echo "Waiting for application..."
+            sleep 5
+
+            echo "Checking Health..."
+            curl -I http://localhost:8000/docs || true
+
+            echo "========================================"
+            echo "Deployment Completed Successfully"
+            echo "========================================"
