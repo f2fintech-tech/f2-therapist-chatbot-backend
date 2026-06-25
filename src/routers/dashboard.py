@@ -98,13 +98,14 @@ async def get_dashboard_summary(user_id: str, db: Session = Depends(get_db)):
                 .order_by(ConversationMessage.created_at.asc())
                 .all()
             )
-            # Take last 6 entries to make a beautiful trend line
-            for msg in messages[-6:]:
+            # Take last 100 entries to make a beautiful trend line
+            for msg in messages[-100:]:
                 m = msg.mood
                 if isinstance(m, dict):
                     dims = m.get("dimensions") or {}
                     mood_trends.append({
-                        "date": msg.created_at.strftime("%d %b"),
+                        "date": msg.created_at.strftime("%Y-%m-%d"),
+                        "displayDate": msg.created_at.strftime("%d %b"),
                         "stress": dims.get("stress", m.get("stress", 50)),
                         "openness": dims.get("openness", m.get("openness", 50)),
                         "urgency": dims.get("urgency", m.get("urgency", 50))
@@ -115,16 +116,19 @@ async def get_dashboard_summary(user_id: str, db: Session = Depends(get_db)):
     # Fallback to Live State if no historical message moods exist
     if not mood_trends:
         live_mood = db.query(MoodLiveState).filter(MoodLiveState.user_id == user_id).first()
+        fallback_date = datetime.now().strftime("%Y-%m-%d")
         if live_mood:
             mood_trends.append({
-                "date": "Today",
+                "date": fallback_date,
+                "displayDate": "Today",
                 "stress": live_mood.stress,
                 "openness": live_mood.openness,
                 "urgency": live_mood.urgency
             })
         else:
             mood_trends.append({
-                "date": "Today",
+                "date": fallback_date,
+                "displayDate": "Today",
                 "stress": 50,
                 "openness": 50,
                 "urgency": 50
@@ -247,27 +251,23 @@ async def get_dashboard_summary(user_id: str, db: Session = Depends(get_db)):
     usage_history = []
     total_minutes = 0
     today = dt.date.today()
-    mock_minutes = [25, 45, 15, 60, 30, 80, 20]
-    
-    for i in range(6, -1, -1):
+    # Only include days that have real usage data
+    for i in range(179, -1, -1):
         day_date = today - dt.timedelta(days=i)
         date_str = day_date.strftime("%Y-%m-%d")
         day_label = day_date.strftime("%a")
         date_display = day_date.strftime("%d %b")
-        
+
         if date_str in platform_usage:
             mins = platform_usage[date_str]
-        else:
-            mins = mock_minutes[day_date.weekday() % len(mock_minutes)]
-            
-        total_minutes += mins
-        usage_history.append({
-            "date": date_str,
-            "displayDate": date_display,
-            "day": day_label,
-            "hours": round(mins / 60.0, 1),
-            "minutes": mins
-        })
+            total_minutes += mins
+            usage_history.append({
+                "date": date_str,
+                "displayDate": date_display,
+                "day": day_label,
+                "hours": round(mins / 60.0, 1),
+                "minutes": mins,
+            })
         
     total_hours = round(total_minutes / 60.0, 1)
 
