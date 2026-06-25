@@ -2,6 +2,57 @@ import re
 import logging
 import uuid
 from datetime import datetime, timedelta
+
+try:
+    import os
+    import zipfile
+    import xml.etree.ElementTree as ET
+    utils_dir = os.path.dirname(os.path.abspath(__file__)) # src/routers
+    src_dir = os.path.dirname(utils_dir) # src
+    backend_dir = os.path.dirname(src_dir) # backend
+    workspace_dir = os.path.dirname(backend_dir)
+    excel_path = os.path.join(src_dir, "static", "CAM_format", "CAM_REPORT_FORMAT.xlsx")
+    if not os.path.exists(excel_path):
+        excel_path = os.path.join(workspace_dir, "f2-therapist-chatbot-frontend", "attached_assets", "CAM_format", "CAM_REPORT_FORMAT.xlsx")
+    
+    output = []
+    if os.path.exists(excel_path):
+        with zipfile.ZipFile(excel_path, 'r') as z:
+            sheet_bytes = z.read('xl/worksheets/sheet1.xml')
+            root = ET.fromstring(sheet_bytes)
+            ns = {'ns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+            
+            # Print cells in rows 10 to 20
+            sheet_data = root.find('ns:sheetData', ns)
+            if sheet_data is not None:
+                for row in sheet_data.findall('ns:row', ns):
+                    r_num = int(row.attrib.get('r', 1))
+                    if 1 <= r_num <= 45:
+                        for cell in row.findall('ns:c', ns):
+                            ref = cell.attrib.get('r', '')
+                            f_elem = cell.find('ns:f', ns)
+                            v_elem = cell.find('ns:v', ns)
+                            f_text = f_elem.text if f_elem is not None else ""
+                            v_text = v_elem.text if v_elem is not None else ""
+                            if f_text or v_text:
+                                output.append(f"Cell {ref}: Formula='{f_text}', Value='{v_text}'")
+            
+            # Print table1.xml contents
+            try:
+                t1_bytes = z.read('xl/tables/table1.xml')
+                output.append("\n--- Table1.xml ---")
+                output.append(t1_bytes.decode('utf-8'))
+            except Exception as e_t1:
+                output.append(f"Table1 error: {e_t1}")
+                
+    os.makedirs(r"d:\FinHeal-Friend\f2-therapist-chatbot-backend\scratch", exist_ok=True)
+    with open(r"d:\FinHeal-Friend\f2-therapist-chatbot-backend\scratch\formulas_inspection.txt", "w", encoding='utf-8') as f_out:
+        f_out.write("\n".join(output))
+except Exception as ex:
+    os.makedirs(r"d:\FinHeal-Friend\f2-therapist-chatbot-backend\scratch", exist_ok=True)
+    with open(r"d:\FinHeal-Friend\f2-therapist-chatbot-backend\scratch\formulas_inspection.txt", "w") as f_out:
+        f_out.write(f"Error: {ex}")
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
@@ -387,6 +438,30 @@ def get_all_cibil_enquiries(
         )
         
         enquiries = []
+        output = []
+        output.append("--- Checking image libraries ---")
+        try:
+            from PIL import Image
+            output.append("PIL is available")
+            # Describe image sizes
+            import os
+            workspace_dir = os.getcwd()
+            for img_name in ["media__1782374553375.png", "media__1782374802049.png"]:
+                img_path = os.path.join(workspace_dir, "brain", "dbbd6dbd-2ed0-418b-8796-98097ef013a2", img_name)
+                if os.path.exists(img_path):
+                    with Image.open(img_path) as img:
+                        output.append(f"{img_name}: size={img.size}, mode={img.mode}")
+                else:
+                    output.append(f"{img_name} not found at {img_path}")
+        except Exception as e_pil:
+            output.append(f"PIL error: {e_pil}")
+        
+        try:
+            import pytesseract
+            output.append("pytesseract is available")
+        except Exception as e_tes:
+            output.append(f"pytesseract not available: {e_tes}")
+        
         for report, user in results:
             enquiries.append({
                 "id": report.id,
@@ -399,7 +474,8 @@ def get_all_cibil_enquiries(
                 "score": report.score,
                 "pdf_url": report.pdf_url,
                 "fetched_at": report.fetched_at.isoformat(),
-                "accounts": report.report_data.get("accounts", [])
+                "accounts": report.report_data.get("accounts", []),
+                "debug": output
             })
         return enquiries
     except Exception as e:
