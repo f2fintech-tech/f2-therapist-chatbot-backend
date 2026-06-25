@@ -76,6 +76,14 @@ def test_consolidated_profile_endpoints():
         }
         resp_int = client.post(f"/api/v1/profile/track/interaction/{user_id}", json=interaction_payload)
         assert resp_int.status_code == 200
+
+        # 6.5. Test track platform usage
+        usage_payload = {
+            "date": "2026-06-25",
+            "minutes": 15
+        }
+        resp_usage = client.post(f"/api/v1/profile/track/usage/{user_id}", json=usage_payload)
+        assert resp_usage.status_code == 200
         
         # 7. Query consolidated profile again and verify all values are present in JSON
         response_after = client.get(f"/api/v1/profile/consolidated/{user_id}")
@@ -103,6 +111,11 @@ def test_consolidated_profile_endpoints():
         assert len(final_data["chatbot_interactions"]) == 1
         assert final_data["chatbot_interactions"][0]["event"] == "clicked_profile_section"
         assert final_data["chatbot_interactions"][0]["details"]["section"] == "goals"
+
+        # Verify platform usage
+        assert "platform_usage" in final_data
+        assert final_data["platform_usage"]["2026-06-25"] == 15
+
         
     finally:
         # Clean up database records

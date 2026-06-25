@@ -196,3 +196,39 @@ def track_interaction(user_id: str, payload: TrackInteractionRequest, db: Sessio
     flag_modified(profile, "data")
     db.commit()
     return {"status": "success", "message": f"Tracked interaction: {payload.event}"}
+
+
+class TrackPlatformUsageRequest(BaseModel):
+    date: str
+    minutes: int
+
+
+@router.post("/track/usage/{user_id}", status_code=status.HTTP_200_OK)
+def track_platform_usage(user_id: str, payload: TrackPlatformUsageRequest, db: Session = Depends(get_db)):
+    """Record platform active usage duration (in minutes) for a specific date (YYYY-MM-DD)."""
+    try:
+        datetime.strptime(payload.date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Must be YYYY-MM-DD")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    profile = get_or_create_consolidated_profile(db, user_id)
+    data = dict(profile.data or {})
+
+    if "platform_usage" not in data:
+        data["platform_usage"] = {}
+
+    current_mins = data["platform_usage"].get(payload.date, 0)
+    data["platform_usage"][payload.date] = current_mins + payload.minutes
+
+    profile.data = data
+    flag_modified(profile, "data")
+    db.commit()
+    return {
+        "status": "success",
+        "message": f"Tracked platform usage: {payload.minutes} min added. Total for {payload.date} is {current_mins + payload.minutes} min."
+    }
+

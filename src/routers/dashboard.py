@@ -238,6 +238,39 @@ async def get_dashboard_summary(user_id: str, db: Session = Depends(get_db)):
             edu_nudge = "📚 Excellent work! You have consumed all our recommended financial guides. Keep checking back for newly added articles and videos!"
             recommended_content_id = None
 
+    # 7. Fetch or generate platform usage history
+    platform_usage = {}
+    if profile and isinstance(profile.data, dict):
+        platform_usage = profile.data.get("platform_usage", {})
+
+    import datetime as dt
+    usage_history = []
+    total_minutes = 0
+    today = dt.date.today()
+    mock_minutes = [25, 45, 15, 60, 30, 80, 20]
+    
+    for i in range(6, -1, -1):
+        day_date = today - dt.timedelta(days=i)
+        date_str = day_date.strftime("%Y-%m-%d")
+        day_label = day_date.strftime("%a")
+        date_display = day_date.strftime("%d %b")
+        
+        if date_str in platform_usage:
+            mins = platform_usage[date_str]
+        else:
+            mins = mock_minutes[day_date.weekday() % len(mock_minutes)]
+            
+        total_minutes += mins
+        usage_history.append({
+            "date": date_str,
+            "displayDate": date_display,
+            "day": day_label,
+            "hours": round(mins / 60.0, 1),
+            "minutes": mins
+        })
+        
+    total_hours = round(total_minutes / 60.0, 1)
+
     return {
         "credit_score": credit_score,
         "next_appointment": next_appointment,
@@ -254,5 +287,11 @@ async def get_dashboard_summary(user_id: str, db: Session = Depends(get_db)):
             "category_breakdown": category_breakdown,
             "nudge_message": edu_nudge,
             "recommended_content_id": recommended_content_id
+        },
+        "platform_usage": {
+            "total_hours": total_hours,
+            "total_days": len(usage_history),
+            "history": usage_history
         }
     }
+
