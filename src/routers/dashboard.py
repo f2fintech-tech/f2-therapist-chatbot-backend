@@ -16,11 +16,11 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 # Standard Test definitions matching the frontend
 TEST_CATALOG = {
-    "financial-literacy": "Financial Literacy Test",
-    "emergency-fund": "Emergency Fund Test",
-    "loan-fit": "Loan Fit / Borrowing Readiness",
-    "credit-readiness": "Credit Readiness Test",
-    "debt-balance": "Debt Balance Test"
+    "financial_literacy": "Financial Literacy Test",
+    "emergency_fund": "Emergency Fund Test",
+    "loan_fit": "Loan Fit / Borrowing Readiness",
+    "credit_readiness": "Credit Readiness Test",
+    "debt_balance": "Debt Balance Test"
 }
 
 # Standard Education content categories matching the frontend
@@ -92,7 +92,7 @@ async def get_dashboard_summary(user_id: str, db: Session = Depends(get_db)):
                 db.query(ConversationMessage)
                 .filter(
                     ConversationMessage.conversation_id.in_(conv_ids),
-                    ConversationMessage.role == MessageRole.USER,
+                    ConversationMessage.role == MessageRole.ASSISTANT,
                     ConversationMessage.mood.isnot(None)
                 )
                 .order_by(ConversationMessage.created_at.asc())
@@ -102,11 +102,12 @@ async def get_dashboard_summary(user_id: str, db: Session = Depends(get_db)):
             for msg in messages[-6:]:
                 m = msg.mood
                 if isinstance(m, dict):
+                    dims = m.get("dimensions") or {}
                     mood_trends.append({
                         "date": msg.created_at.strftime("%d %b"),
-                        "stress": m.get("stress", 50),
-                        "openness": m.get("openness", 50),
-                        "urgency": m.get("urgency", 50)
+                        "stress": dims.get("stress", m.get("stress", 50)),
+                        "openness": dims.get("openness", m.get("openness", 50)),
+                        "urgency": dims.get("urgency", m.get("urgency", 50))
                     })
     except Exception as e:
         logger.error(f"Error fetching mood trends: {e}")
