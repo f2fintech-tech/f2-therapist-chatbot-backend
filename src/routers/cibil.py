@@ -466,7 +466,7 @@ def get_all_cibil_enquiries(
             enquiries.append({
                 "id": report.id,
                 "user_id": report.user_id,
-                "name": user.name or "Guest",
+                "name": report.report_data.get("name") or user.name or "Guest",
                 "email": user.email or "",
                 "phone": report.report_data.get("phone") or user.phone or "",
                 "pan": report.report_data.get("pan", ""),
@@ -475,6 +475,7 @@ def get_all_cibil_enquiries(
                 "pdf_url": report.pdf_url,
                 "fetched_at": report.fetched_at.isoformat(),
                 "accounts": report.report_data.get("accounts", []),
+                "report_data": report.report_data,
                 "debug": output
             })
         return enquiries
