@@ -643,18 +643,24 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
             identifiers = borrower.get("IdentifierPartition", {}).get("Identifier", {})
             if isinstance(identifiers, dict):
                 for k, ident_val in identifiers.items():
-                    id_node = ident_val.get("ID", {})
-                    if id_node.get("IdentifierName") == "TaxId":
-                        report_pan = id_node.get("Id", pan)
-                        break
+                    if isinstance(ident_val, dict):
+                        id_node = ident_val.get("ID", {})
+                        if id_node.get("IdentifierName") == "TaxId":
+                            report_pan = id_node.get("Id", pan)
+                            break
 
             # Extract accounts
             accounts = []
             trade_partition = tl_report.get("TradeLinePartition", {})
             if isinstance(trade_partition, dict):
                 for k, part_val in trade_partition.items():
-                    tradeline = part_val.get("Tradeline", {})
-                    granted_trade = tradeline.get("GrantedTrade", {})
+                    if not isinstance(part_val, dict):
+                        continue
+                    if "Tradeline" in part_val and isinstance(part_val["Tradeline"], dict):
+                        tradeline = part_val["Tradeline"]
+                    else:
+                        tradeline = part_val
+                    granted_trade = tradeline.get("GrantedTrade", {}) if isinstance(tradeline, dict) else {}
                     
                     lender = tradeline.get("creditorName") or "Unknown"
                     
@@ -747,7 +753,10 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
                 
                 for key, val in inquiry_partition.items():
                     if isinstance(val, dict):
-                        inq = val.get("Inquiry", {})
+                        if "Inquiry" in val and isinstance(val["Inquiry"], dict):
+                            inq = val["Inquiry"]
+                        else:
+                            inq = val
                         if isinstance(inq, dict):
                             inq_date_str = inq.get("inquiryDate") or ""
                             if inq_date_str:
@@ -771,9 +780,15 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
             defaults_count = len([a for a in accounts if "past due" in a["payment_status"].lower()])
             write_offs_count = 0
             for part_val in trade_partition.values():
-                tradeline = part_val.get("Tradeline", {})
-                if _safe_int(tradeline.get("writtenOffAmtTotal")) > 0 or _safe_int(tradeline.get("writtenOffPrincipal")) > 0:
-                    write_offs_count += 1
+                if not isinstance(part_val, dict):
+                    continue
+                if "Tradeline" in part_val and isinstance(part_val["Tradeline"], dict):
+                    tradeline = part_val["Tradeline"]
+                else:
+                    tradeline = part_val
+                if isinstance(tradeline, dict):
+                    if _safe_int(tradeline.get("writtenOffAmtTotal")) > 0 or _safe_int(tradeline.get("writtenOffPrincipal")) > 0:
+                        write_offs_count += 1
             
             # Extract gender, address, email, DOB, and age
             gender = borrower.get("Gender") or "-"
@@ -1124,7 +1139,10 @@ def _normalize_bureau_response(data: Dict[str, Any], name: str, phone: str, pan:
         if inquiry_partition and isinstance(inquiry_partition, dict):
             for key, val in inquiry_partition.items():
                 if isinstance(val, dict):
-                    inq = val.get("Inquiry", {})
+                    if "Inquiry" in val and isinstance(val["Inquiry"], dict):
+                        inq = val["Inquiry"]
+                    else:
+                        inq = val
                     if isinstance(inq, dict):
                         inq_date_str = inq.get("inquiryDate") or ""
                         if inq_date_str:
