@@ -260,6 +260,19 @@ async def startup_event():
     logger.info(f"Request size limit: {MAX_REQUEST_BODY_BYTES} bytes")
     logger.info(f"CSRF protection: {CSRF_PROTECTION_ENABLED}")
     logger.info("API Documentation available at: /docs")
+    
+    # Run user leads table backfill on startup
+    try:
+        from src.models import SessionLocal
+        from src.utils.leads_sync import backfill_all_user_leads
+        db = SessionLocal()
+        try:
+            backfill_all_user_leads(db)
+        finally:
+            db.close()
+    except Exception as ebackfill:
+        logger.error(f"Error executing startup leads backfill: {ebackfill}", exc_info=True)
+        
     logger.info("=" * 60)
 
 @app.on_event("shutdown")

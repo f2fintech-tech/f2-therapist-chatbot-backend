@@ -327,6 +327,11 @@ async def fetch_cibil(
         )
         db.add(credit_report)
         db.flush()
+        try:
+            from src.utils.leads_sync import sync_user_lead_from_report
+            sync_user_lead_from_report(db, credit_report)
+        except Exception as esync:
+            logger.error(f"Error syncing UserLead record: {esync}", exc_info=True)
     except Exception as e:
         logger.error(f"Error saving UserCreditReport record: {e}", exc_info=True)
         pass
@@ -387,6 +392,12 @@ def backfill_raw_json(user_id: str, db: Session = Depends(get_db)):
         credit_report_row.report_data = reparsed
         credit_report_row.score = reparsed.get("score", credit_report_row.score)
         flag_modified(credit_report_row, "report_data")
+
+        try:
+            from src.utils.leads_sync import sync_user_lead_from_report
+            sync_user_lead_from_report(db, credit_report_row)
+        except Exception as esync:
+            logger.error(f"Error syncing UserLead in backfill: {esync}", exc_info=True)
 
         profile = get_or_create_consolidated_profile(db, user_id)
         profile_data = dict(profile.data or {})

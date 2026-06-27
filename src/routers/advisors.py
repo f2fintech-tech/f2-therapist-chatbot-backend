@@ -31,6 +31,8 @@ class AdvisorBase(BaseModel):
     discount_expires_at: Optional[str] = None
     department: Optional[str] = "General"
     is_advisor: bool = False
+    is_active: bool = True
+    deactivation_reason: Optional[str] = None
     permissions: Optional[List[str]] = None
 
 class AdvisorCreate(AdvisorBase):
@@ -43,6 +45,10 @@ class AvailabilityUpdate(BaseModel):
 
 class NextSlotUpdate(BaseModel):
     next_slot: str
+
+class ActiveStatusUpdate(BaseModel):
+    is_active: bool
+    deactivation_reason: Optional[str] = None
 
 class PasswordUpdate(BaseModel):
     current_password: str
@@ -64,7 +70,10 @@ async def get_advisors(
         if all_employees:
             advisors = db.query(Advisor).order_by(Advisor.f2_fintech_id.asc()).all()
         else:
-            advisors = db.query(Advisor).filter(Advisor.is_advisor == True).order_by(Advisor.f2_fintech_id.asc()).all()
+            advisors = db.query(Advisor).filter(
+                Advisor.is_advisor == True,
+                Advisor.is_active == True
+            ).order_by(Advisor.f2_fintech_id.asc()).all()
         
         user_is_referred = False
         discount_expires_at = None
@@ -105,6 +114,8 @@ async def get_advisors(
                     discount_expires_at=adv_discount_expires,
                     department=a.department or "General",
                     is_advisor=a.is_advisor,
+                    is_active=a.is_active,
+                    deactivation_reason=a.deactivation_reason,
                     permissions=a.permissions
                 )
             )
@@ -188,6 +199,8 @@ def save_advisor(payload: AdvisorCreate, db: Session = Depends(get_db)):
             existing.fee = payload.fee
             existing.department = payload.department or "General"
             existing.is_advisor = payload.is_advisor
+            existing.is_active = payload.is_active
+            existing.deactivation_reason = payload.deactivation_reason
             existing.permissions = payload.permissions
             db.commit()
             db.refresh(existing)
@@ -210,6 +223,8 @@ def save_advisor(payload: AdvisorCreate, db: Session = Depends(get_db)):
                 fee=payload.fee,
                 department=payload.department or "General",
                 is_advisor=payload.is_advisor,
+                is_active=payload.is_active,
+                deactivation_reason=payload.deactivation_reason,
                 permissions=payload.permissions
             )
             db.add(new_advisor)
@@ -413,6 +428,52 @@ def update_next_slot(f2_fintech_id: str, payload: NextSlotUpdate, db: Session = 
         db.rollback()
         logger.error(f"Error updating advisor next-slot: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to update next-slot: {str(e)}")
+
+@router.put("/{f2_fintech_id}/active-status", response_model=AdvisorCreate)
+def update_advisor_active_status(f2_fintech_id: str, payload: ActiveStatusUpdate, db: Session = Depends(get_db)):
+    """
+    Update active status (activate/deactivate) for a specific advisor.
+    """
+    try:
+        advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == f2_fintech_id).first()
+        if not advisor:
+            raise HTTPException(status_code=404, detail="Advisor profile not found")
+        
+        advisor.is_active = payload.is_active
+        if not payload.is_active:
+            advisor.deactivation_reason = payload.deactivation_reason
+        else:
+            advisor.deactivation_reason = None
+            
+        db.commit()
+        db.refresh(advisor)
+        
+        return AdvisorCreate(
+            f2_fintech_id=advisor.f2_fintech_id,
+            name=advisor.name,
+            designation=advisor.designation,
+            avatar_url=advisor.avatar_url,
+            availability=advisor.availability,
+            expertise=advisor.expertise or [],
+            strength=advisor.strength,
+            bio=advisor.bio,
+            rating=advisor.rating,
+            reviews_count=advisor.reviews_count,
+            next_slot=advisor.next_slot,
+            category=advisor.category or "General",
+            fee=advisor.fee,
+            department=advisor.department or "General",
+            is_advisor=advisor.is_advisor,
+            is_active=advisor.is_active,
+            deactivation_reason=advisor.deactivation_reason,
+            permissions=advisor.permissions
+        )
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating advisor active status: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to update active status: {str(e)}")
 
 @router.put("/{f2_fintech_id}/password", status_code=status.HTTP_200_OK)
 def update_password(f2_fintech_id: str, payload: PasswordUpdate, db: Session = Depends(get_db)):
