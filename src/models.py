@@ -256,6 +256,8 @@ class Advisor(Base):
     password_hash = Column(String(255), nullable=True)
     department = Column(String(255), nullable=True, default="General")
     is_advisor = Column(Boolean, default=False, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    deactivation_reason = Column(String(500), nullable=True)
     permissions = Column(JSON, nullable=True)
 
     def __repr__(self):
@@ -321,6 +323,35 @@ class UserSessionReport(Base):
         return f"<UserSessionReport(id={self.id}, user_id={self.user_id}, type={self.report_type})>"
 
 
+class UserLead(Base):
+    """Stores synchronized CIBIL leads for admin export, mapping exactly to Excel export columns."""
+    __tablename__ = "user_leads"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    credit_report_id = Column("credit_report_id", String(36), ForeignKey("user_credit_reports.id"), nullable=True, unique=True)
+    
+    name = Column("Name", String(128), nullable=False)
+    phone = Column("Phone", String(32), nullable=True)
+    email = Column("Email", String(128), nullable=True)
+    cibil_score = Column("CIBIL Score", Integer, nullable=True)
+    bureau = Column("Bureau", String(32), nullable=True)
+    existing_open_accounts = Column("Existing Open Accounts", Text, nullable=True)
+    date_fetched = Column("Date Fetched", String(64), nullable=True)
+    
+    # Specific loan type columns
+    home_loan = Column("Home Loan", Text, nullable=True)
+    personal_loan = Column("Personal Loan", Text, nullable=True)
+    car_loan = Column("Car Loan", Text, nullable=True)
+    credit_card = Column("Credit Card", Text, nullable=True)
+    education_loan = Column("Education Loan", Text, nullable=True)
+    business_loan = Column("Business Loan", Text, nullable=True)
+    gold_loan = Column("Gold Loan", Text, nullable=True)
+    other_loans = Column("Other Loans", Text, nullable=True)
+
+    def __repr__(self):
+        return f"<UserLead(id={self.id}, name={self.name}, score={self.cibil_score})>"
+
+
 # ==================== Database Initialization ====================
 def init_db():
     """Initialize the database by creating all tables."""
@@ -334,6 +365,8 @@ def init_db():
         _ensure_advisor_department_column()
         _ensure_advisor_is_advisor_column()
         _ensure_advisor_permissions_column()
+        _ensure_advisor_is_active_column()
+        _ensure_advisor_deactivation_reason_column()
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
@@ -518,6 +551,34 @@ def _ensure_advisor_permissions_column():
             "UPDATE advisors SET permissions = '[\"cibil_fetch\", \"cibil_view\", \"scheduled_calls\", \"lenders_edit\", \"education_edit\"]' WHERE permissions IS NULL"
         ))
         logger.info("Backfilled advisor permissions with default permissions")
+
+def _ensure_advisor_is_active_column():
+    """Add is_active column to advisors table if it is missing."""
+    inspector = inspect(engine)
+    if "advisors" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("advisors")}
+    if "is_active" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE advisors ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT TRUE"))
+        logger.info("Added is_active column to advisors")
+
+def _ensure_advisor_deactivation_reason_column():
+    """Add deactivation_reason column to advisors table if it is missing."""
+    inspector = inspect(engine)
+    if "advisors" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("advisors")}
+    if "deactivation_reason" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE advisors ADD COLUMN deactivation_reason VARCHAR(500)"))
+        logger.info("Added deactivation_reason column to advisors")
 
 def get_db():
     """Dependency for getting database session in FastAPI."""
