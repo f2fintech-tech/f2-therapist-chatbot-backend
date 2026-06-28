@@ -18,14 +18,20 @@ def get_user_reports(user_id: str, db: Session = Depends(get_db)):
     Fetch all financial therapy and activity reports for a specific user.
     Generates missing or outdated reports on-the-fly if the user has activity.
     """
-    try:
         now = datetime.utcnow()
         for report_type in ["daily", "fortnightly", "monthly"]:
-            # Check if there is an existing report generated within the last 12 hours
+            # Set realistic cache thresholds based on report type to conserve Gemini API quota
+            if report_type == "daily":
+                threshold = timedelta(hours=24)
+            elif report_type == "fortnightly":
+                threshold = timedelta(days=7)
+            else:  # monthly
+                threshold = timedelta(days=15)
+
             existing = db.query(UserSessionReport).filter(
                 UserSessionReport.user_id == user_id,
                 UserSessionReport.report_type == report_type,
-                UserSessionReport.created_at >= now - timedelta(hours=12)
+                UserSessionReport.created_at >= now - threshold
             ).first()
             
             if not existing:

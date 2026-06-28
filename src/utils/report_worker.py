@@ -141,6 +141,10 @@ def aggregate_user_activity(db: Session, user_id: str, start_date: datetime, end
 
 def generate_report_for_user(db: Session, user_id: str, report_type: str) -> UserSessionReport | None:
     """Fetches telemetry for the window, runs LLM analysis, and saves to database."""
+    # TEMPORARILY DISABLED: Halt all report generations and LLM calls to conserve API quota
+    logger.info(f"Report generation is temporarily disabled. Skipping '{report_type}' report for user {user_id}.")
+    return None
+
     now = datetime.utcnow()
     
     if report_type == "daily":
@@ -160,6 +164,17 @@ def generate_report_for_user(db: Session, user_id: str, report_type: str) -> Use
     if not user:
         logger.error(f"User {user_id} not found in database")
         return None
+
+    # Safeguard to prevent duplicate LLM calls if a report of this type was generated recently
+    threshold = timedelta(hours=24) if report_type == "daily" else (timedelta(days=7) if report_type == "fortnightly" else timedelta(days=15))
+    existing = db.query(UserSessionReport).filter(
+        UserSessionReport.user_id == user_id,
+        UserSessionReport.report_type == report_type,
+        UserSessionReport.created_at >= now - threshold
+    ).first()
+    if existing:
+        logger.info(f"Skipping report generation for user {user_id}. Report of type '{report_type}' already exists within the last {threshold.days or '24 hours'} days/hours.")
+        return existing
 
     # Step 1: Gather Activity Log
     activity = aggregate_user_activity(db, user_id, start_date, end_date)
