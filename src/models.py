@@ -346,6 +346,7 @@ class UserLead(Base):
     education_loan = Column("Education Loan", Text, nullable=True)
     business_loan = Column("Business Loan", Text, nullable=True)
     gold_loan = Column("Gold Loan", Text, nullable=True)
+    professional_loan = Column("Professional Loan", Text, nullable=True)
     other_loans = Column("Other Loans", Text, nullable=True)
 
     def __repr__(self):
@@ -367,6 +368,7 @@ def init_db():
         _ensure_advisor_permissions_column()
         _ensure_advisor_is_active_column()
         _ensure_advisor_deactivation_reason_column()
+        _ensure_user_leads_columns()
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
@@ -579,6 +581,20 @@ def _ensure_advisor_deactivation_reason_column():
     with engine.begin() as connection:
         connection.execute(text("ALTER TABLE advisors ADD COLUMN deactivation_reason VARCHAR(500)"))
         logger.info("Added deactivation_reason column to advisors")
+
+def _ensure_user_leads_columns():
+    """Add Professional Loan column to user_leads table if it is missing (backward compatibility)."""
+    inspector = inspect(engine)
+    if "user_leads" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("user_leads")}
+    if "Professional Loan" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text('ALTER TABLE user_leads ADD COLUMN "Professional Loan" TEXT'))
+        logger.info("Added Professional Loan column to user_leads")
 
 def get_db():
     """Dependency for getting database session in FastAPI."""

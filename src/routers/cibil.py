@@ -59,7 +59,7 @@ from sqlalchemy.orm.attributes import flag_modified
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
 
-from src.models import get_db, User, UserConsolidatedProfile, UserCreditReport, Advisor
+from src.models import get_db, User, UserConsolidatedProfile, UserCreditReport, Advisor, UserLead
 from src.utils.api_security import require_api_key
 from src.utils.cibil_client import fetch_actual_cibil_report, fetch_actual_experian_report, CibilNoRecordError, normalize_cibil_report_from_raw
 from src.utils.wellness_service import record_test_result
@@ -495,6 +495,77 @@ def get_all_cibil_enquiries(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve CIBIL enquiries: {str(e)}"
+        )
+
+
+@router.get("/leads", response_model=List[Dict[str, Any]])
+def get_all_cibil_leads(
+    x_requester_id: Optional[str] = Header(None, alias="X-Requester-ID"),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve all synchronized user leads for admin export and UI rendering.
+    """
+    if x_requester_id:
+        is_admin_user = False
+        if x_requester_id in {"admin", "superadmin"} or "admin" in x_requester_id.lower():
+            is_admin_user = True
+        else:
+            user = db.query(User).filter(User.id == x_requester_id).first()
+            if user:
+                email_clean = (user.email or "").lower().strip()
+                if email_clean in {"admin@finheal.com", "admin@f2finheal.com"} or email_clean.startswith("admin@"):
+                    is_admin_user = True
+        
+        if not is_admin_user:
+            advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == x_requester_id).first()
+            if advisor and "cibil_view" not in (advisor.permissions or []):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access Denied. You do not have permission to view credit leads."
+                )
+    try:
+        from sqlalchemy.orm import defer
+        results = (
+            db.query(UserLead, UserCreditReport, User)
+            .options(defer(UserCreditReport.raw_bureau_json))
+            .join(UserCreditReport, UserLead.credit_report_id == UserCreditReport.id)
+            .join(User, UserCreditReport.user_id == User.id)
+            .order_by(UserCreditReport.fetched_at.desc())
+            .all()
+        )
+        
+        leads = []
+        for lead, report, user in results:
+            leads.append({
+                "id": report.id,
+                "user_id": report.user_id,
+                "name": lead.name,
+                "phone": lead.phone,
+                "email": lead.email,
+                "pan": report.report_data.get("pan", ""),
+                "bureau": lead.bureau,
+                "score": lead.cibil_score,
+                "pdf_url": report.pdf_url,
+                "fetched_at": report.fetched_at.isoformat(),
+                "accounts": report.report_data.get("accounts", []),
+                "report_data": report.report_data,
+                "home_loan": lead.home_loan,
+                "personal_loan": lead.personal_loan,
+                "car_loan": lead.car_loan,
+                "credit_card": lead.credit_card,
+                "education_loan": lead.education_loan,
+                "business_loan": lead.business_loan,
+                "gold_loan": lead.gold_loan,
+                "professional_loan": lead.professional_loan,
+                "other_loans": lead.other_loans,
+            })
+        return leads
+    except Exception as e:
+        logger.error(f"Error fetching CIBIL leads: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve CIBIL leads: {str(e)}"
         )
 
 
