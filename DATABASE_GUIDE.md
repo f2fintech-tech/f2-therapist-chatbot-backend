@@ -76,6 +76,36 @@ WHERE cancelled = true;
 SELECT id, user_id, bureau, score, pdf_url, fetched_at FROM user_credit_reports ORDER BY fetched_at DESC;
 ```
 
+### Count total credit reports fetched (by bureau):
+```sql
+SELECT bureau, COUNT(*) FROM user_credit_reports GROUP BY bureau;
+```
+
+### View all contents of user leads (every column and row):
+```sql
+SELECT * FROM user_leads;
+```
+
+### View structure/schema of the user_leads table:
+```sql
+\d user_leads
+```
+
+### View synchronized user leads (for CIBIL export reports):
+```sql
+SELECT id, "Name", "Phone", "Email", "CIBIL Score", "Bureau", "Date Fetched" FROM user_leads ORDER BY id DESC;
+```
+
+### Count total synchronized leads (by bureau):
+```sql
+SELECT "Bureau", COUNT(*) FROM user_leads GROUP BY "Bureau";
+```
+
+### Inspect specific loan details for user leads:
+```sql
+SELECT "Name", "CIBIL Score", "Home Loan", "Personal Loan", "Car Loan", "Credit Card" FROM user_leads;
+```
+
 ### View recent user calculations (EMI, Compares, Eligibility):
 ```sql
 SELECT id, user_id, calculator_type, loan_type, inputs, created_at 
