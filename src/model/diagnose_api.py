@@ -3,8 +3,14 @@ Diagnostic script to test API connectivity and quota status
 """
 
 import os
+import sys
 from google import genai
 from dotenv import load_dotenv
+
+# Ensure standard output uses UTF-8 to prevent encoding errors on Windows
+if sys.platform.startswith("win"):
+    import codecs
+    sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
 
 load_dotenv()
 
@@ -15,15 +21,15 @@ print("=" * 80)
 # Check API key
 api_key = os.getenv("GEMINI_API_KEY")
 if api_key:
-    print(f"\n✓ GEMINI_API_KEY found")
+    print("\n[OK] GEMINI_API_KEY found")
     print(f"  Key length: {len(api_key)} characters")
 else:
-    print("\n✗ GEMINI_API_KEY not found!")
+    print("\n[ERROR] GEMINI_API_KEY not found!")
     exit(1)
 
 # Initialize client
 client = genai.Client(api_key=api_key)
-print(f"\n✓ Gemini client initialized")
+print("\n[OK] Gemini client initialized")
 
 # Test 1: List available models
 print("\n" + "=" * 80)
@@ -32,12 +38,12 @@ print("=" * 80)
 
 try:
     models = client.models.list()
-    print(f"\n✓ Successfully retrieved model list")
-    print(f"\nAvailable models:")
+    print("\n[OK] Successfully retrieved model list")
+    print("\nAvailable models:")
     for model in models:
         print(f"  - {model.name}")
 except Exception as e:
-    print(f"\n✗ Error listing models: {e}")
+    print(f"\n[ERROR] Error listing models: {e}")
 
 # Test 2: Test embedding endpoint
 print("\n" + "=" * 80)
@@ -50,10 +56,10 @@ try:
         model="text-embedding-2",
         contents="Test query",
     )
-    print(f"✓ text-embedding-2 works!")
+    print("[OK] text-embedding-2 works!")
     print(f"  Embedding dimension: {len(result.embeddings[0].values)}")
 except Exception as e:
-    print(f"✗ text-embedding-2 failed: {e}")
+    print(f"[ERROR] text-embedding-2 failed: {e}")
 
 try:
     print("\nAttempting to embed with 'gemini-embedding-2'...")
@@ -61,10 +67,10 @@ try:
         model="gemini-embedding-2",
         contents="Test query",
     )
-    print(f"✓ gemini-embedding-2 works!")
+    print("[OK] gemini-embedding-2 works!")
     print(f"  Embedding dimension: {len(result.embeddings[0].values)}")
 except Exception as e:
-    print(f"✗ gemini-embedding-2 failed: {e}")
+    print(f"[ERROR] gemini-embedding-2 failed: {e}")
 
 # Test 3: Test generation endpoint (simple)
 print("\n" + "=" * 80)
@@ -77,11 +83,11 @@ try:
         model="gemini-3-flash-preview",
         contents="Say 'Hello' only",
     )
-    print(f"✓ gemini-3-flash-preview works!")
+    print("[OK] gemini-3-flash-preview works!")
     print(f"  Response: {response.text}")
 except Exception as e:
     error_str = str(e)
-    print(f"✗ gemini-3-flash-preview failed: {e}")
+    print(f"[ERROR] gemini-3-flash-preview failed: {e}")
 
     # Check if it's a quota or rate-limit error
     lowered = error_str.lower()

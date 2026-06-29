@@ -1,7 +1,7 @@
 <!-- Local startup on Windows
 Backend:
 cd D:\FinHeal-Friend\f2-therapist-chatbot-backend
-Start venv : " .\.venv\Scripts\Activate.ps1 "
+Start venv : " .\.venv\Scripts\Activate.ps1"
 python -m pip install -r requirements.txt
 python -m uvicorn src.main:app --reload
 
