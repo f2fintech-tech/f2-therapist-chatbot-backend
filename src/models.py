@@ -217,6 +217,7 @@ class UserCreditReport(Base):
     raw_bureau_json = Column(JSON, nullable=True)  # The raw API response from the bureau — used to re-parse on demand
     pdf_url = Column(Text, nullable=True)       # The download link/URL for the PDF report
     fetched_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fetched_by = Column(String(255), nullable=True)
 
 
 class UserLoanCalculatorActivity(Base):
@@ -346,6 +347,7 @@ class UserLead(Base):
     education_loan = Column("Education Loan", Text, nullable=True)
     business_loan = Column("Business Loan", Text, nullable=True)
     gold_loan = Column("Gold Loan", Text, nullable=True)
+    professional_loan = Column("Professional Loan", Text, nullable=True)
     other_loans = Column("Other Loans", Text, nullable=True)
 
     def __repr__(self):
@@ -367,6 +369,7 @@ def init_db():
         _ensure_advisor_permissions_column()
         _ensure_advisor_is_active_column()
         _ensure_advisor_deactivation_reason_column()
+        _ensure_user_leads_columns()
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
@@ -477,18 +480,20 @@ def _ensure_user_wellness_columns():
 
 
 def _ensure_credit_report_columns():
-    """Add raw_bureau_json column to user_credit_reports if it is missing (backward compatibility)."""
+    """Add raw_bureau_json and fetched_by columns to user_credit_reports if missing (backward compatibility)."""
     inspector = inspect(engine)
     if "user_credit_reports" not in inspector.get_table_names():
         return
 
     columns = {column["name"] for column in inspector.get_columns("user_credit_reports")}
-    if "raw_bureau_json" in columns:
-        return
-
+    
     with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE user_credit_reports ADD COLUMN raw_bureau_json JSON"))
-        logger.info("Added raw_bureau_json column to user_credit_reports")
+        if "raw_bureau_json" not in columns:
+            connection.execute(text("ALTER TABLE user_credit_reports ADD COLUMN raw_bureau_json JSON"))
+            logger.info("Added raw_bureau_json column to user_credit_reports")
+        if "fetched_by" not in columns:
+            connection.execute(text("ALTER TABLE user_credit_reports ADD COLUMN fetched_by VARCHAR(255)"))
+            logger.info("Added fetched_by column to user_credit_reports")
 
 def _ensure_advisor_password_column():
     """Add password_hash column to advisors table if it is missing (backward compatibility)."""
@@ -579,6 +584,20 @@ def _ensure_advisor_deactivation_reason_column():
     with engine.begin() as connection:
         connection.execute(text("ALTER TABLE advisors ADD COLUMN deactivation_reason VARCHAR(500)"))
         logger.info("Added deactivation_reason column to advisors")
+
+def _ensure_user_leads_columns():
+    """Add Professional Loan column to user_leads table if it is missing (backward compatibility)."""
+    inspector = inspect(engine)
+    if "user_leads" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("user_leads")}
+    if "Professional Loan" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text('ALTER TABLE user_leads ADD COLUMN "Professional Loan" TEXT'))
+        logger.info("Added Professional Loan column to user_leads")
 
 def get_db():
     """Dependency for getting database session in FastAPI."""

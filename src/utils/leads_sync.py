@@ -48,6 +48,7 @@ def sync_user_lead_from_report(db: Session, report: UserCreditReport) -> UserLea
         education_loan_list = []
         business_loan_list = []
         gold_loan_list = []
+        professional_loan_list = []
         other_loans_list = []
         
         for acc in active_accounts:
@@ -60,6 +61,8 @@ def sync_user_lead_from_report(db: Session, report: UserCreditReport) -> UserLea
                 home_loan_list.append(entry)
             elif "personal" in acc_type:
                 personal_loan_list.append(entry)
+            elif "professional" in acc_type or "prl" in acc_type:
+                professional_loan_list.append(entry)
             elif "car" in acc_type or "auto" in acc_type or "vehicle" in acc_type:
                 car_loan_list.append(entry)
             elif "card" in acc_type:
@@ -80,6 +83,7 @@ def sync_user_lead_from_report(db: Session, report: UserCreditReport) -> UserLea
         education_loan_val = "; ".join(education_loan_list) if education_loan_list else None
         business_loan_val = "; ".join(business_loan_list) if business_loan_list else None
         gold_loan_val = "; ".join(gold_loan_list) if gold_loan_list else None
+        professional_loan_val = "; ".join(professional_loan_list) if professional_loan_list else None
         other_loans_val = "; ".join(other_loans_list) if other_loans_list else None
         
         # 5. Save or Update in UserLead
@@ -99,6 +103,7 @@ def sync_user_lead_from_report(db: Session, report: UserCreditReport) -> UserLea
             existing_lead.education_loan = education_loan_val
             existing_lead.business_loan = business_loan_val
             existing_lead.gold_loan = gold_loan_val
+            existing_lead.professional_loan = professional_loan_val
             existing_lead.other_loans = other_loans_val
             lead = existing_lead
             logger.info(f"Updated existing UserLead record for credit report {report.id}")
@@ -119,6 +124,7 @@ def sync_user_lead_from_report(db: Session, report: UserCreditReport) -> UserLea
                 education_loan=education_loan_val,
                 business_loan=business_loan_val,
                 gold_loan=gold_loan_val,
+                professional_loan=professional_loan_val,
                 other_loans=other_loans_val
             )
             db.add(new_lead)
