@@ -301,3 +301,131 @@ def run_scheduled_reports(db: Session):
         logger.info("Finished scheduled background reports generation")
     except Exception as e:
         logger.error(f"Scheduler worker execution failed: {str(e)}", exc_info=True)
+
+
+def generate_on_demand_report(db: Session, user_id: str) -> UserSessionReport:
+    """
+    On-demand report generation triggered by the user.
+    Enforces a strict 7-day cooldown.
+    """
+    now = datetime.utcnow()
+    
+    # 1. Fetch user to verify
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise ValueError("USER_NOT_FOUND")
+
+    # 2. Check for the most recent "on_demand" report to enforce 7-day cooldown
+    last_report = db.query(UserSessionReport).filter(
+        UserSessionReport.user_id == user_id,
+        UserSessionReport.report_type == "on_demand"
+    ).order_by(UserSessionReport.created_at.desc()).first()
+
+    if last_report:
+        cooldown_limit = last_report.created_at + timedelta(days=7)
+        if now < cooldown_limit:
+            raise ValueError(f"COOLDOWN_ACTIVE|{cooldown_limit.isoformat()}")
+
+    # 3. Calculate start_date and end_date
+    if last_report:
+        start_date = last_report.end_date
+    else:
+        start_date = user.created_at
+
+    end_date = now
+
+    # 4. Gather activity log
+    activity = aggregate_user_activity(db, user_id, start_date, end_date)
+
+    # 5. Check if user has any activity in the timeframe
+    has_activity = (
+        activity["user_msg_count"] > 0 or
+        len(activity["cibil_log"]) > 0 or
+        len(activity["calc_log"]) > 0 or
+        len(activity["test_log"]) > 0
+    )
+
+    if not has_activity:
+        raise ValueError("NO_ACTIVITY")
+
+    # 6. Call Gemini LLM to generate summary & takeaways
+    llm = get_report_llm()
+    prompt = f"""
+    You are an expert, empathetic Financial Therapist and Counselor. 
+    Analyze the user's financial wellness activity logs and chat history for the period {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')} and compile a structured, custom on-demand financial therapy progress report.
+
+    Here is the User profile:
+    - Name: {user.name or 'N/A'}
+    - Wellness Score: {user.wellness_score}/100
+    - Wellness Tier: {user.wellness_tier}
+
+    Here is the User's activity log during this period:
+    - Chat message count: {activity["user_msg_count"]} user messages sent.
+    - CIBIL score checks performed: {json.dumps(activity["cibil_log"])}
+    - Loan calculator runs performed: {json.dumps(activity["calc_log"])}
+    - Financial wellness tests completed: {json.dumps(activity["test_log"])}
+    - Educational videos consumed: {json.dumps(activity["videos_seen"])}
+    - Educational articles consumed: {json.dumps(activity["articles_seen"])}
+
+    Average mood/stress dimensions during this period (scaled 0-100, where higher stress means more anxiety, higher openness means ready for options):
+    - Average Stress Level: {activity["avg_mood"].get('stress', 50.0)}/100
+    - Average Financial Urgency: {activity["avg_mood"].get('urgency', 50.0)}/100
+    - Average Openness to Solutions: {activity["avg_mood"].get('openness', 50.0)}/100
+    - Average Learning Willingness: {activity["avg_mood"].get('willingness', 50.0)}/100
+    - Average General Emotion Score: {activity["avg_mood"].get('emotion', 50.0)}/100
+
+    Please structure your output exactly as a JSON object with the following keys:
+    {{
+        "summary": "A cohesive, compassionate 3-4 sentence paragraph summarizing the user's financial therapy progress, acknowledging their emotions and highlighting the key topic they focused on.",
+        "key_takeaways": [
+            "Takeaway recommendation 1: a short, direct and actionable bullet point (max 15 words) starting with a relevant emoji.",
+            "Takeaway recommendation 2: ...",
+            "Takeaway recommendation 3: ..."
+        ]
+    }}
+    Do not output any markdown code blocks or triple backticks, output raw JSON only.
+    """
+
+    response = llm.invoke(prompt)
+    content = _extract_text(response.content).strip()
+
+    if content.startswith("```"):
+        lines = content.split("\n")
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines[-1].startswith("```"):
+            lines = lines[:-1]
+        content = "\n".join(lines).strip()
+
+    parsed = json.loads(content)
+    summary = parsed.get("summary", "No summary generated.")
+    takeaways = parsed.get("key_takeaways", [])
+
+    # Save to database
+    report_id = str(uuid.uuid4())
+    new_report = UserSessionReport(
+        id=report_id,
+        user_id=user_id,
+        report_type="on_demand",
+        start_date=start_date,
+        end_date=end_date,
+        summary=summary,
+        key_takeaways=takeaways,
+        mood_trend=activity["avg_mood"],
+        activity_summary={
+            "msg_count": activity["user_msg_count"],
+            "cibil_checks": len(activity["cibil_log"]),
+            "calculator_runs": len(activity["calc_log"]),
+            "tests_completed": len(activity["test_log"]),
+            "videos_watched": len(activity["videos_seen"])
+        },
+        created_at=now
+    )
+
+    db.add(new_report)
+    db.commit()
+    db.refresh(new_report)
+
+    logger.info(f"Successfully generated custom on-demand report for user {user_id}")
+    return new_report
+
