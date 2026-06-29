@@ -323,7 +323,8 @@ async def fetch_cibil(
             report_data=report,
             raw_bureau_json=raw_bureau_json,  # Store raw API response for accurate re-parsing
             pdf_url=report.get("pdf_url"),
-            fetched_at=datetime.utcnow()
+            fetched_at=datetime.utcnow(),
+            fetched_by=requester
         )
         db.add(credit_report)
         db.flush()
@@ -485,6 +486,7 @@ def get_all_cibil_enquiries(
                 "score": report.score,
                 "pdf_url": report.pdf_url,
                 "fetched_at": report.fetched_at.isoformat(),
+                "fetched_by": getattr(report, "fetched_by", None) or "client",
                 "accounts": report.report_data.get("accounts", []),
                 "report_data": report.report_data,
                 "debug": output
@@ -548,6 +550,7 @@ def get_all_cibil_leads(
                 "score": lead.cibil_score,
                 "pdf_url": report.pdf_url,
                 "fetched_at": report.fetched_at.isoformat(),
+                "fetched_by": getattr(report, "fetched_by", None) or "client",
                 "accounts": report.report_data.get("accounts", []),
                 "report_data": report.report_data,
                 "home_loan": lead.home_loan,

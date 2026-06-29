@@ -217,6 +217,7 @@ class UserCreditReport(Base):
     raw_bureau_json = Column(JSON, nullable=True)  # The raw API response from the bureau — used to re-parse on demand
     pdf_url = Column(Text, nullable=True)       # The download link/URL for the PDF report
     fetched_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fetched_by = Column(String(255), nullable=True)
 
 
 class UserLoanCalculatorActivity(Base):
@@ -479,18 +480,20 @@ def _ensure_user_wellness_columns():
 
 
 def _ensure_credit_report_columns():
-    """Add raw_bureau_json column to user_credit_reports if it is missing (backward compatibility)."""
+    """Add raw_bureau_json and fetched_by columns to user_credit_reports if missing (backward compatibility)."""
     inspector = inspect(engine)
     if "user_credit_reports" not in inspector.get_table_names():
         return
 
     columns = {column["name"] for column in inspector.get_columns("user_credit_reports")}
-    if "raw_bureau_json" in columns:
-        return
-
+    
     with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE user_credit_reports ADD COLUMN raw_bureau_json JSON"))
-        logger.info("Added raw_bureau_json column to user_credit_reports")
+        if "raw_bureau_json" not in columns:
+            connection.execute(text("ALTER TABLE user_credit_reports ADD COLUMN raw_bureau_json JSON"))
+            logger.info("Added raw_bureau_json column to user_credit_reports")
+        if "fetched_by" not in columns:
+            connection.execute(text("ALTER TABLE user_credit_reports ADD COLUMN fetched_by VARCHAR(255)"))
+            logger.info("Added fetched_by column to user_credit_reports")
 
 def _ensure_advisor_password_column():
     """Add password_hash column to advisors table if it is missing (backward compatibility)."""
