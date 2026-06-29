@@ -699,3 +699,32 @@ def generate_cam_report(user_id: str, db: Session = Depends(get_db)):
         }
     )
 
+
+@router.get("/advisor-limit-check/{advisor_id}")
+def check_advisor_cibil_fetch_limit(advisor_id: str, db: Session = Depends(get_db)):
+    """
+    Check if the advisor/employee has reached a milestone (multiple of 10) in lifetime CIBIL fetches.
+    """
+    try:
+        # Count all credit reports fetched by this advisor in history
+        fetch_count = db.query(UserCreditReport).filter(
+            UserCreditReport.fetched_by == advisor_id
+        ).count()
+        
+        # Trigger warning whenever they fetch exactly a multiple of 10 CIBILs
+        trigger_warning = (fetch_count > 0 and fetch_count % 10 == 0)
+        
+        return {
+            "advisor_id": advisor_id,
+            "fetch_count": fetch_count,
+            "trigger_warning": trigger_warning,
+            "message": f"You have fetched {fetch_count} CIBIL reports in total. Please check your usage."
+        }
+    except Exception as e:
+        logger.error(f"Error checking CIBIL fetch limit for advisor {advisor_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to check CIBIL fetch limit: {str(e)}"
+        )
+
+
