@@ -16,7 +16,7 @@ router = APIRouter(prefix="/chat/reports", tags=["Reports"], dependencies=[Depen
 def get_user_reports(user_id: str, db: Session = Depends(get_db)):
     """
     Fetch all financial therapy and activity reports for a specific user.
-    Generates missing or outdated reports on-the-fly if the user has activity.
+    Only returns "on_demand" reports.
     """
     try:
         now = datetime.utcnow()
@@ -41,9 +41,9 @@ def get_user_reports(user_id: str, db: Session = Depends(get_db)):
                     generate_report_for_user(db, user_id, report_type)
                 except Exception as ex:
                     logger.error(f"Failed to generate {report_type} report on-the-fly: {str(ex)}", exc_info=True)
-
         reports = db.query(UserSessionReport).filter(
-            UserSessionReport.user_id == user_id
+            UserSessionReport.user_id == user_id,
+            UserSessionReport.report_type == "on_demand"
         ).order_by(UserSessionReport.created_at.desc()).all()
         
         return [
@@ -55,6 +55,8 @@ def get_user_reports(user_id: str, db: Session = Depends(get_db)):
                 "end_date": r.end_date.isoformat(),
                 "summary": r.summary,
                 "key_takeaways": r.key_takeaways or [],
+                "strengths": r.strengths or [],
+                "weaknesses": r.weaknesses or [],
                 "mood_trend": r.mood_trend or {},
                 "activity_summary": r.activity_summary or {},
                 "created_at": r.created_at.isoformat()
@@ -70,7 +72,7 @@ def get_user_reports(user_id: str, db: Session = Depends(get_db)):
 @router.post("/{user_id}/trigger")
 def trigger_report_generation(
     user_id: str, 
-    report_type: str = Query(..., pattern="^(daily|fortnightly|monthly)$"), 
+    report_type: str = Query(..., pattern="^(on_demand)$"), 
     db: Session = Depends(get_db)
 ):
     """
@@ -91,6 +93,8 @@ def trigger_report_generation(
                 "end_date": report.end_date.isoformat(),
                 "summary": report.summary,
                 "key_takeaways": report.key_takeaways or [],
+                "strengths": report.strengths or [],
+                "weaknesses": report.weaknesses or [],
                 "mood_trend": report.mood_trend or {},
                 "activity_summary": report.activity_summary or {},
                 "created_at": report.created_at.isoformat()
@@ -109,8 +113,8 @@ def trigger_all_reports(db: Session = Depends(get_db)):
     Developer/Admin endpoint to manually run the scheduled worker for all users.
     """
     try:
-        run_scheduled_reports(db)
-        return {"status": "success", "message": "Triggered reports generation for all users."}
+        # Scheduled generation of periodic reports is fully disabled.
+        return {"status": "skipped", "message": "Scheduled background report generation is fully disabled."}
     except Exception as e:
         logger.error(f"Error triggering all reports: {str(e)}", exc_info=True)
         raise HTTPException(

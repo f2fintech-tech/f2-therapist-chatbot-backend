@@ -129,8 +129,11 @@ def aggregate_user_activity(db: Session, user_id: str, start_date: datetime, end
         videos_seen = edu.get("videos_seen", [])
         articles_seen = edu.get("articles_seen", [])
 
+    chat_contents = [m.content for m in messages if m.role == MessageRole.USER and m.content]
+
     return {
         "user_msg_count": user_msg_count,
+        "chat_contents": chat_contents,
         "avg_mood": avg_mood,
         "cibil_log": cibil_log,
         "calc_log": calc_log,
@@ -367,6 +370,9 @@ def generate_on_demand_report(db: Session, user_id: str) -> UserSessionReport:
     - Educational videos consumed: {json.dumps(activity["videos_seen"])}
     - Educational articles consumed: {json.dumps(activity["articles_seen"])}
 
+    Recent chat messages sent by the user:
+    {json.dumps(activity.get("chat_contents", []))}
+
     Average mood/stress dimensions during this period (scaled 0-100, where higher stress means more anxiety, higher openness means ready for options):
     - Average Stress Level: {activity["avg_mood"].get('stress', 50.0)}/100
     - Average Financial Urgency: {activity["avg_mood"].get('urgency', 50.0)}/100
@@ -381,6 +387,14 @@ def generate_on_demand_report(db: Session, user_id: str) -> UserSessionReport:
             "Takeaway recommendation 1: a short, direct and actionable bullet point (max 15 words) starting with a relevant emoji.",
             "Takeaway recommendation 2: ...",
             "Takeaway recommendation 3: ..."
+        ],
+        "strengths": [
+            "Strength 1: a short point (max 15 words) describing a positive financial therapy habit or behavior shown by the user (e.g. proactive research, high openness).",
+            "Strength 2: ..."
+        ],
+        "weaknesses": [
+            "Weakness 1: a short point (max 15 words) describing a financial anxiety or area of improvement shown by the user (e.g. high stress on loan calculations, avoidance).",
+            "Weakness 2: ..."
         ]
     }}
     Do not output any markdown code blocks or triple backticks, output raw JSON only.
@@ -400,6 +414,8 @@ def generate_on_demand_report(db: Session, user_id: str) -> UserSessionReport:
     parsed = json.loads(content)
     summary = parsed.get("summary", "No summary generated.")
     takeaways = parsed.get("key_takeaways", [])
+    strengths = parsed.get("strengths", [])
+    weaknesses = parsed.get("weaknesses", [])
 
     # Save to database
     report_id = str(uuid.uuid4())
@@ -411,6 +427,8 @@ def generate_on_demand_report(db: Session, user_id: str) -> UserSessionReport:
         end_date=end_date,
         summary=summary,
         key_takeaways=takeaways,
+        strengths=strengths,
+        weaknesses=weaknesses,
         mood_trend=activity["avg_mood"],
         activity_summary={
             "msg_count": activity["user_msg_count"],
