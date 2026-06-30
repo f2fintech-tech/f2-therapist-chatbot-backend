@@ -318,6 +318,8 @@ class UserSessionReport(Base):
     key_takeaways = Column(JSON, nullable=True)  # List of strings
     mood_trend = Column(JSON, nullable=True)  # JSON dictionary of average metrics
     activity_summary = Column(JSON, nullable=True)  # JSON list of CIBIL score checks, calculator runs, test scores, etc.
+    strengths = Column(JSON, nullable=True)
+    weaknesses = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     def __repr__(self):
@@ -370,6 +372,7 @@ def init_db():
         _ensure_advisor_is_active_column()
         _ensure_advisor_deactivation_reason_column()
         _ensure_user_leads_columns()
+        _ensure_user_session_reports_columns()
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
@@ -598,6 +601,21 @@ def _ensure_user_leads_columns():
     with engine.begin() as connection:
         connection.execute(text('ALTER TABLE user_leads ADD COLUMN "Professional Loan" TEXT'))
         logger.info("Added Professional Loan column to user_leads")
+
+def _ensure_user_session_reports_columns():
+    """Add strengths and weaknesses columns to user_session_reports if they are missing."""
+    inspector = inspect(engine)
+    if "user_session_reports" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("user_session_reports")}
+    with engine.begin() as connection:
+        if "strengths" not in columns:
+            connection.execute(text("ALTER TABLE user_session_reports ADD COLUMN strengths JSON"))
+            logger.info("Added strengths column to user_session_reports")
+        if "weaknesses" not in columns:
+            connection.execute(text("ALTER TABLE user_session_reports ADD COLUMN weaknesses JSON"))
+            logger.info("Added weaknesses column to user_session_reports")
 
 def get_db():
     """Dependency for getting database session in FastAPI."""
