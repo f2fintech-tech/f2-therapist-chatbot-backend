@@ -19,6 +19,28 @@ def get_user_reports(user_id: str, db: Session = Depends(get_db)):
     Only returns "on_demand" reports.
     """
     try:
+        now = datetime.utcnow()
+        for report_type in ["daily", "fortnightly", "monthly"]:
+            # Set realistic cache thresholds based on report type to conserve Gemini API quota
+            if report_type == "daily":
+                threshold = timedelta(hours=24)
+            elif report_type == "fortnightly":
+                threshold = timedelta(days=7)
+            else:  # monthly
+                threshold = timedelta(days=15)
+
+            existing = db.query(UserSessionReport).filter(
+                UserSessionReport.user_id == user_id,
+                UserSessionReport.report_type == report_type,
+                UserSessionReport.created_at >= now - threshold
+            ).first()
+            
+            if not existing:
+                try:
+                    # Generate report if user has activity in the timeframe
+                    generate_report_for_user(db, user_id, report_type)
+                except Exception as ex:
+                    logger.error(f"Failed to generate {report_type} report on-the-fly: {str(ex)}", exc_info=True)
         reports = db.query(UserSessionReport).filter(
             UserSessionReport.user_id == user_id,
             UserSessionReport.report_type == "on_demand"

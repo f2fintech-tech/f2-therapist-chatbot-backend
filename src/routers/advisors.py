@@ -124,6 +124,44 @@ async def get_advisors(
         logger.error(f"Error fetching advisors: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch advisors: {str(e)}")
 
+
+@router.get("/profile/{f2_fintech_id}", response_model=AdvisorCreate)
+def get_advisor_profile(f2_fintech_id: str, db: Session = Depends(get_db)):
+    """
+    Retrieve a single advisor/employee profile by f2_fintech_id.
+    """
+    try:
+        advisor = db.query(Advisor).filter(Advisor.f2_fintech_id == f2_fintech_id).first()
+        if not advisor:
+            raise HTTPException(status_code=404, detail="Employee profile not found")
+        
+        return AdvisorCreate(
+            f2_fintech_id=advisor.f2_fintech_id,
+            name=advisor.name,
+            designation=advisor.designation,
+            avatar_url=advisor.avatar_url,
+            availability=advisor.availability,
+            expertise=advisor.expertise or [],
+            strength=advisor.strength,
+            bio=advisor.bio,
+            rating=advisor.rating,
+            reviews_count=advisor.reviews_count,
+            next_slot=advisor.next_slot,
+            category=advisor.category or "General",
+            fee=advisor.fee,
+            department=advisor.department or "General",
+            is_advisor=advisor.is_advisor,
+            is_active=advisor.is_active,
+            deactivation_reason=advisor.deactivation_reason,
+            permissions=advisor.permissions or []
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching advisor profile: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch advisor profile: {str(e)}")
+
+
 # ==================== Referral Endpoints ====================
 
 class ReferralCodeResponse(BaseModel):
