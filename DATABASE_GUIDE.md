@@ -73,7 +73,7 @@ WHERE cancelled = true;
 
 ### View all fetched CIBIL & Experian credit reports:
 ```sql
-SELECT id, user_id, bureau, score, pdf_url, fetched_at FROM user_credit_reports ORDER BY fetched_at DESC;
+SELECT id, user_id, report_data->>'name' AS name, bureau, score, pdf_url, fetched_at FROM user_credit_reports ORDER BY fetched_at DESC;
 ```
 
 ### Count total credit reports fetched (by bureau):
